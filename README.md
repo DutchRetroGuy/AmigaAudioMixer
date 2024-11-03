@@ -6,7 +6,7 @@ level of performance on even low end Amiga's (such as the A500) by making use
 of optimised code and pre-processed samples. It is designed to be able to 
 co-exist with music playback routines, as long as the music playback routine 
 supports disabling access/playback to the hardware channel(s) the Audio Mixer
-uses.
+uses. Hello world
 
 If desired, multiple hardware channels can be assigned to the Audio Mixer,
 allowing for even more samples to be played at the same time. The Audio Mixer
@@ -67,7 +67,7 @@ Features:
 The Audio Mixer is provided as full assembly source code with examples,
 documentation and extra code to help integrate the mixer in C programs.
 
-For more information about the Audio Mixer 3.6, see the included 
+For more information about the Audio Mixer 3.7, see the included 
 documentation.
 
 For more information about mixing audio on the Amiga, see the my website:
