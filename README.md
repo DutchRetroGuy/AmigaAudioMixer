@@ -6,7 +6,7 @@ level of performance on even low end Amiga's (such as the A500) by making use
 of optimised code and pre-processed samples. It is designed to be able to 
 co-exist with music playback routines, as long as the music playback routine 
 supports disabling access/playback to the hardware channel(s) the Audio Mixer
-uses. Hello world
+uses.
 
 If desired, multiple hardware channels can be assigned to the Audio Mixer,
 allowing for even more samples to be played at the same time. The Audio Mixer
