@@ -65,15 +65,15 @@ Features:
    indicate.
    
 The Audio Mixer is provided as full assembly source code with examples,
-[documentation](#Documentation/Documentation.md) and extra code to help integrate the mixer in C programs.
+[documentation](Documentation/Documentation.md) and extra code to help integrate the mixer in C programs.
 
 For more information about the Audio Mixer 3.7, see the included 
-[documentation](#Documentation/Documentation.md).
+[documentation](Documentation/Documentation.md).
 
 For more information about mixing audio on the Amiga, see the my website:
 https://www.powerprograms.nl/amiga/audio-mixing.html
 
-Please see the the included [LICENSE](#LICENSE) file for full license information and
+Please see the the included [LICENSE](LICENSE) file for full license information and
 copyright.
 
 The mixer examples use music by Roald Strauss, samples from freesound.org,
