@@ -1,0 +1,64 @@
+----------------
+Acknowledgements
+----------------
+The mixer examples use some code made by others and use music and samples made
+by others as well.
+
+Thanks for resources and code I've been able to use in this project go to:
+
+   - The mixer examples use the module SneakyChick.mod, which was kindly
+     provided on a freeware/non-commercial use basis by Roald Strauss @
+	 IndieGameMusic.com. Further distribution/use of this module requires a
+	 license. Visit IndieGameMusic.com to license this or one of the many
+	 other tracks they provide for use in your own productions.
+   - The mixer examples uses several samples provided on freesound.org under
+     the Creative Commons CC0 license. These samples are:
+
+     - https://freesound.org/people/egomassive/sounds/536741/
+	 - https://freesound.org/people/Daleonfire/sounds/376694/
+	 - https://freesound.org/people/GameAudio/sounds/220173/
+	 - https://freesound.org/people/derplayer/sounds/587196/
+	 - https://freesound.org/people/Latranz/sounds/520200/
+	 - https://freesound.org/people/NovaSoundTechnology/sounds/118750/
+	 - https://freesound.org/people/aunrea/sounds/495658/
+	 - https://freesound.org/people/skymary/sounds/412017/
+	 
+	 The full text of the CC0 license can be found here: 
+	 https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+   - The mixer examples use PT Player 6.3 by Frank Wille, who has released
+     this ProTracker player under a public domain license.
+   - The mixer examples use LSP 1.10 by Arnaud Carré, who has released this
+     ProTracker converter/player under the MIT license.
+   - The mixer examples use startup code by Henrik Erlandsson, who has 
+     released this code under the MIT license.
+	 
+Full license information for the PT Player, LSP converter/player and startup
+code can be found in LICENSE files included in their respective directories.
+     
+------------------
+License/Disclaimer
+------------------
+With exception of the items listed in the "Acknowledgements" section of this
+document, all code, documentation and other files fall under the following
+license:
+
+Copyright (c) 2024 Jeroen Knoester
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
