@@ -1,4 +1,4 @@
-; $VER: mixer_config.i 3.6 (04.02.24)
+; $VER: mixer_config.i 3.7 (04.02.24)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -12,7 +12,7 @@
 ;       signed limits or overflow from positive to negative (or vice versa).
 ; 
 ; Author: Jeroen Knoester
-; Version: 3.6
+; Version: 3.7
 ; Revision: 20240204
 ;
 ; Assembled using VASM in Amiga-link mode.
@@ -207,8 +207,15 @@ MIXER_ENABLE_CALLBACK	EQU 0
 ; Note: enabling plugins slightly increases CPU and memory costs of the mixer
 ;       for all mixer channels playing back samples. In addition, the effects
 ;       routines themselves will also add CPU overhead.
-; Note: enabling plugins will 
 MIXER_ENABLE_PLUGINS	EQU 0
+
+; Set define below to enable the return vector. The return vector is a user
+; specified routine that will be called at the end of audio interrupt
+; processing.
+;
+; Note: enabling the return vector slightly increases CPU overhead during
+;       interrupt processing.
+MIXER_ENABLE_RETURN_VECTOR	EQU 0
 
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
@@ -218,7 +225,6 @@ MIXER_SECTION			EQU	1
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
 MIXER_NO_ECHO			EQU 0
-	ENDC	; MIXER_CONFIG_I
 	
 ; Set define below to 1 to include C style function definition aliases in
 ; addition to the standard function definitions. This effectively creates
@@ -229,4 +235,5 @@ MIXER_NO_ECHO			EQU 0
 ;       handled, so that they can deal with the registers that C compilers can
 ;       trash between function calls.
 MIXER_C_DEFS			EQU 0
+	ENDC	; MIXER_CONFIG_I
 ; End of File

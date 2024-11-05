@@ -2,6 +2,14 @@ Release notes for the Audio Mixer
 
 v3.7
 ----
+* (NEW) The mixer now supports calling a routine at the end of interrupt 
+        processing, to allow user code to execute actions as close to the
+		mixer interrupt loop as possible. This option is configured to be off
+		by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
+		
+		The vector for this routine can be set by calling 
+		MixerSetReturnVector().
+* (BUGFIX) Fixed a potential issue with the include guard in mixer_config.i
 * (MAINTENANCE) The makefile now automatically synchronises the mixer & plugin
                 files from the main Mixer & Plugin directories to the various
                 example Mixer & Plugin directories.

@@ -1,4 +1,4 @@
-; $VER: mixer.asm 3.6 (05.02.24)
+; $VER: mixer.asm 3.7 (05.02.24)
 ;
 ; mixer.asm
 ; Audio mixing routines
@@ -38,7 +38,7 @@
 ;       between these two.
 ;
 ; Author: Jeroen Knoester
-; Version: 3.6
+; Version: 3.7
 ; Revision: 20240205
 ;
 ; Assembled using VASM in Amiga-link mode.
@@ -271,14 +271,6 @@ CIAStop		MACRO
 ; Setup routines
 ;-----------------------------------------------------------------------------
 
-MixerSetReturnVector
-		move.l	a1,-(sp)
-		lea.l	mixer_stored_vector(pc),a1
-		move.l	a0,(a1)
-		move.l	(sp)+,a1
-		rts
-		
-
 		; Routine: MixerSetup
 		; This routine sets up the data structures and buffers used by the 
 		; mixer.
@@ -347,6 +339,10 @@ MixerSetup
 		move.w	d6,mx_hw_channels(a3)
 		IF MIXER_ENABLE_CALLBACK=1
 			move.l	d4,mx_callback_ptr(a3)
+		ENDIF
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			lea.l	mixer_stored_vector(pc),a4
+			move.l	d4,(a4)
 		ENDIF
 		move.w	d0,mx_buffer_size(a3)
 		move.w	d0,d7
@@ -1676,16 +1672,18 @@ MixSingIHend	MACRO
 			move.w	#MIXER_DEFAULT_COLOUR,$dff180
 		ENDIF
 	
-		move.l	d0,-(sp)
-		move.l	mixer_stored_vector(pc),d0
-		beq.s	.rte
+		IF MIXER_ENABLE_RETURN_VECTOR = 1
+			move.l	d0,-(sp)
+			move.l	mixer_stored_vector(pc),d0
+			beq.s	.rte
 
-		movem.l	d1-d6/a0-a6,-(sp)
-		move.l	mixer_stored_vector(pc),a0
-		jsr		(a0)
-		movem.l	(sp)+,d1-d6/a0-a6
+			movem.l	d1-d6/a0-a6,-(sp)
+			move.l	mixer_stored_vector(pc),a0
+			jsr		(a0)
+			movem.l	(sp)+,d1-d6/a0-a6
 .rte
-		move.l	(sp)+,d0
+			move.l	(sp)+,d0
+		ENDIF
 		rte
 				ENDM
 
@@ -1819,16 +1817,18 @@ MixMultIHend	MACRO
 			move.w	#MIXER_DEFAULT_COLOUR,$dff180
 		ENDIF
 		
-		move.l	d0,-(sp)
-		move.l	mixer_stored_vector(pc),d0
-		beq.s	.rte
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			move.l	d0,-(sp)
+			move.l	mixer_stored_vector(pc),d0
+			beq.s	.rte
 
-		movem.l	d1-d6/a0-a6,-(sp)
-		move.l	mixer_stored_vector(pc),a0
-		jsr		(a0)
-		movem.l	(sp)+,d1-d6/a0-a6
+			movem.l	d1-d6/a0-a6,-(sp)
+			move.l	mixer_stored_vector(pc),a0
+			jsr		(a0)
+			movem.l	(sp)+,d1-d6/a0-a6
 .rte
-		move.l	(sp)+,d0
+			move.l	(sp)+,d0
+		ENDIF
 		rte
 				ENDM
 
@@ -3322,6 +3322,21 @@ MixerGetChannelStatus
 		
 .done
 		movem.l	(sp)+,d2/d4/a1				; Stack
+		rts
+		
+		; Routine: MixerSetReturnVector
+		; This routine sets the optional vector the mixer can call at to at
+		; the end of interrupt execution.
+		;
+		; Note: this vector should point to a standard routine ending in RTS.
+		; Note: this routine should be called after MixerSetup() has been run.
+MixerSetReturnVector
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			move.l	a1,-(sp)
+			lea.l	mixer_stored_vector(pc),a1
+			move.l	a0,(a1)
+			move.l	(sp)+,a1
+		ENDIF
 		rts
 
 		; Routine: MixerSetPluginDeferredPtr

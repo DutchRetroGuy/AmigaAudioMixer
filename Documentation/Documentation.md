@@ -1065,6 +1065,11 @@ This routine returns the total number of internal channels the mixer supports fo
 *D0=MixerGetChannelBufferSize()*  
 This routine returns the value of the internal mixer buffer size. This is the size of the buffer the mixer uses per HW audio channel assigned to it. Its primary purpose is to give plugins a way to get this value without needing access to the internal mixer structure.
 
+*MixerSetReturnVector(A0=return_function_ptr)*
+This routine sets the optional vector the mixer can call at to at the end of interrupt execution.
+
+Note: this vector should point to a standard routine ending in RTS.
+
 #### The following two routines are deprecated and will no longer receive new functionality when the mixer is updated. They are still available for backwards compatibility purposes and have been updated with the new offset loop mode.
 
 *D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length, D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)*  

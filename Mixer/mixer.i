@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.6 (04.02.24)
+; $VER: mixer.i 3.7 (04.02.24)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -298,6 +298,16 @@
 ;	playback.
 ;
 ;
+; If MIXER_ENABLE_RETURN_VECTOR is set to 1, an addition routine is available:
+;
+; MixerSetReturnVector(A0=return_function_ptr)
+;   This routine sets the optional vector the mixer can call at to at
+;   the end of interrupt execution.
+;
+;   Note: this vector should point to a standard routine ending in RTS.
+;	Note: this routine should be called after MixerSetup() has been run.
+;
+;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:
 ;
 ; MixerEnableCallback(A0=callback_function_ptr)
@@ -346,7 +356,7 @@
 ;   calls of the mixer interrupt handler. Results are found in 
 ;   mixer_ticks_average.
 ;
-; If MIXER_COUNTER is set to 1, two additional rotuines are available:
+; If MIXER_COUNTER is set to 1, two additional routines are available:
 ;
 ; MixerResetCounter()
 ;   This routine sets the mixer interrupt counter to 0.
@@ -357,7 +367,7 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.6
+; Version: 3.7
 ; Revision: 20240204
 ;
 ; Assembled using VASM in Amiga-link mode.
@@ -381,8 +391,6 @@ EXREF	MACRO
 		ENDM
 
 ; References
-	EXREF	MixerSetReturnVector
-
 	EXREF	MixerSetup
 	EXREF	MixerInstallHandler
 	EXREF	MixerRemoveHandler
@@ -402,6 +410,8 @@ EXREF	MACRO
 	EXREF	MixerGetSampleMinSize
 	EXREF	MixerGetChannelStatus
 	EXREF	MixerGetTotalChannelCount
+
+	EXREF	MixerSetReturnVector
 	
 	EXREF	MixerEnableCallback
 	EXREF	MixerDisableCallback
