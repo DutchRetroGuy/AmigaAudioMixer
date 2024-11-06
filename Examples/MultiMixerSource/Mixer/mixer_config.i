@@ -210,10 +210,34 @@ MIXER_ENABLE_CALLBACK	EQU 0
 ; Note: enabling plugins will 
 MIXER_ENABLE_PLUGINS	EQU 0
 
+; Set define below to enable the return vector. The return vector is a user
+; specified routine that will be called at the end of audio interrupt
+; processing.
+;
+; Note: enabling the return vector slightly increases CPU overhead during
+;       interrupt processing.
+MIXER_ENABLE_RETURN_VECTOR	EQU 0
+
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
 ; not needed, but it can be useful in certain cases)
 MIXER_SECTION			EQU	1
+
+; Set define below to 1 to change the mixer such that it no longer uses its
+; built-in interrupt handler and DMACON handling, but rather uses callbacks to
+; deal with these aspects. These callback can be set up by calling the routine
+; MixerSetupIRQDMACallbacks().
+;
+; Note: the primary purpose of this setting is to allow external engines/API's
+;       to have control over interrupts and DMA flags. This feature can also
+;       be used to create an OS-legal interrupt handler.
+; Note: enabling this feature also makes the mixer interrupt handler end in
+;       RTS, rather than RTE, to facilitate incorporating the mixer interrupt
+;       handler in an external one. It is up to these external routines to
+;       make sure the mixer's interrupt handler is called once per audio 
+;       interrupt on enabled channels.
+; Note: enabling this feature disables the MIXER_CIA_TIMER setting
+MIXER_EXTERNAL_IRQ_DMA	EQU 0
 
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.

@@ -412,6 +412,7 @@ EXREF	MACRO
 	EXREF	MixerGetTotalChannelCount
 
 	EXREF	MixerSetReturnVector
+	EXREF	MixerSetupIRQDMACallbacks
 	
 	EXREF	MixerEnableCallback
 	EXREF	MixerDisableCallback
@@ -615,6 +616,18 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		UWORD	mx_counter
 	ENDIF
 	LABEL	mx_SIZEOF
+	
+ STRUCTURE MXIRQDMACallbacks,0
+	APTR	mxicb_set_irq_vector
+	APTR	mxicb_remove_irq_vector
+	APTR	mxicb_set_irq_bits
+	APTR	mxicb_clear_irq_bits
+	APTR	mxicb_disable_irq
+	APTR	mxicb_enable_irq
+	APTR	mxicb_acknowledge_irq
+	APTR	mxicb_enable_dma
+	APTR	mxicb_disable_dma
+	LABEL	mxicb_SIZEOF
 	
 	ENDC	; MIXER_I
 ; End of File

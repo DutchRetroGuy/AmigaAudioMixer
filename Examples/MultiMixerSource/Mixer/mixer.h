@@ -13,7 +13,7 @@
  *       header file to work.
  *
  * Author: Jeroen Knoester
- * Version: 3.6
+ * Version: 3.7
  * Revision: 20240204
  *
  * TAB size = 4 spaces

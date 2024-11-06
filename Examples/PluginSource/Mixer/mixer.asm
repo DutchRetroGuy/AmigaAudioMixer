@@ -1,4 +1,4 @@
-; $VER: mixer.asm 3.6 (05.02.24)
+; $VER: mixer.asm 3.7 (06.11.24)
 ;
 ; mixer.asm
 ; Audio mixing routines
@@ -38,8 +38,8 @@
 ;       between these two.
 ;
 ; Author: Jeroen Knoester
-; Version: 3.6
-; Revision: 20240205
+; Version: 3.7
+; Revision: 20241106
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -271,14 +271,6 @@ CIAStop		MACRO
 ; Setup routines
 ;-----------------------------------------------------------------------------
 
-MixerSetReturnVector
-		move.l	a1,-(sp)
-		lea.l	mixer_stored_vector(pc),a1
-		move.l	a0,(a1)
-		move.l	(sp)+,a1
-		rts
-		
-
 		; Routine: MixerSetup
 		; This routine sets up the data structures and buffers used by the 
 		; mixer.
@@ -347,6 +339,22 @@ MixerSetup
 		move.w	d6,mx_hw_channels(a3)
 		IF MIXER_ENABLE_CALLBACK=1
 			move.l	d4,mx_callback_ptr(a3)
+		ENDIF
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			lea.l	mixer_stored_vector(pc),a4
+			move.l	d4,(a4)
+		ENDIF
+		IF MIXER_EXTERNAL_IRQ_DMA=1
+			lea	mixer_irqdma_vectors(pc),a4
+			move.l	d4,mxicb_set_irq_vector(a4)
+			move.l	d4,mxicb_remove_irq_vector(a4)
+			move.l	d4,mxicb_set_irq_bits(a4)
+			move.l	d4,mxicb_clear_irq_bits(a4)
+			move.l	d4,mxicb_disable_irq(a4)
+			move.l	d4,mxicb_enable_irq(a4)
+			move.l	d4,mxicb_acknowledge_irq(a4)
+			move.l	d4,mxicb_enable_dma(a4)
+			move.l	d4,mxicb_disable_dma(a4)
 		ENDIF
 		move.w	d0,mx_buffer_size(a3)
 		move.w	d0,d7
@@ -475,67 +483,90 @@ MixerSetup
 		;      Note: on systems without VBR (i.e. 68000 based systems), A0 has
 		;      to be set to 0.
 MixerInstallHandler
-		movem.l	d1/a1/a6,-(sp)				; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d1/a1/a6,-(sp)				; Stack
+		ELSE
+			movem.l	d1/a1/a2/a6,-(sp)			; Stack
+			lea.l	mixer_irqdma_vectors(pc),a2
+		ENDIF
 		
-		IF MIXER_CIA_TIMER=1
-			move.w	d0,-(sp)				; Stack
-			
-			; Save CIA values
-			lea.l	mxciabase+1,a6			; CIA A
-			lea.l	mixer_stored_cia(pc),a1
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				move.w	d0,-(sp)				; Stack
+				
+				; Save CIA values
+				lea.l	mxciabase+1,a6			; CIA A
+				lea.l	mixer_stored_cia(pc),a1
 
-			move.b	ciacra(a6),d0
-			move.b	ciaicr(a6),d1
-			move.b	d0,(a1)					; Store CIA control value
-			move.b	d1,1(a1)				; Store CIA IC value
-			
-			move.w	(sp)+,d0				; Stack
+				move.b	ciacra(a6),d0
+				move.b	ciaicr(a6),d1
+				move.b	d0,(a1)					; Store CIA control value
+				move.b	d1,1(a1)				; Store CIA IC value
+				
+				move.w	(sp)+,d0				; Stack
+			ENDIF
 		ENDIF
 		
 		; Fetch custombase
 		lea.l	mxcustombase,a6
 		
-		; Store the VBR value
-		lea.l	mixer_stored_vbr(pc),a1
-		move.l	a0,(a1)+
-		
-		; Save interrupt vector if needed
-		tst.w	d0
-		bne		.no_save
-		move.l	$70(a0),(a1)+
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Store the VBR value
+			lea.l	mixer_stored_vbr(pc),a1
+			move.l	a0,(a1)+
+			
+			; Save interrupt vector if needed
+			tst.w	d0
+			bne		.no_save
+			move.l	$70(a0),(a1)+
 
-		; Save any audio interrupt bits set
-		move.w	intenar(a6),d1
-		and.w	#%11110000000,d1			; Audio = bits 7-10
-		or.w	#$8000,d1
-		move.w	d1,(a1)+
+			; Save any audio interrupt bits set
+			move.w	intenar(a6),d1
+			and.w	#%11110000000,d1			; Audio = bits 7-10
+			or.w	#$8000,d1
+			move.w	d1,(a1)+
 		
 .no_save
-		; Disable all audio interrupts
-		move.w	#%11110000000,d1			; Audio = bits 7-10
-		move.w	d1,intena(a6)				; Disable audio interrupts
-		move.w	d1,intreq(a6)				; Clear any pending interrupts
-		move.w	d1,intreq(a6)				; Twice for A4000
+			; Disable all audio interrupts
+			move.w	#%11110000000,d1			; Audio = bits 7-10
+			move.w	d1,intena(a6)				; Disable audio interrupts
+			move.w	d1,intreq(a6)				; Clear any pending interrupts
+			move.w	d1,intreq(a6)				; Twice for A4000
+		ELSE
+			jsr		mxicb_disable_irq(a2)
+		ENDIF
 		
 		; Set audio interrupt handler
-		lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
-		move.l	a1,$70(a0)					; $70 is vector 4 / audio
-		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
+			move.l	a1,$70(a0)					; $70 is vector 4 / audio
+		ELSE
+			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
+			jsr		mxicb_set_irq_vector(a2)
+		ENDIF
+
 		; Calculate audio interrupt bit for correct channel and store result
 		lea.l	mixer(pc),a1				; Fetch mixer structure
 		move.w	#mixer_output_channels,d1	; Load audio channel bit(s)
 		lsl.w	#7,d1						; Shift by 7 to get interrupt bit
 		move.w	d1,mx_irq_bits(a1)			; Store result
-		
-		; Set up audio interrupt
 		or.w	#$c000,d1					; Prep INTENA setup
-		move.w	d1,intena(a6)				; Set INTENA value
-		tst.w	dmaconr(a6)					; Delay for A4000
+		IF MIXER_EXTERNAL_IRQ_DMA=0			
+			; Set up audio interrupt
+			move.w	d1,intena(a6)				; Set INTENA value
+			tst.w	dmaconr(a6)					; Delay for A4000
+		ELSE
+			jsr		mxicb_set_irq_bits(a2)
+		ENDIF
 		
 		; Update mixer status
 		move.w	#MIXER_RUNNING,mx_status(a1)
 		
-		movem.l	(sp)+,d1/a1/a6				; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d1/a1/a6				; Stack
+		ELSE
+			movem.l	(sp)+,d1/a1/a2/a6			; Stack
+		ENDIF
 		rts
 
 		; Routine: MixerRemoveHandler
@@ -557,43 +588,51 @@ MixerRemoveHandler
 		; Fetch custom base
 		lea.l	mxcustombase,a6
 
-		; Disable all audio interrupts
-		move.w	#%11110000000,d0			; Audio = bits 7-10
-		move.w	d0,intena(a6)				; Disable audio interrupts
-		move.w	d0,intreq(a6)				; Clear any pending interrupts
-		move.w	d0,intreq(a6)				; Twice for A4000
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable all audio interrupts
+			move.w	#%11110000000,d0			; Audio = bits 7-10
+			move.w	d0,intena(a6)				; Disable audio interrupts
+			move.w	d0,intreq(a6)				; Clear any pending interrupts
+			move.w	d0,intreq(a6)				; Twice for A4000
 
-		; Restore interrupt vector (if set)
-		lea.l	mixer_stored_vbr(pc),a1
-		move.l	(a1)+,a0					; Get VBR
-		move.l	(a1)+,d0					; Get handler
-		beq		.no_restore
+			; Restore interrupt vector (if set)
+			lea.l	mixer_stored_vbr(pc),a1
+			move.l	(a1)+,a0					; Get VBR
+			move.l	(a1)+,d0					; Get handler
+			beq		.no_restore
 
-		; Restore interrupt vector
-		move.l	d0,$70(a0)					; Vector 4
-		
-		; Restore INTENA value
-		move.w	(a1)+,intena(a6)			; Set old intena values
-		tst.w	dmaconr(a6)					; Delay for A4000
-		
+			; Restore interrupt vector
+			move.l	d0,$70(a0)					; Vector 4
+			
+			; Restore INTENA value
+			move.w	(a1)+,intena(a6)			; Set old intena values
+			tst.w	dmaconr(a6)					; Delay for A4000
 .no_restore
+		ELSE
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_disable_irq(a1)
+			jsr		mxicb_remove_irq_vector(a1)
+			jsr		mxicb_clear_irq_bits(a1)
+		ENDIF
 		; Update mixer status
 		lea.l	mixer(pc),a1
 		move.w	#MIXER_STOPPED,mx_status(a1)
 
-		IF MIXER_CIA_TIMER=1
-			; Restore CIA values
-			lea.l	mxciabase+1,a6			; CIA A
-			lea.l	mixer_stored_cia(pc),a1
-			move.b	(a1),ciacra(a6)			; Restore CIA A control value
-			move.b	1(a1),ciaicr(a6)		; Restore CIA A IC value
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				; Restore CIA values
+				lea.l	mxciabase+1,a6			; CIA A
+				lea.l	mixer_stored_cia(pc),a1
+				move.b	(a1),ciacra(a6)			; Restore CIA A control value
+				move.b	1(a1),ciaicr(a6)		; Restore CIA A IC value
 
-			IF MIXER_CIA_KBOARD_RES=1
-				; Remaining code to restore keyboard
-				move.b	#$ff,ciatblo(a6)	; TB=$ffff
-				move.b	#$ff,ciatbhi(a6)
-				; Re-enable CIA-A interrupts for AmigaOS
-				move.b	#$8f,ciaicr(a6)
+				IF MIXER_CIA_KBOARD_RES=1
+					; Remaining code to restore keyboard
+					move.b	#$ff,ciatblo(a6)	; TB=$ffff
+					move.b	#$ff,ciatbhi(a6)
+					; Re-enable CIA-A interrupts for AmigaOS
+					move.b	#$8f,ciaicr(a6)
+				ENDIF
 			ENDIF
 		ENDIF
 		movem.l	(sp)+,d0/a0/a1/a6			; Stack
@@ -608,25 +647,37 @@ MixerRemoveHandler
 		; Note: if MIXER_CIA_TIMER is set to 1, this routine also clears the
 		;       stored CIA timer results.
 MixerStart
-		movem.l	d0/d1/d7/a0/a6,-(sp)		; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d0/d1/d7/a0/a6,-(sp)		; Stack
+		ELSE
+			movem.l	d0/d1/d7/a0/a1/a6,-(sp)		; Stack
+		ENDIF
 
-		IF MIXER_CIA_TIMER=1
-			; Clear stored CIA timing results
-			lea.l	mixer_ticks_last(pc),a6
-			clr.w	(a6)+
-			clr.w	(a6)+
-			move.w	#$ffff,(a6)
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				; Clear stored CIA timing results
+				lea.l	mixer_ticks_last(pc),a6
+				clr.w	(a6)+
+				clr.w	(a6)+
+				move.w	#$ffff,(a6)
+			ENDIF
 		ENDIF
 		
 		; Fetch custombase
 		lea.l	mxcustombase,a6
-		
+
 		; Enable audio interrupts for all valid channels
 		lea.l	mixer(pc),a0
 		move.w	mx_irq_bits(a0),d0			; Fetch IRQ bits
 		or.w	#$c000,d0					; Prep INTENA setup
-		move.w	d0,intena(a6)				; Set INTENA value
-		tst.w	dmaconr(a6)					; Delay for A4000
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			move.w	d0,intena(a6)				; Set INTENA value
+			tst.w	dmaconr(a6)					; Delay for A4000
+		ELSE
+			lea.l	mixer_irqdma_vectors(pc),a1
+			move.w	d0,d1
+			jsr		mxicb_set_irq_bits(a1)
+		ENDIF
 		
 		IF MIXER_SINGLE=1
 			move.w	#mxsinglechan,d1
@@ -652,7 +703,11 @@ MixerStart
 			dbra	d7,.lp
 		ENDIF
 		
-		movem.l	(sp)+,d0/d1/d7/a0/a6		; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d0/d1/d7/a0/a6		; Stack
+		ELSE
+			movem.l	(sp)+,d0/d1/d7/a0/a1/a6		; Stack
+		ENDIF
 		rts
 
 		; Routine: MixerStop
@@ -661,7 +716,11 @@ MixerStart
 		; Note: MixerSetup, MixerInstallHandler & MixerStart must have been called
 		;       before calling this routine.
 MixerStop
-		movem.l	d6/d7/a0/a6,-(sp)				; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d6/d7/a0/a6,-(sp)				; Stack
+		ELSE
+			movem.l	d6/d7/a0/a1/a6,-(sp)			; Stack
+		ENDIF
 		
 		; Fetch custombase
 		lea.l	mxcustombase,a6
@@ -671,11 +730,15 @@ MixerStop
 		move.w	mx_irq_bits(a0),d7
 		move.w	mx_hw_channels(a0),d6
 		
-		; Disable audio interrupt(s)
-		move.w	d7,intena(a6)					; Disable audio interrupts
-		move.w	d7,intreq(a6)					; Clear any pending interrupts
-		move.w	d7,intreq(a6)					; Twice for A4000
-		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio interrupt(s)
+			move.w	d7,intena(a6)					; Disable audio interrupts
+			move.w	d7,intreq(a6)					; Clear any pending interrupts
+			move.w	d7,intreq(a6)					; Twice for A4000
+		ELSE
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_disable_irq(a1)
+		ENDIF
 		
 		IF MIXER_SINGLE=1
 			move.w	#mxsinglechan,d1
@@ -702,8 +765,12 @@ MixerStop
 			dbra	d7,.lp
 		ENDIF
 		
-		; Disable audio DMA for the mixing channel(s)
-		move.w	d6,dmacon(a6)
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio DMA for the mixing channel(s)
+			move.w	d6,dmacon(a6)
+		ELSE
+			jsr		mxicb_disable_dma(a1)
+		ENDIF
 		
 		; Fetch mixer entries
 		lea.l	mx_mixer_entries(a0),a0
@@ -726,7 +793,11 @@ MixerStop
 		lea.l	mxe_SIZEOF(a0),a0
 		dbra	d7,.enlp
 		
-		movem.l	(sp)+,d6/d7/a0/a6				; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d6/d7/a0/a6				; Stack
+		ELSE
+			movem.l	(sp)+,d6/d7/a0/a1/a6			; Stack
+		ENDIF
 		rts
 		
 		; Routine: MixerVolume
@@ -885,12 +956,19 @@ MixerChannelWrite
 		move.w	mixer+mx_status(pc),d7
 		beq.s	.irq_disabled
 		
-		; Disable audio interrupts
-		lea.l	mxcustombase,a6
-		move.w	mixer+mx_irq_bits(pc),d7		; Fetch audio bits
-		and.w	#$7fff,d7						; Mask out SET/CLR bit
-		move.w	d7,intena(a6)					; Disable audio interrupts
-		tst.w	dmaconr(a6)						; Wait for A4000		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio interrupts
+			lea.l	mxcustombase,a6
+			move.w	mixer+mx_irq_bits(pc),d7		; Fetch audio bits
+			and.w	#$7fff,d7						; Mask out SET/CLR bit
+			move.w	d7,intena(a6)					; Disable audio interrupts
+			tst.w	dmaconr(a6)						; Wait for A4000
+		ELSE
+			move.l	a1,-(sp)
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_disable_irq(a1)
+			move.l	(sp)+,a1
+		ENDIF
 .irq_disabled
 
 		; Start of atomic part
@@ -1022,10 +1100,17 @@ MixerChannelWrite
 		move.w	mixer+mx_status(pc),d7
 		beq.s	.irq_enabled
 		
-		; Re-enable audio interrupts
-		move.w	mixer+mx_irq_bits(pc),d7
-		or.w	#$8000,d7					; Set the SET/CLR bit
-		move.w	d7,intena(a6)				; Enable audio interrupts
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Re-enable audio interrupts
+			move.w	mixer+mx_irq_bits(pc),d7
+			or.w	#$8000,d7					; Set the SET/CLR bit
+			move.w	d7,intena(a6)				; Enable audio interrupts
+		ELSE
+			move.l	a1,-(sp)
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_enable_irq(a1)
+			move.l	(sp)+,a1
+		ENDIF
 .irq_enabled
 
 		; End of atomic part
@@ -1620,8 +1705,10 @@ MixSingIHstart	MACRO
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_IH_COLOUR,$dff180
 		ENDIF
-		IF MIXER_CIA_TIMER=1
-			CIAStart
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				CIAStart
+			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)				; Stack
 		
@@ -1629,8 +1716,14 @@ MixSingIHstart	MACRO
 		lea.l	mxcustombase,a6
 		lea.l	mixer+mx_mixer_entries(pc),a1
 		
-		; Acknowledge interrupt
-		move.w	mixer+mx_irq_bits(pc),intreq(a6)
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Acknowledge interrupt
+			move.w	mixer+mx_irq_bits(pc),intreq(a6)
+		ELSE
+			move.l	mixer_irqdma_vectors(pc),a2
+			move.w	mixer+mx_irq_bits(pc),d4
+			jsr		mxicb_acknowledge_irq(a2)
+		ENDIF
 		
 		; Fetch and swap buffers
 		lea.l	mxe_buffers(a1),a2
@@ -1661,8 +1754,10 @@ MixSingIHend	MACRO
 			move.w	#MIXER_IH_COLOUR,$dff180
 		ENDIF
 		movem.l	(sp)+,d0-d7/a0-a6		; Stack
-		IF MIXER_CIA_TIMER=1
-			CIAStop
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				CIAStop
+			ENDIF
 		ENDIF
 		IF MIXER_COUNTER=1
 			move.l	a0,-(sp)			; Stack
@@ -1676,17 +1771,23 @@ MixSingIHend	MACRO
 			move.w	#MIXER_DEFAULT_COLOUR,$dff180
 		ENDIF
 	
-		move.l	d0,-(sp)
-		move.l	mixer_stored_vector(pc),d0
-		beq.s	.rte
+		IF MIXER_ENABLE_RETURN_VECTOR = 1
+			move.l	d0,-(sp)
+			move.l	mixer_stored_vector(pc),d0
+			beq.s	.rte
 
-		movem.l	d1-d6/a0-a6,-(sp)
-		move.l	mixer_stored_vector(pc),a0
-		jsr		(a0)
-		movem.l	(sp)+,d1-d6/a0-a6
+			movem.l	d1-d6/a0-a6,-(sp)
+			move.l	mixer_stored_vector(pc),a0
+			jsr		(a0)
+			movem.l	(sp)+,d1-d6/a0-a6
 .rte
-		move.l	(sp)+,d0
-		rte
+			move.l	(sp)+,d0
+		ENDIF
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			rte
+		ELSE
+			rts
+		ENDIF
 				ENDM
 
 		; Macro: MixMultIHstart
@@ -1697,8 +1798,10 @@ MixMultIHstart	MACRO
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_IH_COLOUR,$dff180
 		ENDIF
-		IF MIXER_CIA_TIMER=1
-			CIAStart
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				CIAStart
+			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)			; Stack
 		
@@ -1745,7 +1848,14 @@ MixMultIHstart	MACRO
 		; Acknowledge interrupts
 		moveq	#0,d4
 		bset	d5,d4					; D4 = correct IRQ bit
-		move.w	d4,intreq(a6)			; Acknowledge IRQ
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			move.w	d4,intreq(a6)			; Acknowledge IRQ
+		ELSE
+			move.l	a1,-(sp)
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_acknowledge_irq(a1)
+			move.l	(sp)+,a1
+		ENDIF
 			
 		; Play current buffer
 		move.l	a0,ac_ptr(a6,d6.w)
@@ -1804,8 +1914,10 @@ MixMultIHend	MACRO
 		; End of handler
 .end_handler
 		movem.l	(sp)+,d0-d7/a0-a6			; Stack
-		IF MIXER_CIA_TIMER=1
-			CIAStop
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				CIAStop
+			ENDIF
 		ENDIF
 		IF MIXER_COUNTER=1
 			move.l	a0,-(sp)			; Stack
@@ -1819,17 +1931,23 @@ MixMultIHend	MACRO
 			move.w	#MIXER_DEFAULT_COLOUR,$dff180
 		ENDIF
 		
-		move.l	d0,-(sp)
-		move.l	mixer_stored_vector(pc),d0
-		beq.s	.rte
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			move.l	d0,-(sp)
+			move.l	mixer_stored_vector(pc),d0
+			beq.s	.rte
 
-		movem.l	d1-d6/a0-a6,-(sp)
-		move.l	mixer_stored_vector(pc),a0
-		jsr		(a0)
-		movem.l	(sp)+,d1-d6/a0-a6
+			movem.l	d1-d6/a0-a6,-(sp)
+			move.l	mixer_stored_vector(pc),a0
+			jsr		(a0)
+			movem.l	(sp)+,d1-d6/a0-a6
 .rte
-		move.l	(sp)+,d0
-		rte
+			move.l	(sp)+,d0
+		ENDIF
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			rte
+		ELSE
+			rts
+		ENDIF
 				ENDM
 
 ;-----------------------------------------------------------------------------
@@ -3323,6 +3441,79 @@ MixerGetChannelStatus
 .done
 		movem.l	(sp)+,d2/d4/a1				; Stack
 		rts
+		
+		; Routine: MixerSetReturnVector
+		; This routine sets the optional vector the mixer can call at to at
+		; the end of interrupt execution.
+		;
+		; Note: this vector should point to a standard routine ending in RTS.
+		; Note: this routine should be called after MixerSetup() has been run.
+		;
+		; A0 - Pointer to routine to call back.
+MixerSetReturnVector
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			move.l	a1,-(sp)
+			lea.l	mixer_stored_vector(pc),a1
+			move.l	a0,(a1)
+			move.l	(sp)+,a1
+		ENDIF
+		rts
+		
+		; Routine: MixerSetupIRQDMACallbacks
+		; This routine sets up the vectors used for callback routines to
+		; manage setting up interrupt vectors and DMA flags. These callback
+		; routines.
+		;
+		; Callback vectors have to be passed through the MXIRQDMACallbacks
+		; structure. This structure contains the following members:
+		; * mxicb_set_irq_vector 
+		;   - Function pointer to routine that sets the IRQ vector for audio
+		;     interrupts. 
+		;     Parameter: A1 = vector to mixer interrupt handler
+		; * mxicb_remove_irq_vector
+		;   - Function pointer to routine that removes the IRQ vector for
+		;     audio interrupts.
+		; * mxicb_set_irq_bits
+		;   - Function pointer to routine that sets the correct bits in INTENA
+		;     to enable audio interrupts for the mixer. 
+		;     Parameter: D1 = INTENA bits to set
+		; * mxicb_clear_irq_bits
+		;   - Function pointer to routine that clears the audio interrupt bits
+		; * mxicb_disable_irq
+		;   - Function pointer to routine that disables audio interrupts
+		; * mxicb_enable_irq
+		;   - Function pointer to routine that enables audio interrupts.
+		; * mxicb_acknowledge_irq
+		;   - Function pointer to routine that acknowledges audio interrupt.
+		;     Parameter: D4 = INTREQ value
+		; * mxicb_enable_dma
+		;   - Function pointer to routine that enables audio DMA.
+		;     Parameter: D0 = DMACON value
+		; * mxicb_disable_dma
+		;   - Function pointer to routine that disables audio DMA.
+		;     Paramater: D6 = DMACON value
+		;
+		; Note: MixerSetup should be run before this routine
+		;
+		; A0 - Pointer to MXIRQDMACallbacks structure
+MixerSetupIRQDMACallbacks
+		IF MIXER_EXTERNAL_IRQ_DMA=1
+			move.l	a1,-(sp)					; Stack
+
+			lea	mixer_irqdma_vectors(pc),a1
+			move.l	mxicb_set_irq_vector(a0),mxicb_set_irq_vector(a1)
+			move.l	mxicb_remove_irq_vector(a0),mxicb_remove_irq_vector(a1)
+			move.l	mxicb_set_irq_bits(a0),mxicb_set_irq_bits(a1)
+			move.l	mxicb_clear_irq_bits(a0),mxicb_clear_irq_bits(a1)
+			move.l	mxicb_disable_irq(a0),mxicb_disable_irq(a1)
+			move.l	mxicb_enable_irq(a0),mxicb_enable_irq(a1)
+			move.l	mxicb_acknowledge_irq(a0),mxicb_acknowledge_irq(a1)
+			move.l	mxicb_enable_dma(a0),mxicb_enable_dma(a1)
+			move.l	mxicb_disable_dma(a0),mxicb_disable_dma(a1)
+
+			move.l (sp)+,a1						; Stack
+		ENDIF
+		rts
 
 		; Routine: MixerSetPluginDeferredPtr
 		; This routine sets the pointer for the deferred plugin action to take
@@ -3377,7 +3568,11 @@ MixerDisableCallback
 		;
 		; D1 - Hardware channel to play silence on
 MixerPlaySilence
-		movem.l	d0/d1/a0/a6,-(sp)			; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d0/d1/a0/a6,-(sp)			; Stack
+		ELSE
+			movem.l	d0/d1/a0/a1/a6,-(sp)		; Stack
+		ENDIF
 
 		; Fetch audio channel
 		lea.l	mxcustombase,a6
@@ -3397,10 +3592,19 @@ MixerPlaySilence
 		move.w	#DMAF_SETCLR,d0
 		bset	d1,d0
 		
-		; Activate audio DMA
-		move.w	d0,dmacon(a6)
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Activate audio DMA
+			move.w	d0,dmacon(a6)
+		ELSE
+			lea.l	mixer_irqdma_vectors(pc),a1
+			jsr		mxicb_enable_dma(a1)
+		ENDIF
 
-		movem.l	(sp)+,d0/d1/a0/a6			; Stack
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d0/d1/a0/a6			; Stack
+		ELSE
+			movem.l	(sp)+,d0/d1/a0/a1/a6		; Stack
+		ENDIF
 		rts
 
 		; Routine: MixerClearBuffer
@@ -3539,6 +3743,9 @@ mixer_fx_struct			blk.b	mfx_SIZEOF
 		IF MIXER_68020=1
 			cnop	0,4
 		ENDIF
+		IF MIXER_EXTERNAL_IRQ_DMA=1
+mixer_irqdma_vectors	blk.b	mxicb_SIZEOF
+		ENDIF
 mixer_stored_vbr		dc.l	0
 mixer_stored_handler	dc.l	0
 mixer_stored_intena		dc.w	0
@@ -3578,6 +3785,7 @@ _MixerGetChannelBufferSize	EQU MixerGetChannelBufferSize
 _MixerResetCounter			EQU	MixerResetCounter
 _MixerGetCounter			EQU	MixerGetCounter
 _MixerSetReturnVector		EQU MixerSetReturnVector
+_MixerSetupIRQDMACallbacks	EQU	MixerSetupIRQDMACallbacks
 
 
 	XDEF	_MixerGetBufferSize
@@ -3603,6 +3811,7 @@ _MixerSetReturnVector		EQU MixerSetReturnVector
 	XDEF	_MixerResetCounter
 	XDEF	_MixerGetCounter
 	XDEF	_MixerSetReturnVector
+	XDEF	_MixerSetupIRQDMACallbacks
 		ENDIF
 		
 	ENDIF
