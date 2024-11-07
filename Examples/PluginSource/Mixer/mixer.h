@@ -81,9 +81,20 @@ typedef struct MXPlugin
 								   initialisation function */
 } MXPlugin;
 
-/* Prototypes */
+typedef struct MXIRQDMACallbacks
+{
+	void (*mxicb_set_irq_vector)();
+	void (*mxicb_remove_irq_vector)();
+	void (*mxicb_set_irq_bits)();
+	void (*mxicb_clear_irq_bits)();
+	void (*mxicb_disable_irq)();
+	void (*mxicb_enable_irq)();
+	void (*mxicb_acknowledge_irq)();
+	void (*mxicb_enable_dma)();
+	void (*mxicb_disable_dma)();
+} MXIRQDMACallbacks;
 
-void MixerSetReturnVector (MIX_REGARG(void (*irq_routine)(), "a0"));
+/* Prototypes */
 
 /* 
 ULONG MixerGetBufferSize(void)
@@ -284,6 +295,57 @@ ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
 	channel is in use, the routine will return MIX_CH_BUSY.
  */
 ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
+
+/*
+void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
+	This routine sets the optional vector the mixer can call at to at the end
+	of interrupt execution.
+
+	Note: this vector should point to a standard routine ending in RTS.
+	Note: this routine should be called after MixerSetup() has been run.
+ */
+void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
+
+/*
+void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
+	This routine sets up the vectors used for callback routines to
+	manage setting up interrupt vectors and DMA flags. These callback
+	routines.
+	
+	Callback vectors have to be passed through the MXIRQDMACallbacks
+	structure. This structure contains the following members:
+	* mxicb_set_irq_vector 
+	  - Function pointer to routine that sets the IRQ vector for audio
+		interrupts. 
+		Parameter: A1 = vector to mixer interrupt handler
+	* mxicb_remove_irq_vector
+	  - Function pointer to routine that removes the IRQ vector for
+		audio interrupts.
+	* mxicb_set_irq_bits
+	  - Function pointer to routine that sets the correct bits in INTENA
+		to enable audio interrupts for the mixer. 
+		Parameter: D1 = INTENA bits to set
+	* mxicb_clear_irq_bits
+	  - Function pointer to routine that clears the audio interrupt bits
+	* mxicb_disable_irq
+	  - Function pointer to routine that disables audio interrupts
+	* mxicb_enable_irq
+	  - Function pointer to routine that enables audio interrupts.
+	* mxicb_acknowledge_irq
+	  - Function pointer to routine that acknowledges audio interrupt.
+		Parameter: D4 = INTREQ value
+	* mxicb_enable_dma
+	  - Function pointer to routine that enables audio DMA.
+		Parameter: D0 = DMACON value
+	* mxicb_disable_dma
+	  - Function pointer to routine that disables audio DMA.
+		Paramater: D6 = DMACON value
+	
+	Note: MixerSetup should be run before this routine
+	Note: all callback routines should save & restore all registers they
+		  use
+*/
+void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
 
 /*
 void MixerEnableCallback(void *callback_function_ptr)

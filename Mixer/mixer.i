@@ -308,6 +308,47 @@
 ;	Note: this routine should be called after MixerSetup() has been run.
 ;
 ;
+; IF MIXER_EXTERNAL_IRQ_DMA is set to 1, an additional routine is available:
+;
+; MixerSetIRQDMACallbacks(A0=callback_structure)
+;   This routine sets up the vectors used for callback routines to
+;   manage setting up interrupt vectors and DMA flags. These callback
+;   routines.
+;
+;   Callback vectors have to be passed through the MXIRQDMACallbacks
+;   structure. This structure contains the following members:
+;   * mxicb_set_irq_vector 
+;     - Function pointer to routine that sets the IRQ vector for audio
+;       interrupts. 
+;       Parameter: A1 = vector to mixer interrupt handler
+;   * mxicb_remove_irq_vector
+;     - Function pointer to routine that removes the IRQ vector for
+;       audio interrupts.
+;   * mxicb_set_irq_bits
+;     - Function pointer to routine that sets the correct bits in INTENA
+;       to enable audio interrupts for the mixer. 
+;       Parameter: D1 = INTENA bits to set
+;   * mxicb_clear_irq_bits
+;     - Function pointer to routine that clears the audio interrupt bits
+;   * mxicb_disable_irq
+;     - Function pointer to routine that disables audio interrupts
+;   * mxicb_enable_irq
+;     - Function pointer to routine that enables audio interrupts.
+;   * mxicb_acknowledge_irq
+;     - Function pointer to routine that acknowledges audio interrupt.
+;       Parameter: D4 = INTREQ value
+;   * mxicb_enable_dma
+;     - Function pointer to routine that enables audio DMA.
+;       Parameter: D0 = DMACON value
+;   * mxicb_disable_dma
+;     - Function pointer to routine that disables audio DMA.
+;       Paramater: D6 = DMACON value
+;
+;   Note: MixerSetup should be run before this routine
+;   Note: all callback routines should save & restore all registers they
+;         use
+;
+;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:
 ;
 ; MixerEnableCallback(A0=callback_function_ptr)
@@ -412,7 +453,7 @@ EXREF	MACRO
 	EXREF	MixerGetTotalChannelCount
 
 	EXREF	MixerSetReturnVector
-	EXREF	MixerSetupIRQDMACallbacks
+	EXREF	MixerSetIRQDMACallbacks
 	
 	EXREF	MixerEnableCallback
 	EXREF	MixerDisableCallback

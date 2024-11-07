@@ -412,7 +412,7 @@ EXREF	MACRO
 	EXREF	MixerGetTotalChannelCount
 
 	EXREF	MixerSetReturnVector
-	EXREF	MixerSetupIRQDMACallbacks
+	EXREF	MixerSetIRQDMACallbacks
 	
 	EXREF	MixerEnableCallback
 	EXREF	MixerDisableCallback

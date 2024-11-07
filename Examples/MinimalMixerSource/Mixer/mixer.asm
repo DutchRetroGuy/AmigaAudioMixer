@@ -3459,7 +3459,7 @@ MixerSetReturnVector
 		ENDIF
 		rts
 		
-		; Routine: MixerSetupIRQDMACallbacks
+		; Routine: MixerSetIRQDMACallbacks
 		; This routine sets up the vectors used for callback routines to
 		; manage setting up interrupt vectors and DMA flags. These callback
 		; routines.
@@ -3494,9 +3494,11 @@ MixerSetReturnVector
 		;     Paramater: D6 = DMACON value
 		;
 		; Note: MixerSetup should be run before this routine
+		; Note: all callback routines should save & restore all registers they
+		;       use
 		;
 		; A0 - Pointer to MXIRQDMACallbacks structure
-MixerSetupIRQDMACallbacks
+MixerSetIRQDMACallbacks
 		IF MIXER_EXTERNAL_IRQ_DMA=1
 			move.l	a1,-(sp)					; Stack
 
@@ -3785,7 +3787,7 @@ _MixerGetChannelBufferSize	EQU MixerGetChannelBufferSize
 _MixerResetCounter			EQU	MixerResetCounter
 _MixerGetCounter			EQU	MixerGetCounter
 _MixerSetReturnVector		EQU MixerSetReturnVector
-_MixerSetupIRQDMACallbacks	EQU	MixerSetupIRQDMACallbacks
+_MixerSetIRQDMACallbacks	EQU	MixerSetIRQDMACallbacks
 
 
 	XDEF	_MixerGetBufferSize
@@ -3811,7 +3813,7 @@ _MixerSetupIRQDMACallbacks	EQU	MixerSetupIRQDMACallbacks
 	XDEF	_MixerResetCounter
 	XDEF	_MixerGetCounter
 	XDEF	_MixerSetReturnVector
-	XDEF	_MixerSetupIRQDMACallbacks
+	XDEF	_MixerSetIRQDMACallbacks
 		ENDIF
 		
 	ENDIF

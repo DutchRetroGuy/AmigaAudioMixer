@@ -58,6 +58,8 @@ Features:
    * Sample rate used can be configured at assembly time, using standard Paula
      period values.
    * Fully PC relative code is used to make relocation as easy as possible.
+   * Optionally supports using callbacks to handle IRQ and DMA registers, 
+     rather than the mixer doing so natively.
 
 *) in practice, this is limited by the largest maximum single block of free 
    RAM that exists. A system with multiple memory expansions will be limited 

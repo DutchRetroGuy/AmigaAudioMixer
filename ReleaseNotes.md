@@ -2,6 +2,14 @@ Release notes for the Audio Mixer
 
 v3.7
 ----
+* (NEW) The mixer now optionally supports using callbacks to handle IRQ and
+        DMA registers, rather than the mixer doing so natively. This option
+		allows for, amongst other things, implementing an OS-legal interrupt
+		server for the mixer, or implementing the mixer as part of another
+		API.
+		
+		This option is configured to be off by default, use 
+		MIXER_EXTERNAL_IRQ_DMA to enable it.
 * (NEW) The mixer now supports calling a routine at the end of interrupt 
         processing, to allow user code to execute actions as close to the
         mixer interrupt loop as possible. This option is configured to be off

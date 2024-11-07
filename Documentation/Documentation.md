@@ -56,12 +56,22 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 - Supports playback of samples of any size that will fit in RAM\*.
 - Sample rate used can be configured at assembly time, using standard Paula period values.
 - Fully PC relative code is used to make relocation as easy as possible.
+- Optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively.
 
 \*) in practice, this is limited by the largest maximum single block of free RAM that exists. A system with multiple memory expansions will be limited to a much smaller maximum sample size than the total RAM size would seem to indicate.
 
 ### Release Notes
 
 Release notes for the Audio Mixer
+
+#### v3.7
+- (NEW) The mixer now optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively. This option allows for, amongst other things, implementing an OS-legal interrupt server for the mixer, or implementing the mixer as part of another API.
+  - This option is configured to be off by default, use MIXER_EXTERNAL_IRQ_DMA to enable it.
+- (NEW) The mixer now supports calling a routine at the end of interrupt processing, to allow user code to execute actions as close to the mixer interrupt loop as possible. This option is configured to be off by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
+  - The vector for this routine can be set by calling MixerSetReturnVector().
+- (BUGFIX) Fixed a potential issue with the include guard in mixer_config.i
+- (MAINTENANCE) The makefile now automatically synchronises the mixer & plugin files from the main Mixer & Plugin directories to the various example Mixer & Plugin directories.
+- (MAINTENANCE) The makefile is now platform agnostic and will work on both Windows based systems and Unix-like systems (including Linux, BSD & Mac OS X).
 
 #### v3.6
 
@@ -1069,6 +1079,46 @@ This routine returns the value of the internal mixer buffer size. This is the si
 This routine sets the optional vector the mixer can call at to at the end of interrupt execution.
 
 Note: this vector should point to a standard routine ending in RTS.
+
+*MixerSetIRQDMACallbacks(A0=callback_structure)*
+This routine sets up the vectors used for callback routines to
+manage setting up interrupt vectors and DMA flags. These callback
+routines.
+
+Callback vectors have to be passed through the MXIRQDMACallbacks
+structure. This structure contains the following members:
+* mxicb_set_irq_vector 
+  - Function pointer to routine that sets the IRQ vector for audio
+    interrupts. 
+    Parameter: A1 = vector to mixer interrupt handler
+* mxicb_remove_irq_vector
+  - Function pointer to routine that removes the IRQ vector for
+    audio interrupts.
+* mxicb_set_irq_bits
+  - Function pointer to routine that sets the correct bits in INTENA
+    to enable audio interrupts for the mixer. 
+    Parameter: D1 = INTENA bits to set
+* mxicb_clear_irq_bits
+  - Function pointer to routine that clears the audio interrupt bits
+* mxicb_disable_irq
+  - Function pointer to routine that disables audio interrupts
+* mxicb_enable_irq
+  - Function pointer to routine that enables audio interrupts.
+* mxicb_acknowledge_irq
+  - Function pointer to routine that acknowledges audio interrupt.
+    Parameter: D4 = INTREQ value
+* mxicb_enable_dma
+  - Function pointer to routine that enables audio DMA.
+    Parameter: D0 = DMACON value
+* mxicb_disable_dma
+  - Function pointer to routine that disables audio DMA.
+    Paramater: D6 = DMACON value
+
+Note: MixerSetup should be run before this routine
+Note: all callback routines should save & restore all registers they
+      use
+Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+
 
 #### The following two routines are deprecated and will no longer receive new functionality when the mixer is updated. They are still available for backwards compatibility purposes and have been updated with the new offset loop mode.
 
