@@ -49,8 +49,8 @@ MIXER_CONFIG_I	SET	1
 ;						  The paired channels will always be AUD2 & AUD3.
 ;						  Unpaired channels are either none, AUD0, AUD1 or 
 ;						  AUD0 & AUD1.
-MIXER_SINGLE			EQU 1
-MIXER_MULTI				EQU	0
+MIXER_SINGLE			EQU 0
+MIXER_MULTI				EQU	1
 MIXER_MULTI_PAIRED		EQU 0
 
 ;-----------------------------------------------------------------------------
@@ -208,7 +208,7 @@ MIXER_ENABLE_CALLBACK	EQU 1
 ;       for all mixer channels playing back samples. In addition, the effects
 ;       routines themselves will also add CPU overhead.
 ; Note: enabling plugins will 
-MIXER_ENABLE_PLUGINS	EQU 0
+MIXER_ENABLE_PLUGINS	EQU 1
 
 ; Set define below to enable the return vector. The return vector is a user
 ; specified routine that will be called at the end of audio interrupt
@@ -221,7 +221,7 @@ MIXER_ENABLE_RETURN_VECTOR	EQU 0
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
 ; not needed, but it can be useful in certain cases)
-MIXER_SECTION			EQU	1
+MIXER_SECTION			EQU	0
 
 ; Set define below to 1 to change the mixer such that it no longer uses its
 ; built-in interrupt handler and DMACON handling, but rather uses callbacks to
@@ -237,7 +237,7 @@ MIXER_SECTION			EQU	1
 ;       make sure the mixer's interrupt handler is called once per audio 
 ;       interrupt on enabled channels.
 ; Note: enabling this feature disables the MIXER_CIA_TIMER setting
-MIXER_EXTERNAL_IRQ_DMA	EQU 0
+MIXER_EXTERNAL_IRQ_DMA	EQU 1
 
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
@@ -252,5 +252,5 @@ MIXER_NO_ECHO			EQU 0
 ; Note: enabling this option also changes the way plugins and callbacks are
 ;       handled, so that they can deal with the registers that C compilers can
 ;       trash between function calls.
-MIXER_C_DEFS			EQU 0
+MIXER_C_DEFS			EQU 1
 ; End of File

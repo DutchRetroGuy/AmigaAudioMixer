@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.7 (04.02.24)
+; $VER: mixer.i 3.7 (21.01.25)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -409,7 +409,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.7
-; Revision: 20240204
+; Revision: 20250125
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces

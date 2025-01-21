@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.6 (04.02.24)
+; $VER: mixer.i 3.7 (21.01.25)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -298,6 +298,57 @@
 ;	playback.
 ;
 ;
+; If MIXER_ENABLE_RETURN_VECTOR is set to 1, an addition routine is available:
+;
+; MixerSetReturnVector(A0=return_function_ptr)
+;   This routine sets the optional vector the mixer can call at to at
+;   the end of interrupt execution.
+;
+;   Note: this vector should point to a standard routine ending in RTS.
+;	Note: this routine should be called after MixerSetup() has been run.
+;
+;
+; IF MIXER_EXTERNAL_IRQ_DMA is set to 1, an additional routine is available:
+;
+; MixerSetIRQDMACallbacks(A0=callback_structure)
+;   This routine sets up the vectors used for callback routines to
+;   manage setting up interrupt vectors and DMA flags. These callback
+;   routines.
+;
+;   Callback vectors have to be passed through the MXIRQDMACallbacks
+;   structure. This structure contains the following members:
+;   * mxicb_set_irq_vector 
+;     - Function pointer to routine that sets the IRQ vector for audio
+;       interrupts. 
+;       Parameter: A1 = vector to mixer interrupt handler
+;   * mxicb_remove_irq_vector
+;     - Function pointer to routine that removes the IRQ vector for
+;       audio interrupts.
+;   * mxicb_set_irq_bits
+;     - Function pointer to routine that sets the correct bits in INTENA
+;       to enable audio interrupts for the mixer. 
+;       Parameter: D1 = INTENA bits to set
+;   * mxicb_clear_irq_bits
+;     - Function pointer to routine that clears the audio interrupt bits
+;   * mxicb_disable_irq
+;     - Function pointer to routine that disables audio interrupts
+;   * mxicb_enable_irq
+;     - Function pointer to routine that enables audio interrupts.
+;   * mxicb_acknowledge_irq
+;     - Function pointer to routine that acknowledges audio interrupt.
+;       Parameter: D4 = INTREQ value
+;   * mxicb_enable_dma
+;     - Function pointer to routine that enables audio DMA.
+;       Parameter: D0 = DMACON value
+;   * mxicb_disable_dma
+;     - Function pointer to routine that disables audio DMA.
+;       Paramater: D6 = DMACON value
+;
+;   Note: MixerSetup should be run before this routine
+;   Note: all callback routines should save & restore all registers they
+;         use
+;
+;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:
 ;
 ; MixerEnableCallback(A0=callback_function_ptr)
@@ -346,7 +397,7 @@
 ;   calls of the mixer interrupt handler. Results are found in 
 ;   mixer_ticks_average.
 ;
-; If MIXER_COUNTER is set to 1, two additional rotuines are available:
+; If MIXER_COUNTER is set to 1, two additional routines are available:
 ;
 ; MixerResetCounter()
 ;   This routine sets the mixer interrupt counter to 0.
@@ -357,8 +408,8 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.6
-; Revision: 20240204
+; Version: 3.7
+; Revision: 20250121
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -366,7 +417,6 @@
 ; Includes (OS includes assume at least NDK 1.3) 
 	include	exec/types.i
 	include hardware/dmabits.i
-	
 	include mixer_config.i
 	
 	IFND	MIXER_I
@@ -374,7 +424,7 @@ MIXER_I	SET	1
 
 ; References macro
 EXREF	MACRO
-		IFD BUILD_MIXER_CMIX
+		IFD BUILD_MIXER
 			XDEF \1
 		ELSE
 			XREF \1
@@ -401,6 +451,9 @@ EXREF	MACRO
 	EXREF	MixerGetSampleMinSize
 	EXREF	MixerGetChannelStatus
 	EXREF	MixerGetTotalChannelCount
+
+	EXREF	MixerSetReturnVector
+	EXREF	MixerSetIRQDMACallbacks
 	
 	EXREF	MixerEnableCallback
 	EXREF	MixerDisableCallback
@@ -604,6 +657,18 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		UWORD	mx_counter
 	ENDIF
 	LABEL	mx_SIZEOF
+	
+ STRUCTURE MXIRQDMACallbacks,0
+	APTR	mxicb_set_irq_vector
+	APTR	mxicb_remove_irq_vector
+	APTR	mxicb_set_irq_bits
+	APTR	mxicb_clear_irq_bits
+	APTR	mxicb_disable_irq
+	APTR	mxicb_enable_irq
+	APTR	mxicb_acknowledge_irq
+	APTR	mxicb_enable_dma
+	APTR	mxicb_disable_dma
+	LABEL	mxicb_SIZEOF
 	
 	ENDC	; MIXER_I
 ; End of File
