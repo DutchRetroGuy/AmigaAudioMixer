@@ -1,15 +1,21 @@
 /*
- * CMixer.c
+ * OSLegalMixer.c
  *
- * This is an extremely basic example showing how the mixer.h file works.
- * For more complete examples, see the assembly examples provided.
+ * This is an example showing how the mixer's MIXER_EXTERNAL_IRQ_DMA setting
+ * can be used to run it in an OS legal manner. The same technique can be
+ * applied to other code that needs or wants to take care of IRQ/DMA settings
+ * itself, rather than letting the mixer do it.
  * 
  * Note: mixer configuration has to be done via the mixer_config.i file and
  *       the mixer.asm file has to be assembled into a linkable object prior
  *       to use in C programs.
- *	   
- * Note: this program does not disable the OS. Keep in mind this can cause
- *       instabilities considering the way the mixer works.
+ *
+ * Note: the OS expects certain registers to be pushed to stack and restored
+ *       when executing an interrupt through the interrupt server mechanism.
+ *       To do this, two assembly instructions are needed in the C code.
+ *
+ *       This program uses the VBCC style for inline assembly, other compilers
+ *       might require changes for the inline assembly code to work.
  *
  * Author: Jeroen Knoester
  * Version: 1.0
@@ -25,6 +31,7 @@
 #include <proto/dos.h>
 #include <exec/exec.h>
 #include <proto/exec.h>
+#include <hardware/custom.h>
 #include <hardware/dmabits.h>
 #include "mixer/mixer.h"
 #include "plugins/plugins.h"
@@ -36,9 +43,9 @@
 #define MIX_REGARG(arg, reg) arg asm(reg)
 #endif
 
-/* Global variable */
-volatile long callback_output = 0;
-volatile long test_handler_counter = 0;
+/* Global variables */
+extern struct Custom custom;
+APTR mixer_interrupt_handler;
 
 /* Support functions */
 char *LoadSample(char *filename, ULONG *size)
@@ -133,48 +140,83 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 	}
 }
 
-/* Callback function */
-int callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
-                      MIX_REGARG(UWORD mixer_channel,"d0"))
+/* IRQ handler */
+void InterruptHandler()
 {
-	callback_output = (long)sample_pointer;
-	return 0;
+	// movem.l  d2-d7/a2-a4,-(sp)    ; required stack operation
+	
+	// movem.l  (sp)+,d2-d7/a2-a4
 }
 
-/* Vector handler function */
-void test_function()
+/* IRQ/DMA control functions */
+void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a1"))
 {
-	test_handler_counter++;
-	return;
+	// routine that sets the IRQ vector for audio interrupts
+	mixer_interrupt_handler = (APTR) interrupt_handler;
+	// TODO - set up actual interrupt value
+}
+
+void RemoveIRQVector()
+{
+	// routine that removes the IRQ vector for audio interrupts
+}
+
+void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d1"))
+{
+	// routine that sets the correct bits in INTENA to enable
+	// audio interrupts for the mixer
+}
+
+void ClearIRQBits()
+{
+	// routine that clears the audio interrupt bits
+}
+
+void DisableIRQ()
+{
+	// routine that disables audio interrupts
+}
+
+void EnableIRQ()
+{
+	// routine that enables audio interrupts
+}
+
+void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
+{
+	// routine that acknowledges audio interrupt
+	// Documentation suggests that this is not needed for OS legal interrupts.
+}
+
+void EnableDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
+{
+	// routine that enables audio DMA
+	custom.dmacon = dmacon_value;
+}
+
+void DisableDMA(MIX_REGARG(UWORD dmacon_value,"d6"))
+{
+	// routine that disables audio DMA
+	custom.dmacon = dmacon_value;
 }
 
 /* Main program */
 int main()
 {
 	ULONG buffer_size;
-	ULONG plugin_buffer_size;
-	ULONG plugin_data_size;
 	ULONG mixer_total_channels;
-	ULONG plugin_total_data_size;
 	void *vbr=0;
 	void *buffer=NULL;
-	void *plugin_buffer=NULL;
-	void *plugin_data=NULL;
 	void *sample1=NULL,*sample2=NULL,*sample3=NULL,*sample4=NULL;
 	ULONG sample1_size,sample2_size,sample3_size,sample4_size;
 	MXEffect effect1, effect2, effect3, effect4;
-	MXPlugin plugin;
-	MXPDPitchInitData pitch_init_data;
+	MXIRQDMACallbacks irq_dma_callbacks;
 	LONG current_callback_output = 0;
 	char input[255];
 	
-	printf ("CMixer - example in C for using the Audio Mixer\n");
-	printf ("-----------------------------------------------\n");
+	printf ("OSLegalMixer - example in C for using the Audio Mixer in an OS Legal manner\n");
+	printf ("---------------------------------------------------------------------------\n");
 	printf ("\n");
-	printf ("Note: this example is very short and does not close down the OS\n");
-	printf ("      properly. The Audio Mixer directly accesses custom chip\n");
-	printf ("      registers, closing down the OS properly prior to using the\n");
-	printf ("      mixer is required in real programs.\n");
 	printf ("Note: this program assumes a VBR of 0\n");
 	printf ("\n");
 	printf ("Samples used are sourced from freesound.org. See the readme file in the data\n");
@@ -190,35 +232,6 @@ int main()
 	if (buffer==NULL)
 	{
 		printf ("Chip RAM buffer allocation failed\n");
-		return 5;
-	}
-	
-	/* Get plugin buffer size to use */
-	plugin_buffer_size=MixerGetPluginsBufferSize();
-	printf ("Plugin buffer size: %d\n",(int)plugin_buffer_size);
-	
-	/* Allocate plugin buffer in any RAM */
-	plugin_buffer = AllocMem(plugin_buffer_size, MEMF_ANY);
-	if (plugin_buffer==NULL)
-	{
-		FreeMem (buffer,buffer_size);
-		printf ("Plugin buffer allocation failed\n");
-		return 5;
-	}
-	
-	/* Get plugin data size to use */
-	mixer_total_channels=MixerGetTotalChannelCount();
-	plugin_data_size=MixerPluginGetMaxDataSize();
-	plugin_total_data_size=plugin_data_size*mixer_total_channels;
-	printf ("Plugin data size: %d\n",(int)plugin_total_data_size);
-	
-	/* Allocate plugin data buffer in any RAM */
-	plugin_data = AllocMem(plugin_total_data_size, MEMF_ANY);
-	if (plugin_data==NULL)
-	{
-		FreeMem (buffer,buffer_size);
-		FreeMem (plugin_buffer,plugin_buffer_size);
-		printf ("Plugin data buffer allocation failed\n");
 		return 5;
 	}
 	
@@ -247,16 +260,25 @@ int main()
 	ConvertSample(sample3,sample3_size,4);
 	ConvertSample(sample4,sample4_size,4);
 	 
+	/* Set up DMA/IRQ callbacks */
+	irq_dma_callbacks.mxicb_set_irq_vector = SetIRQVector;
+	irq_dma_callbacks.mxicb_remove_irq_vector = RemoveIRQVector;
+	irq_dma_callbacks.mxicb_set_irq_bits = SetIRQBits;
+	irq_dma_callbacks.mxicb_clear_irq_bits = ClearIRQBits;
+	irq_dma_callbacks.mxicb_disable_irq = DisableIRQ;
+	irq_dma_callbacks.mxicb_enable_irq = EnableIRQ;
+	irq_dma_callbacks.mxicb_acknowledge_irq = AcknowledgeIRQ;
+	irq_dma_callbacks.mxicb_enable_dma = EnableDMA;
+	irq_dma_callbacks.mxicb_disable_dma = DisableDMA;
+	
+	MixerSetIRQDMACallbacks(&irq_dma_callbacks);
+	 
 	/* Set up Mixer */
-	MixerSetup(buffer, plugin_buffer, plugin_data, MIX_PAL, plugin_data_size);
+	MixerSetup(buffer, NULL, NULL, MIX_PAL, 0);
 	
 	/* Set up Mixer interrupt handler */
 	MixerInstallHandler(vbr,0);
 
-	/* Set up vector handler */
-	MixerSetReturnVector(test_function);
-	test_handler_counter = 0;
-	
 	/* Start Mixer */
 	MixerStart();
 	
@@ -300,67 +322,6 @@ int main()
 	MixerPlayFX(&effect3,DMAF_AUD2);
 	MixerPlayFX(&effect4,DMAF_AUD2);
 	
-	/* Wait for keyboard input to continue program */
-	printf ("Press enter to play samples with a plugin:");
-	fgets(input, sizeof(input), stdin);
-	
-	/* Stop playback of all samples */
-	MixerStopFX(DMAF_AUD2|MIX_CH0|MIX_CH1|MIX_CH2|MIX_CH3);
-	Delay(5);
-	
-	/* Set up plugin init data structure */
-	pitch_init_data.mpid_pit_mode = MXPLG_PITCH_STANDARD;
-	pitch_init_data.mpid_pit_precalc = MXPLG_PITCH_NO_PRECALC;
-	pitch_init_data.mpid_pit_ratio_fp8 = 1<<8|0x80;
-	pitch_init_data.mpid_pit_length = 0;
-	pitch_init_data.mpid_pit_loop_offset = 0;
-	
-	/* Set up plugin structure */
-	plugin.mpl_plugin_type = MIX_PLUGIN_STD;
-	plugin.mpl_init_ptr = MixPluginInitPitch;
-	plugin.mpl_plugin_ptr = MixPluginPitch;
-	plugin.mpl_init_data_ptr = &pitch_init_data;
-	
-	/* Set up MXEffect structure */
-	effect1.mfx_plugin = &plugin;
-	effect2.mfx_plugin = &plugin;
-	effect3.mfx_plugin = &plugin;
-	effect4.mfx_plugin = &plugin;
-	
-	/* play all four samples in loop */
-	MixerPlayFX(&effect1,DMAF_AUD2);
-	MixerPlayFX(&effect2,DMAF_AUD2);
-	MixerPlayFX(&effect3,DMAF_AUD2);
-	MixerPlayFX(&effect4,DMAF_AUD2);
-	
-	/* Wait for keyboard input to continue program */
-	printf ("Press enter to play a sample using a callback function:");
-	fgets(input, sizeof(input), stdin);
-	
-	/* Stop playback of all samples */
-	MixerStopFX(DMAF_AUD2|MIX_CH0|MIX_CH1|MIX_CH2|MIX_CH3);
-	Delay(5);
-	
-	/* Set up MXEffect structure for a single sample to play */\
-	effect1.mfx_loop = MIX_FX_ONCE;
-	effect1.mfx_plugin = NULL;
-	
-	/* Set up callback function */
-	MixerEnableCallback(callback_function);
-	
-	/* Play sample while callback is active */
-	MixerPlayFX(&effect1,DMAF_AUD2);
-	
-	/* Wait on callback result */
-	/* Use the Amiga Dos call delay() for this 
-	   The delay value is given in 50th of a second */
-	while (callback_output==0)
-	{
-		Delay(5);
-	}
-	
-	printf ("Callback occured, sample address found = $%x\n\n",(int)callback_output);
-	
 	/* Stop Mixer */
 	MixerStop();
 	
@@ -369,18 +330,12 @@ int main()
 	
 	/* Deallocate Chip RAM buffer */
 	FreeMem(buffer,buffer_size);
-	
-	/* Deallocate other buffers */
-	FreeMem (plugin_buffer,plugin_buffer_size);
-	FreeMem (plugin_data,plugin_total_data_size);
-	
+
 	/* Deallocate samples */
 	FreeMem(sample1,sample1_size);
 	FreeMem(sample2,sample2_size);
 	FreeMem(sample3,sample3_size);
 	FreeMem(sample4,sample4_size);
-	
-	printf ("Test handler counter value = %d\n\n",(int)test_handler_counter);
 
 	/* Close DOS library */
 

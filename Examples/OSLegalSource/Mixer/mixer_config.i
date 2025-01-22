@@ -196,7 +196,7 @@ MIXER_COUNTER			EQU 0
 ; 
 ; Note: enabling callback functions slightly increases CPU cost of the mixer
 ;       when a sample ends.
-MIXER_ENABLE_CALLBACK	EQU 1
+MIXER_ENABLE_CALLBACK	EQU 0
 
 ; Set define below to enable plugins. Plugins are real time effect routines
 ; that are called by the mixer prior to the mixing of a given mixer channel.
@@ -208,7 +208,7 @@ MIXER_ENABLE_CALLBACK	EQU 1
 ;       for all mixer channels playing back samples. In addition, the effects
 ;       routines themselves will also add CPU overhead.
 ; Note: enabling plugins will 
-MIXER_ENABLE_PLUGINS	EQU 1
+MIXER_ENABLE_PLUGINS	EQU 0
 
 ; Set define below to enable the return vector. The return vector is a user
 ; specified routine that will be called at the end of audio interrupt
