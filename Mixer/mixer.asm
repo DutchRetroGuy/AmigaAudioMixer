@@ -48,6 +48,7 @@
 	include hardware/custom.i
 	include hardware/dmabits.i
 	include mixer.i
+	include debug.i
 	IF MIXER_CIA_TIMER=1
 		include hardware/cia.i
 	ENDIF
@@ -509,6 +510,8 @@ MixerInstallHandler
 		
 		; Fetch custombase
 		lea.l	mxcustombase,a6
+		
+		DBGPauseCol $f00
 		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			; Store the VBR value
@@ -3501,6 +3504,8 @@ MixerSetReturnVector
 MixerSetIRQDMACallbacks
 		IF MIXER_EXTERNAL_IRQ_DMA=1
 			move.l	a1,-(sp)					; Stack
+
+			DBGPauseCol $ff0
 
 			lea	mixer_irqdma_vectors(pc),a1
 			move.l	mxicb_set_irq_vector(a0),mxicb_set_irq_vector(a1)

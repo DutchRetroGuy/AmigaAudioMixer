@@ -44,8 +44,9 @@
 #endif
 
 /* Global variables */
-extern struct Custom custom;
-APTR mixer_interrupt_handler;
+volatile struct Custom* custom;
+volatile APTR mixer_interrupt_handler;
+volatile APTR old_vector;
 
 /* Support functions */
 char *LoadSample(char *filename, ULONG *size)
@@ -144,60 +145,81 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 void InterruptHandler()
 {
 	// movem.l  d2-d7/a2-a4,-(sp)    ; required stack operation
-	
+	void (*interrupt_handler)();
+	interrupt_handler = mixer_interrupt_handler;
+
+	interrupt_handler();
 	// movem.l  (sp)+,d2-d7/a2-a4
 }
 
 /* IRQ/DMA control functions */
 void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a1"))
 {
-	// routine that sets the IRQ vector for audio interrupts
+	volatile APTR* vector;
+	vector = (APTR *) 0x70;
+	
+	// Routine that sets the IRQ vector for audio interrupts
 	mixer_interrupt_handler = (APTR) interrupt_handler;
+	
 	// TODO - set up actual interrupt value
+	old_vector = (APTR *) *vector;
+	*vector = (APTR *)mixer_interrupt_handler;
 }
 
 void RemoveIRQVector()
 {
 	// routine that removes the IRQ vector for audio interrupts
+	volatile APTR* vector;
+	vector = (APTR *) 0x70;
+	
+	*vector = (APTR *) old_vector;
 }
 
 void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d1"))
 {
-	// routine that sets the correct bits in INTENA to enable
+	// Routine that sets the correct bits in INTENA to enable
 	// audio interrupts for the mixer
+	custom->intena = intena_bits;
 }
 
 void ClearIRQBits()
 {
-	// routine that clears the audio interrupt bits
+	// Routine that clears the audio interrupt bits
+	custom->intena = 0x780;
 }
 
 void DisableIRQ()
 {
-	// routine that disables audio interrupts
+	// Routine that disables audio interrupts
+	// Note that the example disables *all* interrupts for simplicitty,
+	// which is not needed!
+	Disable();
 }
 
 void EnableIRQ()
 {
-	// routine that enables audio interrupts
+	// Routine that re-enables audio interrupts
+	Enable();
 }
 
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
 {
-	// routine that acknowledges audio interrupt
+	// Routine that acknowledges audio interrupt
 	// Documentation suggests that this is not needed for OS legal interrupts.
+	custom->intreq = intreq_value;
+	custom->intreq = intreq_value;
 }
 
 void EnableDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
 {
 	// routine that enables audio DMA
-	custom.dmacon = dmacon_value;
+	custom->dmacon = dmacon_value;
 }
 
 void DisableDMA(MIX_REGARG(UWORD dmacon_value,"d6"))
 {
 	// routine that disables audio DMA
-	custom.dmacon = dmacon_value;
+	custom->dmacon = dmacon_value;
 }
 
 /* Main program */
@@ -222,6 +244,9 @@ int main()
 	printf ("Samples used are sourced from freesound.org. See the readme file in the data\n");
 	printf ("subdirectory of the mixer 'example' directory.\n");
 	printf ("\n");
+	
+	/* Define address for custom chipset */
+	custom = (struct Custom*) 0xdff00;
 	
 	/* Get buffer size to use */
 	buffer_size=MixerGetBufferSize();
@@ -271,10 +296,10 @@ int main()
 	irq_dma_callbacks.mxicb_enable_dma = EnableDMA;
 	irq_dma_callbacks.mxicb_disable_dma = DisableDMA;
 	
-	MixerSetIRQDMACallbacks(&irq_dma_callbacks);
-	 
 	/* Set up Mixer */
 	MixerSetup(buffer, NULL, NULL, MIX_PAL, 0);
+	
+	MixerSetIRQDMACallbacks(&irq_dma_callbacks);
 	
 	/* Set up Mixer interrupt handler */
 	MixerInstallHandler(vbr,0);
@@ -321,6 +346,10 @@ int main()
 	MixerPlayFX(&effect2,DMAF_AUD2);
 	MixerPlayFX(&effect3,DMAF_AUD2);
 	MixerPlayFX(&effect4,DMAF_AUD2);
+	
+	/* Wait for keyboard input to continue program */
+	printf ("Press enter to end playback:");
+	fgets(input, sizeof(input), stdin);
 	
 	/* Stop Mixer */
 	MixerStop();
