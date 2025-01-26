@@ -345,8 +345,13 @@
 ;       Paramater: D6 = DMACON value
 ;
 ;   Note: MixerSetup should be run before this routine
-;   Note: all callback routines should save & restore all registers they
-;         use
+;   Note: if MIXER_C_DEFS is set to 0, all callback routines should save &
+;         restore all registers they use. 
+;
+;         If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
+;         pushed to and popped from the stack by the mixer. All callback 
+;         routines should save & restore all other registers they use.
+;		
 ;
 ;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:

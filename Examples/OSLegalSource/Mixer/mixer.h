@@ -341,9 +341,13 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
 	  - Function pointer to routine that disables audio DMA.
 		Paramater: D6 = DMACON value
 	
-	Note: MixerSetup should be run before this routine
-	Note: all callback routines should save & restore all registers they
-		  use
+    Note: MixerSetup should be run before this routine
+    Note: if MIXER_C_DEFS is set to 0, all callback routines should save &
+          restore all registers they use. 
+
+          If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
+          pushed to and popped from the stack by the mixer. All callback 
+          routines should save & restore all other registers they use.
 */
 void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
 

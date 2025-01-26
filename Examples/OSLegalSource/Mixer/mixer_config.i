@@ -49,8 +49,8 @@ MIXER_CONFIG_I	SET	1
 ;						  The paired channels will always be AUD2 & AUD3.
 ;						  Unpaired channels are either none, AUD0, AUD1 or 
 ;						  AUD0 & AUD1.
-MIXER_SINGLE			EQU 0
-MIXER_MULTI				EQU	1
+MIXER_SINGLE			EQU 1
+MIXER_MULTI				EQU	0
 MIXER_MULTI_PAIRED		EQU 0
 
 ;-----------------------------------------------------------------------------

@@ -1818,6 +1818,7 @@ MixSingIHstart	MACRO
 			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)				; Stack
+		DBGBreakPnt
 		
 		; Fetch custombase & mixer / mixer entry
 		lea.l	mxcustombase,a6
@@ -1827,7 +1828,7 @@ MixSingIHstart	MACRO
 			; Acknowledge interrupt
 			move.w	mixer+mx_irq_bits(pc),intreq(a6)
 		ELSE
-			move.l	mixer_irqdma_vectors(pc),a2
+			lea.l	mixer_irqdma_vectors(pc),a2
 			move.w	mixer+mx_irq_bits(pc),d4
 			move.l	mxicb_acknowledge_irq(a2),a2
 			IF MIXER_C_DEFS=1
@@ -1900,7 +1901,9 @@ MixSingIHend	MACRO
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			rte
 		ELSE
-			rts
+			;rts
+			DBGBreakPnt
+			rte
 		ENDIF
 				ENDM
 

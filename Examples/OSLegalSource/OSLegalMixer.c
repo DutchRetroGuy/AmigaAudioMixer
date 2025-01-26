@@ -345,17 +345,17 @@ int main()
 	 *       with a zero, but for the sake of completeness it's included here
 	 *       anyway.
 	 */
-	//MixerPlayFX(&effect1,DMAF_AUD2);
-	//MixerPlayFX(&effect2,DMAF_AUD2);
-	//MixerPlayFX(&effect3,DMAF_AUD2);
-	//MixerPlayFX(&effect4,DMAF_AUD2);
+	MixerPlayFX(&effect1,DMAF_AUD2);
+	MixerPlayFX(&effect2,DMAF_AUD2);
+	MixerPlayFX(&effect3,DMAF_AUD2);
+	MixerPlayFX(&effect4,DMAF_AUD2);
 	
 	/* Wait for keyboard input to continue program */
 	printf ("Press enter to end playback:");
 	fgets(input, sizeof(input), stdin);
 	
 	/* Stop Mixer */
-	//MixerStop();
+	MixerStop();
 	
 	/* Remove Mixer interrupt handler */
 	MixerRemoveHandler();
