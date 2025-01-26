@@ -144,12 +144,10 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 /* IRQ handler */
 void InterruptHandler()
 {
-	// movem.l  d2-d7/a2-a4,-(sp)    ; required stack operation
 	void (*interrupt_handler)();
 	interrupt_handler = mixer_interrupt_handler;
 
 	interrupt_handler();
-	// movem.l  (sp)+,d2-d7/a2-a4
 }
 
 /* IRQ/DMA control functions */
@@ -191,15 +189,19 @@ void ClearIRQBits()
 void DisableIRQ()
 {
 	// Routine that disables audio interrupts
-	// Note that the example disables *all* interrupts for simplicitty,
+	// Note that the example disables *all* interrupts for simplicity,
 	// which is not needed!
-	Disable();
+	//Disable();
+	custom->intena = 0x780;
+	custom->intreq = 0x780;
+	custom->intreq = 0x780;
 }
 
-void EnableIRQ()
+void EnableIRQ(MIX_REGARG(UWORD intena_bits,"d0"))
 {
 	// Routine that re-enables audio interrupts
-	Enable();
+	//Enable();
+	custom->intena = intena_bits;
 }
 
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
@@ -246,7 +248,7 @@ int main()
 	printf ("\n");
 	
 	/* Define address for custom chipset */
-	custom = (struct Custom*) 0xdff00;
+	custom = (struct Custom*) 0xdff000;
 	
 	/* Get buffer size to use */
 	buffer_size=MixerGetBufferSize();
@@ -299,6 +301,7 @@ int main()
 	/* Set up Mixer */
 	MixerSetup(buffer, NULL, NULL, MIX_PAL, 0);
 	
+	/* Set function callbacks for IRQ & DMA handling */
 	MixerSetIRQDMACallbacks(&irq_dma_callbacks);
 	
 	/* Set up Mixer interrupt handler */
@@ -342,17 +345,17 @@ int main()
 	 *       with a zero, but for the sake of completeness it's included here
 	 *       anyway.
 	 */
-	MixerPlayFX(&effect1,DMAF_AUD2);
-	MixerPlayFX(&effect2,DMAF_AUD2);
-	MixerPlayFX(&effect3,DMAF_AUD2);
-	MixerPlayFX(&effect4,DMAF_AUD2);
+	//MixerPlayFX(&effect1,DMAF_AUD2);
+	//MixerPlayFX(&effect2,DMAF_AUD2);
+	//MixerPlayFX(&effect3,DMAF_AUD2);
+	//MixerPlayFX(&effect4,DMAF_AUD2);
 	
 	/* Wait for keyboard input to continue program */
 	printf ("Press enter to end playback:");
 	fgets(input, sizeof(input), stdin);
 	
 	/* Stop Mixer */
-	MixerStop();
+	//MixerStop();
 	
 	/* Remove Mixer interrupt handler */
 	MixerRemoveHandler();

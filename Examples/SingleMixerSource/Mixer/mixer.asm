@@ -511,8 +511,6 @@ MixerInstallHandler
 		; Fetch custombase
 		lea.l	mxcustombase,a6
 		
-		DBGPauseCol $f00
-		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			; Store the VBR value
 			lea.l	mixer_stored_vbr(pc),a1
@@ -536,7 +534,18 @@ MixerInstallHandler
 			move.w	d1,intreq(a6)				; Clear any pending interrupts
 			move.w	d1,intreq(a6)				; Twice for A4000
 		ELSE
-			jsr		mxicb_disable_irq(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			move.l	mxicb_disable_irq(a2),a2
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
 		ENDIF
 		
 		; Set audio interrupt handler
@@ -545,7 +554,19 @@ MixerInstallHandler
 			move.l	a1,$70(a0)					; $70 is vector 4 / audio
 		ELSE
 			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
-			jsr		mxicb_set_irq_vector(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			move.l	mxicb_set_irq_vector(a2),a2
+
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
 		ENDIF
 
 		; Calculate audio interrupt bit for correct channel and store result
@@ -559,7 +580,19 @@ MixerInstallHandler
 			move.w	d1,intena(a6)				; Set INTENA value
 			tst.w	dmaconr(a6)					; Delay for A4000
 		ELSE
-			jsr		mxicb_set_irq_bits(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			move.l	mxicb_set_irq_bits(a2),a2
+
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
 		ENDIF
 		
 		; Update mixer status
@@ -570,6 +603,7 @@ MixerInstallHandler
 		ELSE
 			movem.l	(sp)+,d1/a1/a2/a6			; Stack
 		ENDIF
+		
 		rts
 
 		; Routine: MixerRemoveHandler
@@ -612,10 +646,32 @@ MixerRemoveHandler
 			tst.w	dmaconr(a6)					; Delay for A4000
 .no_restore
 		ELSE
+			DBGPauseCol $f00
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_disable_irq(a1)
-			jsr		mxicb_remove_irq_vector(a1)
-			jsr		mxicb_clear_irq_bits(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a2,-(sp)
+				move.l	a1,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			move.l	mxicb_disable_irq(a1),a2
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				move.l	(sp),a1
+			ENDIF
+			move.l	mxicb_remove_irq_vector(a1),a2
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				move.l	(sp),a1
+			ENDIF
+			move.l	mxicb_clear_irq_bits(a1),a2
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/d1/a0/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
 		ENDIF
 		; Update mixer status
 		lea.l	mixer(pc),a1
@@ -677,9 +733,16 @@ MixerStart
 			move.w	d0,intena(a6)				; Set INTENA value
 			tst.w	dmaconr(a6)					; Delay for A4000
 		ELSE
-			lea.l	mixer_irqdma_vectors(pc),a1
 			move.w	d0,d1
-			jsr		mxicb_set_irq_bits(a1)
+			lea.l	mixer_irqdma_vectors(pc),a1
+			move.l	mxicb_set_irq_bits(a1),a1
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ENDIF
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ENDIF
 		ENDIF
 		
 		IF MIXER_SINGLE=1
@@ -740,7 +803,18 @@ MixerStop
 			move.w	d7,intreq(a6)					; Twice for A4000
 		ELSE
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_disable_irq(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			move.l	mxicb_disable_irq(a1),a1
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
 		ENDIF
 		
 		IF MIXER_SINGLE=1
@@ -772,7 +846,18 @@ MixerStop
 			; Disable audio DMA for the mixing channel(s)
 			move.w	d6,dmacon(a6)
 		ELSE
-			jsr		mxicb_disable_dma(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			move.l	mxicb_disable_dma(a1),a1
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
 		ENDIF
 		
 		; Fetch mixer entries
@@ -967,10 +1052,19 @@ MixerChannelWrite
 			move.w	d7,intena(a6)					; Disable audio interrupts
 			tst.w	dmaconr(a6)						; Wait for A4000
 		ELSE
-			move.l	a1,-(sp)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_disable_irq(a1)
-			move.l	(sp)+,a1
+			move.l	mxicb_disable_irq(a1),a1
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
 		ENDIF
 .irq_disabled
 
@@ -1109,10 +1203,21 @@ MixerChannelWrite
 			or.w	#$8000,d7					; Set the SET/CLR bit
 			move.w	d7,intena(a6)				; Enable audio interrupts
 		ELSE
-			move.l	a1,-(sp)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_enable_irq(a1)
-			move.l	(sp)+,a1
+			move.l	mxicb_enable_irq(a1),a1
+			move.w	mixer+mx_irq_bits(pc),d0
+			or.w	#$8000,d0					; Set the SET/CLR bit
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
 		ENDIF
 .irq_enabled
 
@@ -1725,7 +1830,14 @@ MixSingIHstart	MACRO
 		ELSE
 			move.l	mixer_irqdma_vectors(pc),a2
 			move.w	mixer+mx_irq_bits(pc),d4
-			jsr		mxicb_acknowledge_irq(a2)
+			move.l	mxicb_acknowledge_irq(a2),a2
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ENDIF
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ENDIF
 		ENDIF
 		
 		; Fetch and swap buffers
@@ -1854,10 +1966,19 @@ MixMultIHstart	MACRO
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			move.w	d4,intreq(a6)			; Acknowledge IRQ
 		ELSE
-			move.l	a1,-(sp)
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_acknowledge_irq(a1)
-			move.l	(sp)+,a1
+			move.l	mxicb_acknowledge_irq(a1),a1
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
 		ENDIF
 			
 		; Play current buffer
@@ -3505,8 +3626,6 @@ MixerSetIRQDMACallbacks
 		IF MIXER_EXTERNAL_IRQ_DMA=1
 			move.l	a1,-(sp)					; Stack
 
-			DBGPauseCol $ff0
-
 			lea	mixer_irqdma_vectors(pc),a1
 			move.l	mxicb_set_irq_vector(a0),mxicb_set_irq_vector(a1)
 			move.l	mxicb_remove_irq_vector(a0),mxicb_remove_irq_vector(a1)
@@ -3603,8 +3722,16 @@ MixerPlaySilence
 			; Activate audio DMA
 			move.w	d0,dmacon(a6)
 		ELSE
+			DBGPauseCol $ff0
 			lea.l	mixer_irqdma_vectors(pc),a1
-			jsr		mxicb_enable_dma(a1)
+			move.l	mxicb_enable_dma(a1),a1
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0,-(sp)
+			ENDIF
+			jsr		(a1)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0
+			ENDIF
 		ENDIF
 
 		IF MIXER_EXTERNAL_IRQ_DMA=0
