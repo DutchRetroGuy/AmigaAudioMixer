@@ -180,12 +180,6 @@ void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d1"))
 	custom->intena = intena_bits;
 }
 
-void ClearIRQBits()
-{
-	// Routine that clears the audio interrupt bits
-	custom->intena = 0x780;
-}
-
 void DisableIRQ()
 {
 	// Routine that disables audio interrupts
@@ -197,13 +191,6 @@ void DisableIRQ()
 	custom->intreq = 0x780;
 }
 
-void EnableIRQ(MIX_REGARG(UWORD intena_bits,"d0"))
-{
-	// Routine that re-enables audio interrupts
-	//Enable();
-	custom->intena = intena_bits;
-}
-
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
 {
 	// Routine that acknowledges audio interrupt
@@ -212,17 +199,12 @@ void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
 	custom->intreq = intreq_value;
 }
 
-void EnableDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
+void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
 {
-	// routine that enables audio DMA
+	// routine that sets DMACON
 	custom->dmacon = dmacon_value;
 }
 
-void DisableDMA(MIX_REGARG(UWORD dmacon_value,"d6"))
-{
-	// routine that disables audio DMA
-	custom->dmacon = dmacon_value;
-}
 
 /* Main program */
 int main()
@@ -291,12 +273,9 @@ int main()
 	irq_dma_callbacks.mxicb_set_irq_vector = SetIRQVector;
 	irq_dma_callbacks.mxicb_remove_irq_vector = RemoveIRQVector;
 	irq_dma_callbacks.mxicb_set_irq_bits = SetIRQBits;
-	irq_dma_callbacks.mxicb_clear_irq_bits = ClearIRQBits;
 	irq_dma_callbacks.mxicb_disable_irq = DisableIRQ;
-	irq_dma_callbacks.mxicb_enable_irq = EnableIRQ;
 	irq_dma_callbacks.mxicb_acknowledge_irq = AcknowledgeIRQ;
-	irq_dma_callbacks.mxicb_enable_dma = EnableDMA;
-	irq_dma_callbacks.mxicb_disable_dma = DisableDMA;
+	irq_dma_callbacks.mxicb_set_dmacon = SetDMA;
 	
 	/* Set up Mixer */
 	MixerSetup(buffer, NULL, NULL, MIX_PAL, 0);

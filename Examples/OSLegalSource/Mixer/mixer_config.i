@@ -239,6 +239,13 @@ MIXER_SECTION			EQU	0
 ; Note: enabling this feature disables the MIXER_CIA_TIMER setting
 MIXER_EXTERNAL_IRQ_DMA	EQU 1
 
+; Set define below to 1 to change the mixer such that calls to the external
+; interrupt and DMA handling routines calls these once per bit to be set, 
+; rather than providing a full mask containing all relevant bits in one call.
+;
+; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+MIXER_EXTERNAL_BITWISE	EQU 0
+
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
 MIXER_NO_ECHO			EQU 0

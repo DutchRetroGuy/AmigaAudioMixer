@@ -320,29 +320,42 @@
 ;   * mxicb_set_irq_vector 
 ;     - Function pointer to routine that sets the IRQ vector for audio
 ;       interrupts. 
-;       Parameter: A1 = vector to mixer interrupt handler
+;       Parameter: A0 = vector to mixer interrupt handler
+;
+;       Note: the mixer interrupt handler will return using RTS rather
+;             than RTE when using external IRQ/DMA callbacks
 ;   * mxicb_remove_irq_vector
 ;     - Function pointer to routine that removes the IRQ vector for
 ;       audio interrupts.
+;		
+;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, this routine is also
+;	          responsible for resetting INTENA to the value it had prior to
+;			  calling MixerInstallHandler(), if this is desired.
+;			  
+;			  when MIXER_EXTERNAL_BITWISE is set to 0, this is done by the
+;			  mixer automatically
 ;   * mxicb_set_irq_bits
 ;     - Function pointer to routine that sets the correct bits in INTENA
 ;       to enable audio interrupts for the mixer. 
-;       Parameter: D1 = INTENA bits to set
-;   * mxicb_clear_irq_bits
-;     - Function pointer to routine that clears the audio interrupt bits
+;       Parameter: D0 = INTENA bits to set
+;		
+;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
+;		      passed as individual INTENA values, where the set/clear bit is
+;			  set as appropriate
 ;   * mxicb_disable_irq
 ;     - Function pointer to routine that disables audio interrupts
-;   * mxicb_enable_irq
-;     - Function pointer to routine that enables audio interrupts.
 ;   * mxicb_acknowledge_irq
 ;     - Function pointer to routine that acknowledges audio interrupt.
-;       Parameter: D4 = INTREQ value
-;   * mxicb_enable_dma
+;       Parameter: D0 = INTREQ value
+;		
+;		Note: this will always pass the INTREQ value for a single channel.
+;   * mxicb_set_dmacon
 ;     - Function pointer to routine that enables audio DMA.
 ;       Parameter: D0 = DMACON value
-;   * mxicb_disable_dma
-;     - Function pointer to routine that disables audio DMA.
-;       Paramater: D6 = DMACON value
+;		
+;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
+;		      passed as individual DMACON values, where the set/clear bit is
+;			  set as appropriate
 ;
 ;   Note: MixerSetup should be run before this routine
 ;   Note: if MIXER_C_DEFS is set to 0, all callback routines should save &
@@ -667,12 +680,9 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	APTR	mxicb_set_irq_vector
 	APTR	mxicb_remove_irq_vector
 	APTR	mxicb_set_irq_bits
-	APTR	mxicb_clear_irq_bits
 	APTR	mxicb_disable_irq
-	APTR	mxicb_enable_irq
 	APTR	mxicb_acknowledge_irq
-	APTR	mxicb_enable_dma
-	APTR	mxicb_disable_dma
+	APTR	mxicb_set_dmacon
 	LABEL	mxicb_SIZEOF
 	
 	ENDC	; MIXER_I
