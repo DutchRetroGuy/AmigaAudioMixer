@@ -1,5 +1,35 @@
-# Ignore build artifacts
+# Ignore build artefacts
 *.o
 
 # Ignore drafts folder
 Drafts/
+
+# Ignore duplicate mixer.asm, mixer.i, mixer.h
+Examples/CallbackSource/Mixer/mixer.asm
+Examples/CallbackSource/Mixer/mixer.i
+Examples/CallbackSource/Mixer/mixer.h
+Examples/CMixerSource/Mixer/mixer.asm
+Examples/CMixerSource/Mixer/mixer.i
+Examples/CMixerSource/Mixer/mixer.h
+Examples/MinimalMixerSource/Mixer/mixer.asm
+Examples/MinimalMixerSource/Mixer/mixer.i
+Examples/MinimalMixerSource/Mixer/mixer.h
+Examples/MultiMixerSource/Mixer/mixer.asm
+Examples/MultiMixerSource/Mixer/mixer.i
+Examples/MultiMixerSource/Mixer/mixer.h
+Examples/MultiPairedMixerSource/Mixer/mixer.asm
+Examples/MultiPairedMixerSource/Mixer/mixer.i
+Examples/MultiPairedMixerSource/Mixer/mixer.h
+Examples/OSLegalSource/Mixer/mixer.asm
+Examples/OSLegalSource/Mixer/mixer.i
+Examples/OSLegalSource/Mixer/mixer.h
+Examples/PluginSource/Mixer/mixer.asm
+Examples/PluginSource/Mixer/mixer.i
+Examples/PluginSource/Mixer/mixer.h
+Examples/SingleMixerHQSource/Mixer/mixer.asm
+Examples/SingleMixerHQSource/Mixer/mixer.i
+Examples/SingleMixerHQSource/Mixer/mixer.h
+Examples/SingleMixerSource/Mixer/mixer.asm
+Examples/SingleMixerSource/Mixer/mixer.i
+Examples/SingleMixerSource/Mixer/mixer.h
+
