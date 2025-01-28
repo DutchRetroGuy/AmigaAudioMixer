@@ -263,11 +263,12 @@ int main()
 	}
 	
 	/* Convert all samples here */
-	printf ("Pre-processing samples...\n");
+	printf ("Pre-processing samples... ");
 	ConvertSample(sample1,sample1_size,4);
 	ConvertSample(sample2,sample2_size,4);
 	ConvertSample(sample3,sample3_size,4);
 	ConvertSample(sample4,sample4_size,4);
+	printf ("Done...\n");
 	 
 	/* Set up DMA/IRQ callbacks */
 	irq_dma_callbacks.mxicb_set_irq_vector = SetIRQVector;
@@ -324,10 +325,10 @@ int main()
 	 *       with a zero, but for the sake of completeness it's included here
 	 *       anyway.
 	 */
-	//MixerPlayFX(&effect1,DMAF_AUD2);
-	//MixerPlayFX(&effect2,DMAF_AUD2);
-	//MixerPlayFX(&effect3,DMAF_AUD2);
-	//MixerPlayFX(&effect4,DMAF_AUD2);
+	MixerPlayFX(&effect1,DMAF_AUD2);
+	MixerPlayFX(&effect2,DMAF_AUD2);
+	MixerPlayFX(&effect3,DMAF_AUD2);
+	MixerPlayFX(&effect4,DMAF_AUD2);
 	
 	/* Wait for keyboard input to continue program */
 	printf ("Press enter to end playback:");

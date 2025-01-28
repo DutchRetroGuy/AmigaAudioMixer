@@ -311,9 +311,10 @@
 ; IF MIXER_EXTERNAL_IRQ_DMA is set to 1, an additional routine is available:
 ;
 ; MixerSetIRQDMACallbacks(A0=callback_structure)
-;   This routine sets up the vectors used for callback routines to
-;   manage setting up interrupt vectors and DMA flags. These callback
-;   routines.
+;	This routine sets up the vectors used for callback routines to
+;	manage setting up interrupt vectors and DMA flags. This routine and
+;	associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is set to
+;	1 in mixer_config.i.
 ;
 ;   Callback vectors have to be passed through the MXIRQDMACallbacks
 ;   structure. This structure contains the following members:
@@ -323,7 +324,9 @@
 ;       Parameter: A0 = vector to mixer interrupt handler
 ;
 ;       Note: the mixer interrupt handler will return using RTS rather
-;             than RTE when using external IRQ/DMA callbacks
+;             than RTE when using external IRQ/DMA callbacks. This behaviour
+;             can be overridden by setting MIXER_EXTERNAL_RTE to 1, in which
+;             case the interrupt handler will exit using RTE.
 ;   * mxicb_remove_irq_vector
 ;     - Function pointer to routine that removes the IRQ vector for
 ;       audio interrupts.

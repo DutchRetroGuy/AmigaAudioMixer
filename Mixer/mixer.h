@@ -83,12 +83,12 @@ typedef struct MXPlugin
 
 typedef struct MXIRQDMACallbacks
 {
-	void (*mxicb_set_irq_vector)();
+	void (*mxicb_set_irq_vector)(MIX_REGARG(void (*interrupt_handler)(),"a0"));
 	void (*mxicb_remove_irq_vector)();
-	void (*mxicb_set_irq_bits)();
-	void (*mxicb_disable_irq)();
-	void (*mxicb_acknowledge_irq)();
-	void (*mxicb_set_dmacon)();
+	void (*mxicb_set_irq_bits)(MIX_REGARG(UWORD intena_value,"d0"));
+	void (*mxicb_disable_irq)(MIX_REGARG(UWORD intena_value,"d0"));
+	void (*mxicb_acknowledge_irq)(MIX_REGARG(UWORD intreq_value,"d0"));
+	void (*mxicb_set_dmacon)(MIX_REGARG(UWORD dmacon_value,"d0"));
 } MXIRQDMACallbacks;
 
 /* Prototypes */
@@ -306,8 +306,9 @@ void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
 /*
 void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
 	This routine sets up the vectors used for callback routines to
-	manage setting up interrupt vectors and DMA flags. These callback
-	routines.
+	manage setting up interrupt vectors and DMA flags. This routine and 
+	associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is set to
+	1 in mixer_config.i.
 	
 	Callback vectors have to be passed through the MXIRQDMACallbacks
 	structure. This structure contains the following members:
@@ -316,8 +317,10 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
 		interrupts. 
 		Parameter: A0 = vector to mixer interrupt handler
 		
-        Note: the mixer interrupt handler will return using RTS rather
-              than RTE when using external IRQ/DMA callbacks
+		Note: the mixer interrupt handler will return using RTS rather
+		      than RTE when using external IRQ/DMA callbacks. This behaviour
+		      can be overridden by setting MIXER_EXTERNAL_RTE to 1, in which
+		      case the interrupt handler will exit using RTE.
 	* mxicb_remove_irq_vector
 	  - Function pointer to routine that removes the IRQ vector for
 		audio interrupts. 
@@ -367,6 +370,8 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
           If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
           pushed to and popped from the stack by the mixer. All callback 
           routines should save & restore all other registers they use.
+    Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set 
+          to 1.
 */
 void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
 

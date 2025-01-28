@@ -1,4 +1,4 @@
-; $VER: mixer.asm 3.7 (06.11.24)
+; $VER: mixer.asm 3.7 (28.01.25)
 ;
 ; mixer.asm
 ; Audio mixing routines
@@ -39,7 +39,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.7
-; Revision: 20241106
+; Revision: 20250128
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -791,9 +791,7 @@ MixerStart
 				move.w	#$ffff,(a6)
 			ENDIF
 		ENDIF
-		
-		DBGBreakPnt
-		
+
 		; Fetch custombase
 		lea.l	mxcustombase,a6
 
@@ -1191,10 +1189,13 @@ MixerChannelWrite
 				move.l	a1,-(sp)
 			ENDIF
 			
+			lea.l	mixer_irqdma_vectors(pc),a1
+			
 			; Path for mask based resetting of IRQ bits
 			IF MIXER_EXTERNAL_BITWISE=0
 				move.l	mxicb_disable_irq(a1),a2
-				move.w	d7,d0
+				move.w	mixer+mx_irq_bits(pc),d0	; Fetch audio bits
+				and.w	#$7fff,d0
 				jsr		(a2)
 			ELSE
 			; Path for bitwise resetting of IRQ bits
@@ -2004,7 +2005,7 @@ MixSingIHstart	MACRO
 			move.w	mixer+mx_irq_bits(pc),intreq(a6)
 		ELSE
 			lea.l	mixer_irqdma_vectors(pc),a2
-			move.w	mixer+mx_irq_bits(pc),d4
+			move.w	mixer+mx_irq_bits(pc),d0
 			move.l	mxicb_acknowledge_irq(a2),a2
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1,-(sp)
@@ -2076,9 +2077,11 @@ MixSingIHend	MACRO
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			rte
 		ELSE
-			; TODO!!!
-			;rts
-			rte
+			IF MIXER_EXTERNAL_RTE=0
+				rts
+			ELSE
+				rte
+			ENDIF
 		ENDIF
 				ENDM
 
@@ -2267,7 +2270,11 @@ MixMultIHend	MACRO
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			rte
 		ELSE
-			rts
+			IF MIXER_EXTERNAL_RTE=0
+				rts
+			ELSE
+				rte
+			ENDIF
 		ENDIF
 				ENDM
 
@@ -3782,8 +3789,9 @@ MixerSetReturnVector
 		
 		; Routine: MixerSetIRQDMACallbacks
 		; This routine sets up the vectors used for callback routines to
-		; manage setting up interrupt vectors and DMA flags. These callback
-		; routines.
+		; manage setting up interrupt vectors and DMA flags. This routine and
+		; associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is
+		; set to 1 in mixer_config.i.
 		;
 		; Callback vectors have to be passed through the MXIRQDMACallbacks
 		; structure. This structure contains the following members:
@@ -3793,7 +3801,10 @@ MixerSetReturnVector
 		;       Parameter: A0 = vector to mixer interrupt handler
 		;
 		;       Note: the mixer interrupt handler will return using RTS rather
-		;             than RTE when using external IRQ/DMA callbacks
+		;             than RTE when using external IRQ/DMA callbacks. This
+		;             behaviour can be overridden by setting 
+		;             MIXER_EXTERNAL_RTE to 1, in which case the interrupt
+		;             handler will exit using RTE.
 		;   * mxicb_remove_irq_vector
 		;     - Function pointer to routine that removes the IRQ vector for
 		;       audio interrupts.

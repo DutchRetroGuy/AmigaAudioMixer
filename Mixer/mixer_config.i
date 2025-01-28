@@ -1,4 +1,4 @@
-; $VER: mixer_config.i 3.7 (21.01.25)
+; $VER: mixer_config.i 3.7 (28.01.25)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -13,7 +13,7 @@
 ; 
 ; Author: Jeroen Knoester
 ; Version: 3.7
-; Revision: 20250121
+; Revision: 20250128
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -235,7 +235,8 @@ MIXER_SECTION			EQU	1
 ;       handler in an external one. It is up to these external routines to
 ;       make sure the mixer's interrupt handler is called once per audio 
 ;       interrupt on enabled channels.
-; Note: enabling this feature disables the MIXER_CIA_TIMER setting
+; Note: enabling this feature disables the MIXER_CIA_TIMER setting.
+; Note: enabling callback functions slightly increases CPU cost of the mixer.
 MIXER_EXTERNAL_IRQ_DMA	EQU 0
 
 ; Set define below to 1 to change the mixer such that calls to the external
@@ -244,6 +245,13 @@ MIXER_EXTERNAL_IRQ_DMA	EQU 0
 ;
 ; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
 MIXER_EXTERNAL_BITWISE	EQU 0
+
+; Set define below to 1 to revert the mixer's behaviour when 
+; MIXER_EXTERNAL_IRQ_DMA is set to 1 to using an RTE to end the interrupt
+; interrupt, rather than an RTS.
+;
+; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+MIXER_EXTERNAL_RTE		EQU	0
 
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.

@@ -311,9 +311,10 @@
 ; IF MIXER_EXTERNAL_IRQ_DMA is set to 1, an additional routine is available:
 ;
 ; MixerSetIRQDMACallbacks(A0=callback_structure)
-;   This routine sets up the vectors used for callback routines to
-;   manage setting up interrupt vectors and DMA flags. These callback
-;   routines.
+;	This routine sets up the vectors used for callback routines to
+;	manage setting up interrupt vectors and DMA flags. This routine and
+;	associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is set to
+;	1 in mixer_config.i.
 ;
 ;   Callback vectors have to be passed through the MXIRQDMACallbacks
 ;   structure. This structure contains the following members:
@@ -323,7 +324,9 @@
 ;       Parameter: A0 = vector to mixer interrupt handler
 ;
 ;       Note: the mixer interrupt handler will return using RTS rather
-;             than RTE when using external IRQ/DMA callbacks
+;             than RTE when using external IRQ/DMA callbacks. This behaviour
+;             can be overridden by setting MIXER_EXTERNAL_RTE to 1, in which
+;             case the interrupt handler will exit using RTE.
 ;   * mxicb_remove_irq_vector
 ;     - Function pointer to routine that removes the IRQ vector for
 ;       audio interrupts.
@@ -372,7 +375,8 @@
 ;         If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
 ;         pushed to and popped from the stack by the mixer. All callback 
 ;         routines should save & restore all other registers they use.
-;		
+;	Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set 
+;         to 1.
 ;
 ;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:
@@ -606,6 +610,15 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	APTR	mpl_plugin_ptr
 	APTR	mpl_init_data_ptr
 	LABEL	mpl_SIZEOF
+	
+ STRUCTURE MXIRQDMACallbacks,0
+	APTR	mxicb_set_irq_vector
+	APTR	mxicb_remove_irq_vector
+	APTR	mxicb_set_irq_bits
+	APTR	mxicb_disable_irq
+	APTR	mxicb_acknowledge_irq
+	APTR	mxicb_set_dmacon
+	LABEL	mxicb_SIZEOF
 
 ; Internal (private) structures
  STRUCTURE MXChannel,0
@@ -683,15 +696,6 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		UWORD	mx_counter
 	ENDIF
 	LABEL	mx_SIZEOF
-	
- STRUCTURE MXIRQDMACallbacks,0
-	APTR	mxicb_set_irq_vector
-	APTR	mxicb_remove_irq_vector
-	APTR	mxicb_set_irq_bits
-	APTR	mxicb_disable_irq
-	APTR	mxicb_acknowledge_irq
-	APTR	mxicb_set_dmacon
-	LABEL	mxicb_SIZEOF
 	
 	ENDC	; MIXER_I
 ; End of File
