@@ -538,7 +538,7 @@ MixerInstallHandler
 			ENDIF
 			; Path for mask based resetting of IRQ bits
 			IF MIXER_EXTERNAL_BITWISE=0
-				move.w	d1,d0
+				move.w	#%11110000000,d0
 				move.l	mxicb_disable_irq(a2),a2
 
 				jsr		(a2)
@@ -552,9 +552,6 @@ MixerInstallHandler
 					move.l	mxicb_disable_irq(a1),a2
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
 				ENDIF
 .mixer_curr_chan	SET .mixer_curr_chan>>1
 .mixer_curr_bit		SET	.mixer_curr_bit<<1
@@ -795,6 +792,8 @@ MixerStart
 			ENDIF
 		ENDIF
 		
+		DBGBreakPnt
+		
 		; Fetch custombase
 		lea.l	mxcustombase,a6
 
@@ -810,11 +809,13 @@ MixerStart
 				movem.l	d0/d1/a0/a1,-(sp)
 			ENDIF
 			
+			lea.l	mixer_irqdma_vectors(pc),a1
+			
 			; Path for mask based setting of IRQ bits
 			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_set_irq_bits(a2),a2
+				move.l	mxicb_set_irq_bits(a1),a1
 
-				jsr		(a2)
+				jsr		(a1)
 			ELSE
 			; Path for bitwise setting of IRQ bits
 .mixer_curr_chan	SET mixer_output_channels
@@ -822,12 +823,10 @@ MixerStart
 				; Set all IRQ bits using REPT
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_set_irq_bits(a1),a2
+					lea.l	mixer_irqdma_vectors(pc),a1
+					move.l	mxicb_set_irq_bits(a1),a1
 					move.w	#$c000|.mixer_curr_bit,d0
-					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
+					jsr		(a1)
 				ENDIF
 .mixer_curr_chan	SET .mixer_curr_chan>>1
 .mixer_curr_bit		SET	.mixer_curr_bit<<1
@@ -897,15 +896,37 @@ MixerStop
 			move.w	d7,intreq(a6)					; Clear any pending interrupts
 			move.w	d7,intreq(a6)					; Twice for A4000
 		ELSE
-		CONTINUE HERE WITH BITWISE STUFF
 			lea.l	mixer_irqdma_vectors(pc),a1
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1,-(sp)
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
-			move.l	mxicb_disable_irq(a1),a1
-			jsr		(a1)
+			
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_disable_irq(a1),a2
+				move.w	#%11110000000,d0			; Audio = bits 7-10
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.l	mxicb_disable_irq(a1),a2
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1
 			ELSE
@@ -947,8 +968,24 @@ MixerStop
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
-			move.l	mxicb_set_dmacon(a1),a1
-			jsr		(a1)
+			; Mask based path for DMACON
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_set_dmacon(a1),a1
+				move.w	d6,d0
+				jsr		(a1)
+			ELSE
+			; Bitwise path for DMACON
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%1
+				REPT 4
+					move.l	mxicb_set_dmacon(a1),a1
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a1)
+				
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1
 			ELSE
@@ -1153,9 +1190,31 @@ MixerChannelWrite
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
-			lea.l	mixer_irqdma_vectors(pc),a1
-			move.l	mxicb_disable_irq(a1),a1
-			jsr		(a1)
+			
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_disable_irq(a1),a2
+				move.w	d7,d0
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.l	mxicb_disable_irq(a1),a2
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1
 			ELSE
@@ -1304,11 +1363,31 @@ MixerChannelWrite
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
+			
 			lea.l	mixer_irqdma_vectors(pc),a1
-			move.l	mxicb_set_irq_bits(a1),a1
-			move.w	mixer+mx_irq_bits(pc),d0
-			or.w	#$8000,d0					; Set the SET/CLR bit
-			jsr		(a1)
+			
+			; Path for mask based setting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_set_irq_bits(a1),a2
+				move.w	mixer+mx_irq_bits(pc),d0
+				or.w	#$8000,d0				; Set the SET/CLR bit
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.l	mxicb_set_irq_bits(a1),a2
+					move.w	#$8000|.mixer_curr_bit,d0
+					jsr		(a2)
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1
 			ELSE
@@ -1915,7 +1994,6 @@ MixSingIHstart	MACRO
 			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)				; Stack
-		DBGBreakPnt
 		
 		; Fetch custombase & mixer / mixer entry
 		lea.l	mxcustombase,a6
@@ -1998,8 +2076,8 @@ MixSingIHend	MACRO
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			rte
 		ELSE
+			; TODO!!!
 			;rts
-			DBGBreakPnt
 			rte
 		ENDIF
 				ENDM
@@ -2071,8 +2149,28 @@ MixMultIHstart	MACRO
 				move.l	a1,-(sp)
 			ENDIF
 			lea.l	mixer_irqdma_vectors(pc),a1
-			move.l	mxicb_acknowledge_irq(a1),a1
-			jsr		(a1)
+			
+			; Path for mask based acknowledging of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_acknowledge_irq(a1),a1
+				move.w	d4,d0
+				jsr		(a1)
+			ELSE
+			; Path for bitwise acknowledging of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				REPT 4
+					IF .mixer_curr_chan&1=1
+						move.l	mxicb_acknowledge_irq(a1),a2
+						move.w	#.mixer_curr_bit,d0
+						jsr		(a2)
+					ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+			
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1
 			ELSE
@@ -3717,6 +3815,14 @@ MixerSetReturnVector
 		;			  set/clear bit is set as appropriate
 		;   * mxicb_disable_irq
 		;     - Function pointer to routine that disables audio interrupts
+		;       Parameter: D0 = INTENA bits to disable
+		;
+		;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits
+		;		      are passed as individual INTENA values, where the
+		;			  set/clear bit is set as appropriate
+		;       Note: this is a separate routine from mxicb_set_irq_bits
+		;             because disabling interrupts should also make sure to
+		;             reset the corresponding bits in INTREQ
 		;   * mxicb_acknowledge_irq
 		;     - Function pointer to routine that acknowledges audio interrupt.
 		;       Parameter: D0 = INTREQ value
@@ -3842,7 +3948,9 @@ MixerPlaySilence
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0,-(sp)
 			ENDIF
-			jsr		(a1)
+
+			jsr		(a1)		
+
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0
 			ENDIF

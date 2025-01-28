@@ -151,7 +151,7 @@ void InterruptHandler()
 }
 
 /* IRQ/DMA control functions */
-void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a1"))
+void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 {
 	volatile APTR* vector;
 	vector = (APTR *) 0x70;
@@ -173,14 +173,14 @@ void RemoveIRQVector()
 	*vector = (APTR *) old_vector;
 }
 
-void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d1"))
+void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d0"))
 {
 	// Routine that sets the correct bits in INTENA to enable
 	// audio interrupts for the mixer
 	custom->intena = intena_bits;
 }
 
-void DisableIRQ()
+void DisableIRQ(MIX_REGARG(UWORD intena_bits,"d0"))
 {
 	// Routine that disables audio interrupts
 	// Note that the example disables *all* interrupts for simplicity,
@@ -191,7 +191,7 @@ void DisableIRQ()
 	custom->intreq = 0x780;
 }
 
-void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d4"))
+void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
 {
 	// Routine that acknowledges audio interrupt
 	// Documentation suggests that this is not needed for OS legal interrupts.
@@ -324,10 +324,10 @@ int main()
 	 *       with a zero, but for the sake of completeness it's included here
 	 *       anyway.
 	 */
-	MixerPlayFX(&effect1,DMAF_AUD2);
-	MixerPlayFX(&effect2,DMAF_AUD2);
-	MixerPlayFX(&effect3,DMAF_AUD2);
-	MixerPlayFX(&effect4,DMAF_AUD2);
+	//MixerPlayFX(&effect1,DMAF_AUD2);
+	//MixerPlayFX(&effect2,DMAF_AUD2);
+	//MixerPlayFX(&effect3,DMAF_AUD2);
+	//MixerPlayFX(&effect4,DMAF_AUD2);
 	
 	/* Wait for keyboard input to continue program */
 	printf ("Press enter to end playback:");

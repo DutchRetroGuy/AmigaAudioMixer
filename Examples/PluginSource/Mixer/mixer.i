@@ -344,6 +344,14 @@
 ;			  set as appropriate
 ;   * mxicb_disable_irq
 ;     - Function pointer to routine that disables audio interrupts
+;       Parameter: D0 = INTENA bits to disable
+;
+;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
+;		      passed as individual INTENA values, where the set/clear bit is
+;			  set as appropriate
+;       Note: this is a separate routine from mxicb_set_irq_bits because 
+;             disabling interrupts should also make sure to reset the 
+;             corresponding bits in INTREQ
 ;   * mxicb_acknowledge_irq
 ;     - Function pointer to routine that acknowledges audio interrupt.
 ;       Parameter: D0 = INTREQ value
