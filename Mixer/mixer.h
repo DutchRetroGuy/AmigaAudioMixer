@@ -14,7 +14,7 @@
  *
  * Author: Jeroen Knoester
  * Version: 3.7
- * Revision: 20250121
+ * Revision: 20250129
  *
  * TAB size = 4 spaces
  */
@@ -26,14 +26,16 @@
 #endif
 
 /* REGARG define to call assembly routines */
-#if !defined(MIX_REGARG)
-#if defined(__VBCC__)
+#if defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
+// Exploit the fact that Bartman's compiler doesn't add underscore to its C symbols and use them to call underscored mixer function from asm side
+#define MIX_API __attribute__((always_inline)) static inline
+#define MIX_REGARG(arg, reg) arg
+#elif defined(__VBCC__)
+#define MIX_API
 #define MIX_REGARG(arg, reg) __reg(reg) arg
 #elif defined(__GNUC__) // Bebbo
+#define MIX_API
 #define MIX_REGARG(arg, reg) arg asm(reg)
-#elif defined(BARTMAN_GCC) // Bartman
-#define MIX_REGARG(x, reg) void
-#endif
 #endif
 
 /* Constants */
@@ -76,34 +78,28 @@ typedef struct MXPlugin
 {
 	UWORD mpl_plugin_type;		/* Type of plugin (MIX_PLUGIN_STD or 
 								   MIX_PLUGIN_NODATE) */
-	void (*mpl_init_ptr)();		/* Pointer to initialisation function for the 
+	void (*mpl_init_ptr)();		/* Pointer to initialisation function for the
 								   plugin */
 	void (*mpl_plugin_ptr)();	/* Pointer to plugin function */
 	void *mpl_init_data_ptr;	/* Pointer to data used by the plugin 
 								   initialisation function */
 } MXPlugin;
 
-#if !defined(BARTMAN_GCC) // Bartman
 typedef struct MXIRQDMACallbacks
 {
-	void (*mxicb_set_irq_vector)(MIX_REGARG(void (*interrupt_handler)(),"a0"));
-	void (*mxicb_remove_irq_vector)();
-	void (*mxicb_set_irq_bits)(MIX_REGARG(UWORD intena_value,"d0"));
-	void (*mxicb_disable_irq)(MIX_REGARG(UWORD intena_value,"d0"));
-	void (*mxicb_acknowledge_irq)(MIX_REGARG(UWORD intreq_value,"d0"));
-	void (*mxicb_set_dmacon)(MIX_REGARG(UWORD dmacon_value,"d0"));
+	void (*mxicb_set_irq_vector)();		/* Pointer to function to set audio
+										   interrupt vector */
+	void (*mxicb_remove_irq_vector)();	/* Pointer to function to remove audio
+										   interrupt vector */
+	void (*mxicb_set_irq_bits)();		/* Pointer to function to set INTENA
+										   bit(s) */
+	void (*mxicb_disable_irq)();		/* Pointer to function to disable 
+										   audio interrupt(s) */
+	void (*mxicb_acknowledge_irq)();	/* Pointer to function to acknowledge
+										   interrupt request was serviced */
+	void (*mxicb_set_dmacon)();			/* Pointer to function that sets
+										   DMACON to given value */
 } MXIRQDMACallbacks;
-#else
-typedef struct MXIRQDMACallbacks
-{
-	void (*mxicb_set_irq_vector)();
-	void (*mxicb_remove_irq_vector)();
-	void (*mxicb_set_irq_bits)();
-	void (*mxicb_disable_irq)();
-	void (*mxicb_acknowledge_irq)();
-	void (*mxicb_set_dmacon)();
-} MXIRQDMACallbacks;
-#endif
 
 /* Prototypes */
 
@@ -115,7 +111,7 @@ ULONG MixerGetBufferSize(void)
 	this routine is to offer a method for C programs to gain access to this
 	value without needing access to mixer.i.
 */
-ULONG MixerGetBufferSize(void);
+MIX_API ULONG MixerGetBufferSize(void);
 
 /*
 ULONG MixerGetPluginsBufferSize(void)
@@ -127,14 +123,14 @@ ULONG MixerGetPluginsBufferSize(void)
 	Note: this function is only available if MIXER_ENABLE_PLUGINS is set to 1
 	      in mixer_config.i
 */
-ULONG MixerGetPluginsBufferSize(void);
+MIX_API ULONG MixerGetPluginsBufferSize(void);
 
 /*
 ULONG MixerGetTotalChannelCount(void)
 	Returns the total number of channels the mixer supports for sample
 	playback.
 */
-ULONG MixerGetTotalChannelCount(void);
+MIX_API ULONG MixerGetTotalChannelCount(void);
 
 /*
 ULONG MixerGetSampleMinSize(void)
@@ -152,7 +148,7 @@ ULONG MixerGetSampleMinSize(void)
 	      the video system selected when calling MixerSetup (PAL or NTSC).
 	Note: MixerSetup() must have been called prior to calling this function.
 */
-ULONG MixerGetSampleMinSize(void);
+MIX_API ULONG MixerGetSampleMinSize(void);
 
 /* 
 void MixerSetup(void *buffer,void *plugin_buffer,void *plugin_data, 
@@ -190,11 +186,11 @@ void MixerSetup(void *buffer,void *plugin_buffer,void *plugin_data,
 	Note: on 68020+ systems, it is advisable to align the various buffers to a
 	       4 byte boundary for optimal performance.
 */
-void MixerSetup (MIX_REGARG(void *buffer, "a0"),
-                 MIX_REGARG(void *plugin_buffer, "a1"),
-                 MIX_REGARG(void *plugin_data, "a2"),
-                 MIX_REGARG(UWORD vidsys,"d0"),
-				 MIX_REGARG(UWORD plugin_data_length,"d1"));
+MIX_API void MixerSetup (MIX_REGARG(void *buffer, "a0"),
+						 MIX_REGARG(void *plugin_buffer, "a1"),
+						 MIX_REGARG(void *plugin_data, "a2"),
+						 MIX_REGARG(UWORD vidsys,"d0"),
+						 MIX_REGARG(UWORD plugin_data_length,"d1"));
 
 /* 
 void MixerInstallHandler(void *VBR,UWORD save_vector)
@@ -205,15 +201,15 @@ void MixerInstallHandler(void *VBR,UWORD save_vector)
 	  saved. Set it to 0 to save the vector for future restoring and to 1 to skip
 	  saving the vector.
    */
-void MixerInstallHandler(MIX_REGARG(void *VBR,"a0"),
-                         MIX_REGARG(UWORD save_vector,"d0"));
+MIX_API void MixerInstallHandler(MIX_REGARG(void *VBR,"a0"),
+								 MIX_REGARG(UWORD save_vector,"d0"));
 
 /* 
 void MixerRemoveHandler(void)
 	Removes the mixer interrupt handler. MixerStop() should be called prior to
 	calling this routine to make sure audio DMA is stopped.
 */
-void MixerRemoveHandler(void);
+MIX_API void MixerRemoveHandler(void);
 
 /* 
 void MixerStart(void)
@@ -221,21 +217,21 @@ void MixerStart(void)
 	MixerInstallHandler() must have been called prior to calling this 
 	function.
 */
-void MixerStart(void);
+MIX_API void MixerStart(void);
 
 /* 
 void MixerStop(void)
 	Stops mixer playback. MixerSetup() and MixerInstallHandler() must have
 	been called prior to calling this function.
 */
-void MixerStop(void);
+MIX_API void MixerStop(void);
 
 /* 
 void MixerVolume(UWORD volume)
 	Set the desired hardware output volume used by the mixer (valid values are
 	0 to 64).
 */
-void MixerVolume(MIX_REGARG(UWORD volume,"d0"));
+MIX_API void MixerVolume(MIX_REGARG(UWORD volume,"d0"));
 
 /* 
 ULONG MixerPlayFX(MXEffect *effect_structure,
@@ -252,8 +248,8 @@ ULONG MixerPlayFX(MXEffect *effect_structure,
 
 	Note: the MXEffect definition can be found at the top of this file.
 */
-ULONG MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
-                  MIX_REGARG(ULONG hardware_channel,"d0"));
+MIX_API ULONG MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+						  MIX_REGARG(ULONG hardware_channel,"d0"));
 
 /* 
 ULONG MixerPlayChannelFX(MXEffect *effect_structure,
@@ -279,8 +275,8 @@ ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 	      maximum number of software channels available as defined in 
 	      mixer_config.i.
 */
-ULONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
-                         MIX_REGARG(ULONG mixer_channel,"d0"));
+MIX_API ULONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+								 MIX_REGARG(ULONG mixer_channel,"d0"));
 
 /*
 void MixerStopFX(ULONG mixer_channel_mask)
@@ -294,7 +290,7 @@ void MixerStopFX(ULONG mixer_channel_mask)
 
 	Note: see MixerPlayChannelFX() for an explanation of mixer channels.
 */
-void MixerStopFX(MIX_REGARG(UWORD mixer_channel_mask,"d0"));
+MIX_API void MixerStopFX(MIX_REGARG(UWORD mixer_channel_mask,"d0"));
 
 /* 
 ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
@@ -305,17 +301,17 @@ ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
 	If the channel is not used, the routine will return MIX_CH_FREE. If the
 	channel is in use, the routine will return MIX_CH_BUSY.
  */
-ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
+MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
 
 /*
-void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
+void MixerSetReturnVector(MIX_REGARG(void (*return_routine)(), "a0"));
 	This routine sets the optional vector the mixer can call at to at the end
 	of interrupt execution.
 
 	Note: this vector should point to a standard routine ending in RTS.
 	Note: this routine should be called after MixerSetup() has been run.
  */
-void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
+MIX_API void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
 
 /*
 void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
@@ -387,7 +383,7 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
     Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set 
           to 1.
 */
-void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
+MIX_API void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
 
 /*
 void MixerEnableCallback(void *callback_function_ptr)
@@ -405,7 +401,7 @@ void MixerEnableCallback(void *callback_function_ptr)
 	Note: this function is only available if MIXER_ENABLE_CALLBACK is set to 1
 	      in mixer_config.i
 */
-void MixerEnableCallback(MIX_REGARG(int (*callback_function_ptr)(),"a0"));
+MIX_API void MixerEnableCallback(MIX_REGARG(ULONG (*callback_function_ptr)(),"a0"));
 
 /*
 void MixerDisableCallback(void)
@@ -414,7 +410,7 @@ void MixerDisableCallback(void)
 	Note: this function is only available if MIXER_ENABLE_CALLBACK is set to 1
 	      in mixer_config.i
 */
-void MixerDisableCallback(void);
+MIX_API void MixerDisableCallback(void);
 
 /*
 void MixerSetPluginDeferredPtr(void *deferred_function_ptr, void *mxchannel_ptr)
@@ -430,8 +426,8 @@ void MixerSetPluginDeferredPtr(void *deferred_function_ptr, void *mxchannel_ptr)
 	Note: this function is only available if MIXER_ENABLE_PLUGINS is set to 1
 	      in mixer_config.i
 */
-void MixerSetPluginDeferredPtr(MIX_REGARG(void (*deferred_function_ptr)(),"a0"),
-							   MIX_REGARG(void *mxchannel_ptr,"a2"));
+MIX_API void MixerSetPluginDeferredPtr(MIX_REGARG(void (*deferred_function_ptr)(),"a0"),
+									   MIX_REGARG(void *mxchannel_ptr,"a2"));
 
 /*
 ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
@@ -462,12 +458,12 @@ ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
 	
 	Note: this function is deprecated,use MixerPlayFX() instead.
 */
-ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
-                      MIX_REGARG(ULONG hardware_channel,"d0"),
-					  MIX_REGARG(LONG length,"d1"),
-					  MIX_REGARG(WORD signed_priority,"d2"),
-					  MIX_REGARG(UWORD loop_indicator,"d3"),
-					  MIX_REGARG(LONG loop_offset,"d4"));
+MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
+							  MIX_REGARG(ULONG hardware_channel,"d0"),
+							  MIX_REGARG(LONG length,"d1"),
+							  MIX_REGARG(WORD signed_priority,"d2"),
+							  MIX_REGARG(UWORD loop_indicator,"d3"),
+							  MIX_REGARG(LONG loop_offset,"d4"));
 
 /*
 ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
@@ -499,12 +495,361 @@ ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
 	Note: see MixerPlayChannelFX() for an explanation of mixer channels.
 	Note: this function is deprecated,use MixerPlayChannelFX() instead.
 */
-ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
-                             MIX_REGARG(ULONG hardware_channel,"d0"),
-					         MIX_REGARG(LONG length,"d1"),
-					         MIX_REGARG(WORD signed_priority,"d2"),
-					         MIX_REGARG(UWORD loop_indicator,"d3"),
-							 MIX_REGARG(LONG loop_offset,"d4"));
+MIX_API ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
+									 MIX_REGARG(ULONG hardware_channel,"d0"),
+									 MIX_REGARG(LONG length,"d1"),
+									 MIX_REGARG(WORD signed_priority,"d2"),
+									 MIX_REGARG(UWORD loop_indicator,"d3"),
+									 MIX_REGARG(LONG loop_offset,"d4"));
 
 #undef MIX_REGARG
+
+/*
+ Bartman GCC specific wrapper functions follow
+ */
+#if defined(BARTMAN_GCC) // Bartman
+MIX_API ULONG MixerGetBufferSize(void) {
+	register volatile ULONG reg_result __asm("d0");
+	__asm__ volatile (
+		"jsr _MixerGetBufferSize"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API ULONG MixerGetPluginsBufferSize(void)
+{
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerGetPluginsBufferSize"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API ULONG MixerGetTotalChannelCount(void)
+{
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerGetTotalChannelCount"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API ULONG MixerGetSampleMinSize(void) {
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerGetSampleMinSize"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API void MixerSetup(void *buffer, UWORD vidsys) {
+	register volatile void *reg_buffer __asm("a0") = buffer;
+	register volatile UWORD reg_vidsys __asm("d0") = vidsys;
+
+	__asm__ volatile (
+		"jsr _MixerSetup\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_buffer), "r" (reg_vidsys)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerInstallHandler(void *VBR, UWORD save_vector) {
+	register volatile void *reg_VBR __asm("a0") = VBR;
+	register volatile UWORD reg_save_vector __asm("d0") = save_vector;
+
+	__asm__ volatile (
+		"jsr _MixerInstallHandler\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_VBR), "r" (reg_save_vector)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerRemoveHandler(void) {
+	__asm__ volatile (
+		"jsr _MixerRemoveHandler"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerStart(void) {
+	__asm__ volatile (
+		"jsr _MixerStart"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerStop(void) {
+	__asm__ volatile (
+		"jsr _MixerStop"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerVolume(UWORD volume) {
+	register volatile UWORD reg_volume __asm("d0") = volume;
+
+	__asm__ volatile (
+		"jsr _MixerVolume\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_volume)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API ULONG MixerPlayFX(
+	MXEffectStructure *effect_structure, ULONG hardware_channel
+) {
+	register volatile MXEffectStructure *reg_effect_structure __asm("a0") = effect_structure;
+	register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerPlayFX\n"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		: "r" (reg_effect_structure), "r" (reg_hardware_channel)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API ULONG MixerChannelPlayFX(
+	MXEffectStructure *effect_structure, ULONG mixer_channel
+) {
+	register volatile MXEffectStructure *reg_effect_structure __asm("a0") = effect_structure;
+	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerChannelPlayFX\n"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		: "r" (reg_effect_structure), "r" (reg_mixer_channel)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API void MixerStopFX(UWORD mixer_channel_mask) {
+	register volatile UWORD reg_mixer_channel_mask __asm("d0") = mixer_channel_mask;
+
+	__asm__ volatile (
+		"jsr _MixerStopFX\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_mixer_channel_mask)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
+{
+	register volatile UWORD reg_mixer_channel __asm("d0") = hardware_channel;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerGetChannelStatus\n"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		: "r" (reg_mixer_channel)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API void MixerSetReturnVector(void (*return_routine)())
+{
+	register volatile void (*reg_return_routine)() __asm("a0") = return_routine;
+
+	__asm__ volatile (
+		"jsr _MixerSetReturnVector\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_return_routine)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerSetIRQDMACallbacks(MXIRQDMACallbacks *callbacks)
+{
+	register volatile MXIRQDMACallbacks *reg_callbacks __asm("a0") = callbacks;
+
+	__asm__ volatile (
+		"jsr _MixerSetIRQDMACallbacks\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_callbacks)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerEnableCallback(ULONG (*callback_function_ptr)())
+{
+	register volatile ULONG (*reg_callback)() __asm("a0") = callback_function_ptr;
+
+	__asm__ volatile (
+		"jsr _MixerEnableCallback\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_callback)
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerDisableCallback(void)
+{
+	__asm__ volatile (
+		"jsr _MixerDisableCallback"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerSetPluginDeferredPtr(void (*deferred_function_ptr)(),
+									   void *mxchannel_ptr)
+{
+	register volatile void (*reg_deffered)() __asm("a0") = deferred_function_ptr;
+	register volatile void *reg_channel __asm("a2") = mxchannel_ptr;
+
+	__asm__ volatile (
+		"jsr _MixerSetPluginDeferredPtr\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_deffered), "r" (reg_channel)
+		// Clobbers
+		: "cc"
+	);
+}
+
+
+MIX_API ULONG MixerPlaySample(
+	void *sample, ULONG hardware_channel, LONG length, WORD signed_priority,
+	UWORD loop_indicator
+) {
+	register volatile void *reg_sample __asm("a0") = sample;
+	register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
+	register volatile LONG reg_length __asm("d1") = length;
+	register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
+	register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerPlaySample\n"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		: "r" (reg_sample), "r" (reg_hardware_channel), "r" (reg_length),
+			"r" (reg_signed_priority), "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
+MIX_API ULONG MixerPlayChannelSample(
+	void *sample, ULONG mixer_channel, LONG length, WORD signed_priority,
+	UWORD loop_indicator
+) {
+	register volatile void *reg_sample __asm("a0") = sample;
+	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+	register volatile LONG reg_length __asm("d1") = length;
+	register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
+	register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerPlayChannelSample\n"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		: "r" (reg_sample), "r" (reg_mixer_channel), "r" (reg_length),
+			"r" (reg_signed_priority), "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+#endif
+
 #endif

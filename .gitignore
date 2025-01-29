@@ -8,3 +8,8 @@ Drafts/
 Examples/*/Mixer/mixer.asm
 Examples/*/Mixer/mixer.i
 Examples/*/Mixer/mixer.h
+
+# Ignore duplicate plugins.asm, plugins.i, plugins.h
+Examples/*/Plugins/plugins.asm
+Examples/*/Plugins/plugins.i
+Examples/*/Plugins/plugins.h

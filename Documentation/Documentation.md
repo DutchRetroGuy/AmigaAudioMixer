@@ -822,6 +822,10 @@ The mixer comes with a number of example programs which show the abilities of th
 
   Unlike the MinimalMixerExample however, it also shows the use of plugins and callback routines. The plugin used to showcase plugin use is the pitch change plugin.
 
+- #### OSLegalExample
+
+  An example program that shows how to use the mixer in an OS legal way. This example, like CMixerExample, is written in C.
+
 ### Tools
 
 Alongside the mixer, two tools have been included. These tools are:

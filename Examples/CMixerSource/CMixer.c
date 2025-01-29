@@ -12,8 +12,8 @@
  *       instabilities considering the way the mixer works.
  *
  * Author: Jeroen Knoester
- * Version: 1.0
- * Revision: 20230319
+ * Version: 1.1
+ * Revision: 20250129
  *
  * TAB size = 4 spaces
  */
@@ -134,8 +134,8 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* Callback function */
-int callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
-                      MIX_REGARG(UWORD mixer_channel,"d0"))
+ULONG callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
+                        MIX_REGARG(UWORD mixer_channel,"d0"))
 {
 	callback_output = (long)sample_pointer;
 	return 0;
