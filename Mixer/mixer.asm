@@ -48,7 +48,6 @@
 	include hardware/custom.i
 	include hardware/dmabits.i
 	include mixer.i
-	include debug.i
 	IF MIXER_CIA_TIMER=1
 		include hardware/cia.i
 	ENDIF
@@ -547,9 +546,9 @@ MixerInstallHandler
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Set all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a2),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_disable_irq(a1),a2
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a2)
 				ENDIF
@@ -613,9 +612,9 @@ MixerInstallHandler
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Set all IRQ bits using REPT
+				move.l	mxicb_set_irq_bits(a2),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_set_irq_bits(a1),a2
 					move.w	#$c000|.mixer_curr_bit,d0
 					jsr		(a2)
 					IF MIXER_C_DEFS=1
@@ -718,9 +717,9 @@ MixerRemoveHandler
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_disable_irq(a1),a2
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a2)
 					IF MIXER_C_DEFS=1
@@ -911,9 +910,9 @@ MixerStop
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_disable_irq(a1),a2
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a2)
 					IF MIXER_C_DEFS=1
@@ -975,8 +974,8 @@ MixerStop
 			; Bitwise path for DMACON
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%1
+				move.l	mxicb_set_dmacon(a1),a1
 				REPT 4
-					move.l	mxicb_set_dmacon(a1),a1
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a1)
 				
