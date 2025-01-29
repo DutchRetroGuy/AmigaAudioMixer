@@ -1201,18 +1201,18 @@ MixerChannelWrite
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_disable_irq(a1),a2
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
 				ENDIF
 .mixer_curr_chan	SET .mixer_curr_chan>>1
 .mixer_curr_bit		SET	.mixer_curr_bit<<1
 				ENDR
+				IF MIXER_C_DEFS=1
+					move.l	(sp),a1
+				ENDIF
 			ENDIF
 
 			IF MIXER_C_DEFS=1
