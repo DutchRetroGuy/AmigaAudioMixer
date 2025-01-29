@@ -83,6 +83,7 @@ typedef struct MXPlugin
 								   initialisation function */
 } MXPlugin;
 
+#if !defined(BARTMAN_GCC) // Bartman
 typedef struct MXIRQDMACallbacks
 {
 	void (*mxicb_set_irq_vector)(MIX_REGARG(void (*interrupt_handler)(),"a0"));
@@ -92,6 +93,17 @@ typedef struct MXIRQDMACallbacks
 	void (*mxicb_acknowledge_irq)(MIX_REGARG(UWORD intreq_value,"d0"));
 	void (*mxicb_set_dmacon)(MIX_REGARG(UWORD dmacon_value,"d0"));
 } MXIRQDMACallbacks;
+#else
+typedef struct MXIRQDMACallbacks
+{
+	void (*mxicb_set_irq_vector)();
+	void (*mxicb_remove_irq_vector)();
+	void (*mxicb_set_irq_bits)();
+	void (*mxicb_disable_irq)();
+	void (*mxicb_acknowledge_irq)();
+	void (*mxicb_set_dmacon)();
+} MXIRQDMACallbacks;
+#endif
 
 /* Prototypes */
 
