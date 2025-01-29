@@ -302,21 +302,17 @@ housekeeping_cleanup:
 	
 # Targets
 ifeq ($(COMPILE_C),0)
-all: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(PERFTEST) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(MIXEROBJECTS) $(PLUGINSOBJECTS)
-all: housekeeping_cleanup
+all: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(PERFTEST) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(MIXEROBJECTS) $(PLUGINSOBJECTS) housekeeping_cleanup
 else
-all: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(PERFTEST) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(CMIXER) $(COSLEGAL) $(CSAMCONV) $(MIXEROBJECTS) $(PLUGINSOBJECTS)
-all: housekeeping_cleanup
+all: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(PERFTEST) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(CMIXER) $(COSLEGAL) $(CSAMCONV) $(MIXEROBJECTS) $(PLUGINSOBJECTS) housekeeping_cleanup
 endif
 
 mixer: $(MIXEROBJECTS) $(CONVERTER) $(PLUGINSOBJECTS)
 
 ifeq ($(COMPILE_C),0)
-install: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(PERFTEST) $(MIXEROBJECTS) $(PLUGINSOBJECTS)
-install: housekeeping_cleanup
+install: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(PERFTEST) $(MIXEROBJECTS) $(PLUGINSOBJECTS) housekeeping_cleanup
 else
-install: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(PERFTEST) $(CMIXER) $(COSLEGAL) $(CSAMCONV) $(MIXEROBJECTS) $(PLUGINSOBJECTS)
-install: housekeeping_cleanup
+install: housekeeping $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER) $(MINIMALMIXER) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(PERFTEST) $(CMIXER) $(COSLEGAL) $(CSAMCONV) $(MIXEROBJECTS) $(PLUGINSOBJECTS) housekeeping_cleanup
 endif
 	if not exist $(INSTLOC) $(MKDIR) $(INSTLOC)
 	if not exist $(INSTLOC)$(SLASH)Mixer $(MKDIR) $(INSTLOC)$(SLASH)Mixer
@@ -372,8 +368,7 @@ ifeq ($(COMPILE_C),1)
 	$(RM) $(CSAMCONVDIR)$(SLASH)*.o
 endif
 
-clean: clean_internal
-clean: housekeeping_cleanup
+clean: clean_internal housekeeping_cleanup
 	
 # Note: show_depend will not show dependencies for the C example.
 #       It also requires the -depend=make flag which may or may not be VASM

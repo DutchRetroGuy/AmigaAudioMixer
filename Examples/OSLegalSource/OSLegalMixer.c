@@ -264,7 +264,7 @@ int main()
 	}
 	
 	/* Convert all samples here */
-	printf ("Pre-processing samples... ");
+	printf ("Pre-processing samples...\n");
 	ConvertSample(sample1,sample1_size,4);
 	ConvertSample(sample2,sample2_size,4);
 	ConvertSample(sample3,sample3_size,4);
