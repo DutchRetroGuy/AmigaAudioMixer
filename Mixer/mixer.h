@@ -74,6 +74,8 @@ typedef struct MXEffect
 							   playing back the sample */
 } MXEffect;
 
+/* Note: see the documentation and plugins.h for more information
+         about the functions passed and their arguments. */
 typedef struct MXPlugin
 {
 	UWORD mpl_plugin_type;		/* Type of plugin (MIX_PLUGIN_STD or 
@@ -85,6 +87,8 @@ typedef struct MXPlugin
 								   initialisation function */
 } MXPlugin;
 
+/* Note: the callback functions and their arguments are fully described at
+         MixerSetIRQDMACallbacks() further down in this file. */
 typedef struct MXIRQDMACallbacks
 {
 	void (*mxicb_set_irq_vector)();		/* Pointer to function to set audio
