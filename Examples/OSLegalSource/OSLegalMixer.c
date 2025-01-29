@@ -142,13 +142,13 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* IRQ handler */
-void InterruptHandler()
+/*void InterruptHandler()
 {
 	void (*interrupt_handler)();
 	interrupt_handler = mixer_interrupt_handler;
 
 	interrupt_handler();
-}
+}*/
 
 /* IRQ/DMA control functions */
 void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
@@ -173,22 +173,19 @@ void RemoveIRQVector()
 	*vector = (APTR *) old_vector;
 }
 
-void SetIRQBits(MIX_REGARG(UWORD intena_bits,"d0"))
+void SetIRQBits(MIX_REGARG(UWORD intena_value,"d0"))
 {
-	// Routine that sets the correct bits in INTENA to enable
-	// audio interrupts for the mixer
-	custom->intena = intena_bits;
+	// Routine that sets the correct bits in INTENA
+	custom->intena = intena_value;
 }
 
-void DisableIRQ(MIX_REGARG(UWORD intena_bits,"d0"))
+void DisableIRQ(MIX_REGARG(UWORD intena_value,"d0"))
 {
 	// Routine that disables audio interrupts
-	// Note that the example disables *all* interrupts for simplicity,
-	// which is not needed!
 	//Disable();
-	custom->intena = 0x780;
-	custom->intreq = 0x780;
-	custom->intreq = 0x780;
+	custom->intena = intena_value;
+	custom->intreq = intena_value;
+	custom->intreq = intena_value;
 }
 
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))

@@ -31,6 +31,8 @@
 #define MIX_REGARG(arg, reg) __reg(reg) arg
 #elif defined(__GNUC__) // Bebbo
 #define MIX_REGARG(arg, reg) arg asm(reg)
+#elif defined(BARTMAN_GCC) // Bartman
+#define MIX_REGARG(x, reg) void
 #endif
 #endif
 
