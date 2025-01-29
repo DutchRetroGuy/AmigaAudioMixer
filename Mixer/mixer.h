@@ -75,7 +75,7 @@ typedef struct MXEffect
 } MXEffect;
 
 /* Note: see the documentation and plugins.h for more information
-         about the functions passed and their arguments. */
+         about the functions in this structure and their arguments. */
 typedef struct MXPlugin
 {
 	UWORD mpl_plugin_type;		/* Type of plugin (MIX_PLUGIN_STD or 
