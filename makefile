@@ -73,8 +73,8 @@ CCLNKFLAGS=+$(VCCFG)
 ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     SLASH := $(strip \)
-	CP := copy /Y >NUL 2>NUL 
-	RM := del /Q /F >NUL 2>NUL 
+	CP := copy /Y >NUL 2>NUL
+	RM := del /Q /F >NUL 2>NUL
 	MKDIR := mkdir >NUL 
 else
     DETECTED_OS := Unix-like
@@ -100,6 +100,28 @@ PTPLAYERDIR=$(EXAMPLEDIR)$(SLASH)PTPlayer
 LSPLAYERDIR=$(EXAMPLEDIR)$(SLASH)LSP
 STARTUPDIR=$(EXAMPLEDIR)$(SLASH)Startup
 SUPPORTDIR=$(EXAMPLEDIR)$(SLASH)Support
+
+# Detect type of OS used (Windows or Unix-like)
+# Note: this part deals with batch processing build artefacts
+ifeq ($(OS),Windows_NT)
+	# Batch commands for dealing with housekeeping
+	CPDIR_MIXER = for /d %%d in ($(EXAMPLEDIR)$(SLASH)*) do if exist %%d\Mixer $(CP) "$(MIXERDIR)$(SLASH)mixer.asm" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.i" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.h" %%d$(SLASH)Mixer$(SLASH)
+	CPDIR_PLUGINS = for /d %%d in ($(EXAMPLEDIR)$(SLASH)*) do if exist %%d\Plugins $(CP) "$(PLUGINSDIR)$(SLASH)plugins.asm" %%d$(SLASH)Plugins$(SLASH) & $(CP) "$(PLUGINSDIR)$(SLASH)plugins.i" %%d$(SLASH)Plugins$(SLASH) & $(CP) "$(PLUGINSDIR)$(SLASH)plugins.h" %%d$(SLASH)Plugins$(SLASH)
+	RMDIR_MIXER := $(RM) /S $(EXAMPLEDIR)$(SLASH)mixer.asm $(EXAMPLEDIR)$(SLASH)mixer.i $(EXAMPLEDIR)$(SLASH)mixer.h
+	RMDIR_PLUGINS := $(RM) /S $(EXAMPLEDIR)$(SLASH)plugins.asm $(EXAMPLEDIR)$(SLASH)plugins.i $(EXAMPLEDIR)$(SLASH)plugins.h
+	
+	# Batch commands for dealing with make clean
+	RM_CLEAN := $(RM) /S $(MAINDIR)\*.o
+else
+	# Batch commands for dealing with housekeeping
+	CPDIR_MIXER := find Examples -type d -name Mixer -exec $(CP) $(MIXERDIR)/mixer.{asm,i,h} "{}" \;
+	CPDIR_PLUGINS := find Examples -type d -name Plugins -exec $(CP) $(PLUGINSDIR)/plugins.{asm,i,h} "{}" \;
+	RMDIR_MIXER := $(RM) $(EXAMPLEDIR)/*/Mixer/mixer.{asm,i,h}
+	RMDIR_PLUGINS := $(RM) $(EXAMPLEDIR)/*/Plugins/plugins.{asm,i,h}
+
+	# Batch commands for dealing with make clean
+	RM_CLEAN := $(RM) -r $(MAINDIR)\*.o
+endif
 
 # Set up other directories (individual examples / performance test)
 SINGLEMIXERDIR=$(EXAMPLEDIR)$(SLASH)SingleMixerSource
@@ -223,82 +245,12 @@ CSAMCONVOBJECTS=$(CSAMCONVOBJS)
 
 # Housekeeping
 housekeeping:
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(SINGLEMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(SINGLEMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(SINGLEMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(SINGLEMIXERHQDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(SINGLEMIXERHQDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(SINGLEMIXERHQDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(MULTIMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(MULTIMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(MULTIMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(PAIRMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(PAIRMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(PAIRMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(MINIMALMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(MINIMALMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(MINIMALMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(PLUGINEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(PLUGINEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(PLUGINEXAMPLEDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(CMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(CMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(CMIXERDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(COSLEGALDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(COSLEGALDIR)$(SLASH)Mixer
-	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(COSLEGALDIR)$(SLASH)Mixer
-
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.asm $(PLUGINEXAMPLEDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.i $(PLUGINEXAMPLEDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.h $(PLUGINEXAMPLEDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.asm $(CMIXERDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.i $(CMIXERDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.h $(CMIXERDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.asm $(COSLEGALDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.i $(COSLEGALDIR)$(SLASH)Plugins
-	$(CP) $(PLUGINSDIR)$(SLASH)plugins.h $(COSLEGALDIR)$(SLASH)Plugins
+	$(CPDIR_MIXER)
+	$(CPDIR_PLUGINS)
 
 housekeeping_cleanup:
-	$(RM) $(SINGLEMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(SINGLEMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(SINGLEMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(PAIRMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(PAIRMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(PAIRMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(MINIMALMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(MINIMALMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(MINIMALMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(CMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(CMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(CMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.h
-	$(RM) $(COSLEGALDIR)$(SLASH)Mixer$(SLASH)mixer.asm
-	$(RM) $(COSLEGALDIR)$(SLASH)Mixer$(SLASH)mixer.i
-	$(RM) $(COSLEGALDIR)$(SLASH)Mixer$(SLASH)mixer.h
-
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)plugins.asm
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)plugins.i
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)plugins.h
-	$(RM) $(CMIXERDIR)$(SLASH)Plugins$(SLASH)plugins.asm
-	$(RM) $(CMIXERDIR)$(SLASH)Plugins$(SLASH)plugins.i
-	$(RM) $(CMIXERDIR)$(SLASH)Plugins$(SLASH)plugins.h
-	$(RM) $(COSLEGALDIR)$(SLASH)Plugins$(SLASH)plugins.asm
-	$(RM) $(COSLEGALDIR)$(SLASH)Plugins$(SLASH)plugins.i
-	$(RM) $(COSLEGALDIR)$(SLASH)Plugins$(SLASH)plugins.h
+	$(RMDIR_MIXER)
+	$(RMDIR_PLUGINS)
 	
 # Targets
 ifeq ($(COMPILE_C),0)
@@ -341,31 +293,11 @@ ifeq ($(COMPILE_C),1)
 endif
 
 clean_internal:
-	$(RM) $(SINGLEMIXER)
-	$(RM) $(SINGLEMIXERHQ)
-	$(RM) $(MULTIMIXER)
-	$(RM) $(PAIRMIXER)
-	$(RM) $(MINIMALMIXER)
-	$(RM) $(CALLBACKEXAMPLE)
-	$(RM) $(PLUGINEXAMPLE)
-	$(RM) $(PERFTEST)
-	$(RM) $(GFXDIR)$(SLASH)*.o $(STARTUPDIR)$(SLASH)*.o $(DATADIR)$(SLASH)*.o $(MIXERDIR)$(SLASH)*.o $(CONVERTERDIR)$(SLASH)*.o $(PLUGINSDIR)$(SLASH)*.o 
-	$(RM) $(PTPLAYERDIR)$(SLASH)*.o $(LSPLAYERDIR)$(SLASH)*.o $(SUPPORTDIR)$(SLASH)*.o
-	$(RM) $(SINGLEMIXERDIR)$(SLASH)*.o $(SINGLEMIXERDIR)$(SLASH)Mixer$(SLASH)*.o $(SINGLEMIXERDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(SINGLEMIXERHQDIR)$(SLASH)*.o $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)*.o $(SINGLEMIXERHQDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(MULTIMIXERDIR)$(SLASH)*.o $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)*.o $(MULTIMIXERDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(PAIRMIXERDIR)$(SLASH)*.o $(PAIRMIXERDIR)$(SLASH)Mixer$(SLASH)*.o $(PAIRMIXERDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(MINIMALMIXERDIR)$(SLASH)*.o $(MINIMALMIXERDIR)$(SLASH)Mixer$(SLASH)*.o
-	$(RM) $(CALLBACKEXAMPLEDIR)$(SLASH)*.o $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)*.o $(CALLBACKEXAMPLEDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(PLUGINEXAMPLEDIR)$(SLASH)*.o $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)*.o $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)*.o $(PLUGINEXAMPLEDIR)$(SLASH)Support$(SLASH)*.o
-	$(RM) $(PERFTESTDIR)$(SLASH)*.o $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)*.o $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)*.o $(PERFTESTDIR)$(SLASH)Support$(SLASH)*.o
+	$(RM) $(SINGLEMIXER) $(SINGLEMIXERHQ) $(MULTIMIXER) $(PAIRMIXER)
+	$(RM) $(MINIMALMIXER) $(CALLBACKEXAMPLE) $(PLUGINEXAMPLE) $(PERFTEST)
+	$(RM_CLEAN)
 ifeq ($(COMPILE_C),1)
-	$(RM) $(CMIXER)
-	$(RM) $(COSLEGAL)
-	$(RM) $(CSAMCONV)
-	$(RM) $(CMIXERDIR)$(SLASH)*.o $(CMIXERDIR)$(SLASH)Mixer$(SLASH)*.o $(CMIXERDIR)$(SLASH)Plugins$(SLASH)*.o
-	$(RM) $(COSLEGALDIR)$(SLASH)*.o $(COSLEGALDIR)$(SLASH)Mixer$(SLASH)*.o $(COSLEGALDIR)$(SLASH)Plugins$(SLASH)*.o
-	$(RM) $(CSAMCONVDIR)$(SLASH)*.o
+	$(RM) $(CMIXER) $(COSLEGAL) $(CSAMCONV)
 endif
 
 clean: clean_internal housekeeping_cleanup
