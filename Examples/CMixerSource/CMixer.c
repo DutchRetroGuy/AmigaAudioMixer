@@ -134,12 +134,23 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* Callback function */
+#if !defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
 ULONG callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
                         MIX_REGARG(UWORD mixer_channel,"d0"))
 {
-	callback_output = (long)sample_pointer;
+	callback_output = (ULONG)sample_pointer;
 	return 0;
 }
+#else // Bartman
+ULONG callback_function()
+{
+	register volatile APTR sample_pointer __asm("a0");
+	register volatile UWORD mixer_channel __asm("d0");
+	
+	callback_output = (ULONG)sample_pointer;
+	return 0;
+}
+#endif
 
 /* Vector handler function */
 void test_function()

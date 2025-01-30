@@ -512,7 +512,8 @@ MIX_API ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
  Bartman GCC specific wrapper functions follow
  */
 #if defined(BARTMAN_GCC) // Bartman
-MIX_API ULONG MixerGetBufferSize(void) {
+MIX_API ULONG MixerGetBufferSize(void) 
+{
 	register volatile ULONG reg_result __asm("d0");
 	__asm__ volatile (
 		"jsr _MixerGetBufferSize"
@@ -577,22 +578,33 @@ MIX_API ULONG MixerGetSampleMinSize(void) {
 	return reg_result;
 }
 
-MIX_API void MixerSetup(void *buffer, UWORD vidsys) {
-	register volatile void *reg_buffer __asm("a0") = buffer;
-	register volatile UWORD reg_vidsys __asm("d0") = vidsys;
+MIX_API void MixerSetup(void *buffer,
+						void *plugin_buffer,
+						void *plugin_data, 
+						UWORD vidsys,
+						UWORD plugin_data_length) 
+{
+    register volatile void *reg_buffer __asm("a0") = buffer;
+    register volatile void *reg_plugin_buffer __asm("a1") = plugin_buffer;
+    register volatile void *reg_plugin_data __asm("a2") = plugin_data;
+    register volatile UWORD reg_vidsys __asm("d0") = vidsys;
+    register volatile UWORD reg_plugin_data_length __asm("d1") = plugin_data_length;
 
-	__asm__ volatile (
-		"jsr _MixerSetup\n"
-		// OutputOperands
-		:
-		// InputOperands
-		: "r" (reg_buffer), "r" (reg_vidsys)
-		// Clobbers
-		: "cc"
-	);
+    __asm__ volatile (
+        "jsr _MixerSetup\n"
+        // OutputOperands
+        :
+        // InputOperands
+        : "r" (reg_buffer), "r" (reg_plugin_buffer), "r" (reg_plugin_data),
+            "r" (reg_vidsys), "r" (reg_plugin_data_length)
+        // Clobbers
+        : "cc"
+    );
 }
 
-MIX_API void MixerInstallHandler(void *VBR, UWORD save_vector) {
+MIX_API void MixerInstallHandler(void *VBR, 
+								 UWORD save_vector)
+{
 	register volatile void *reg_VBR __asm("a0") = VBR;
 	register volatile UWORD reg_save_vector __asm("d0") = save_vector;
 
@@ -607,7 +619,8 @@ MIX_API void MixerInstallHandler(void *VBR, UWORD save_vector) {
 	);
 }
 
-MIX_API void MixerRemoveHandler(void) {
+MIX_API void MixerRemoveHandler(void) 
+{
 	__asm__ volatile (
 		"jsr _MixerRemoveHandler"
 		// OutputOperands
@@ -619,7 +632,8 @@ MIX_API void MixerRemoveHandler(void) {
 	);
 }
 
-MIX_API void MixerStart(void) {
+MIX_API void MixerStart(void) 
+{
 	__asm__ volatile (
 		"jsr _MixerStart"
 		// OutputOperands
@@ -631,7 +645,8 @@ MIX_API void MixerStart(void) {
 	);
 }
 
-MIX_API void MixerStop(void) {
+MIX_API void MixerStop(void) 
+{
 	__asm__ volatile (
 		"jsr _MixerStop"
 		// OutputOperands
@@ -643,7 +658,8 @@ MIX_API void MixerStop(void) {
 	);
 }
 
-MIX_API void MixerVolume(UWORD volume) {
+MIX_API void MixerVolume(UWORD volume) 
+{
 	register volatile UWORD reg_volume __asm("d0") = volume;
 
 	__asm__ volatile (
@@ -657,10 +673,10 @@ MIX_API void MixerVolume(UWORD volume) {
 	);
 }
 
-MIX_API ULONG MixerPlayFX(
-	MXEffectStructure *effect_structure, ULONG hardware_channel
-) {
-	register volatile MXEffectStructure *reg_effect_structure __asm("a0") = effect_structure;
+MIX_API ULONG MixerPlayFX(MXEffect *effect_structure, 
+						  ULONG hardware_channel) 
+{
+	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
 	register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
 	register volatile ULONG reg_result __asm("d0");
 
@@ -677,10 +693,10 @@ MIX_API ULONG MixerPlayFX(
 	return reg_result;
 }
 
-MIX_API ULONG MixerChannelPlayFX(
-	MXEffectStructure *effect_structure, ULONG mixer_channel
-) {
-	register volatile MXEffectStructure *reg_effect_structure __asm("a0") = effect_structure;
+MIX_API ULONG MixerChannelPlayFX(MXEffect *effect_structure,
+								 ULONG mixer_channel)
+{
+	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
 	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
 	register volatile ULONG reg_result __asm("d0");
 
@@ -697,7 +713,8 @@ MIX_API ULONG MixerChannelPlayFX(
 	return reg_result;
 }
 
-MIX_API void MixerStopFX(UWORD mixer_channel_mask) {
+MIX_API void MixerStopFX(UWORD mixer_channel_mask) 
+{
 	register volatile UWORD reg_mixer_channel_mask __asm("d0") = mixer_channel_mask;
 
 	__asm__ volatile (
@@ -713,7 +730,7 @@ MIX_API void MixerStopFX(UWORD mixer_channel_mask) {
 
 MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
 {
-	register volatile UWORD reg_mixer_channel __asm("d0") = hardware_channel;
+	register volatile UWORD reg_mixer_channel __asm("d0") = mixer_channel;
 	register volatile ULONG reg_result __asm("d0");
 
 	__asm__ volatile (
@@ -805,54 +822,62 @@ MIX_API void MixerSetPluginDeferredPtr(void (*deferred_function_ptr)(),
 }
 
 
-MIX_API ULONG MixerPlaySample(
-	void *sample, ULONG hardware_channel, LONG length, WORD signed_priority,
-	UWORD loop_indicator
-) {
-	register volatile void *reg_sample __asm("a0") = sample;
-	register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
-	register volatile LONG reg_length __asm("d1") = length;
-	register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
-	register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
-	register volatile ULONG reg_result __asm("d0");
+MIX_API ULONG MixerPlaySample(void *sample, 
+							  ULONG hardware_channel,
+							  LONG length, 
+							  WORD signed_priority,
+							  UWORD loop_indicator, 
+							  LONG loop_offset)
+{
+    register volatile void *reg_sample __asm("a0") = sample;
+    register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
+    register volatile LONG reg_length __asm("d1") = length;
+    register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
+    register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+    register volatile LONG reg_loop_offset __asm("d4") = loop_offset;
+    register volatile ULONG reg_result __asm("d0");
 
-	__asm__ volatile (
-		"jsr _MixerPlaySample\n"
-		// OutputOperands
-		: "=r" (reg_result)
-		// InputOperands
-		: "r" (reg_sample), "r" (reg_hardware_channel), "r" (reg_length),
-			"r" (reg_signed_priority), "r" (reg_loop_indicator)
-		// Clobbers
-		: "cc"
-	);
+    __asm__ volatile (
+        "jsr _MixerPlaySample\n"
+        // OutputOperands
+        : "=r" (reg_result)
+        // InputOperands
+        : "r" (reg_sample), "r" (reg_hardware_channel), "r" (reg_length),
+            "r" (reg_signed_priority), "r" (reg_loop_indicator), "r" (reg_loop_offset)
+        // Clobbers
+        : "cc"
+    );
 
-	return reg_result;
+    return reg_result;
 }
 
-MIX_API ULONG MixerPlayChannelSample(
-	void *sample, ULONG mixer_channel, LONG length, WORD signed_priority,
-	UWORD loop_indicator
-) {
-	register volatile void *reg_sample __asm("a0") = sample;
-	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
-	register volatile LONG reg_length __asm("d1") = length;
-	register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
-	register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
-	register volatile ULONG reg_result __asm("d0");
+MIX_API ULONG MixerPlayChannelSample(void *sample, 
+									 ULONG mixer_channel, 
+									 LONG length, 
+									 WORD signed_priority,
+									 UWORD loop_indicator, 
+									 LONG loop_offset)
+{
+    register volatile void *reg_sample __asm("a0") = sample;
+    register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+    register volatile LONG reg_length __asm("d1") = length;
+    register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
+    register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+    register volatile LONG reg_loop_offset __asm("d4") = reg_loop_offset;
+    register volatile ULONG reg_result __asm("d0");
 
-	__asm__ volatile (
-		"jsr _MixerPlayChannelSample\n"
-		// OutputOperands
-		: "=r" (reg_result)
-		// InputOperands
-		: "r" (reg_sample), "r" (reg_mixer_channel), "r" (reg_length),
-			"r" (reg_signed_priority), "r" (reg_loop_indicator)
-		// Clobbers
-		: "cc"
-	);
+    __asm__ volatile (
+        "jsr _MixerPlayChannelSample\n"
+        // OutputOperands
+        : "=r" (reg_result)
+        // InputOperands
+        : "r" (reg_sample), "r" (reg_mixer_channel), "r" (reg_length),
+            "r" (reg_signed_priority), "r" (reg_loop_indicator), "r" (reg_loop_offset)
+        // Clobbers
+        : "cc"
+    );
 
-	return reg_result;
+    return reg_result;
 }
 #endif
 
