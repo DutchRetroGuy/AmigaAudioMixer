@@ -1,8 +1,8 @@
 # Makefile for the Audio Mixer examples & objects
 #
 # Author: Jeroen Knoester
-# Version 2.1
-# Revision: 20250129
+# Version 2.2
+# Revision: 20250130
 #
 # To use:
 # * Set the COMPILE_C variable to either 0 or 1. If set to 1, the C example
