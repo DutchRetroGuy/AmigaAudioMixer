@@ -47,6 +47,10 @@ PERF_SIZE_TEST			SET 0		; Set to 1 to get a report on the various
 ;-----------------------------------------------------------------------------
 ; Constants
 ;-----------------------------------------------------------------------------									
+
+NOTE: ALL THESE COME FROM MIXER.I
+MAKE A SPECIAL IF/ENDIF CONSTRUCT TO EXTRACT ONLY THESE FROM MIXER.I
+
 MIX_CH0					EQU	16				; Mixer software channel 0
 MIX_CH1					EQU	32				; ..
 MIX_CH2					EQU	64				; ..
