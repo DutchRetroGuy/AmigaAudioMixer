@@ -26,7 +26,8 @@
 	include copperlists.i
 	include font.i
 	include converter.i
-	include mixer.i
+	include mixer_config.i
+	include performance_test_wrapper.i
 	include plugins.i
 	include PerformanceTest.i
 	include strings.i
@@ -1252,6 +1253,7 @@ plugin_init_data		blk.b	mxplg_max_idata_size*16
 plugin_data				blk.b	mxplg_max_data_size*16
 plugin_sync				dc.w	0
 
+	printv mixer_buffer_size
 		section audio,data_c
 		cnop 0,4
 mixer_buffer			blk.b	mixer_buffer_size

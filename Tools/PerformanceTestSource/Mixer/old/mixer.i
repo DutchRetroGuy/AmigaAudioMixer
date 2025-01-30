@@ -1,4 +1,19 @@
-; $VER: mixer.i 3.7 (21.01.25)
+;
+; IMPORTANT:
+; Mixer include below is intended *only* for the performance test program.
+;
+; It consists of a changed version of the the normal mixer.i file, several
+; elements are changed to allow for the multiple tests that are being done by
+; the performance test.
+;
+; For the mixer designed for use in non-performance tests, see the Mixer 
+; directory in the mixer directory of the AudioMixer directory/archive.
+;
+
+
+
+
+; $VER: mixer.i 3.6 (04.02.24)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -298,87 +313,6 @@
 ;	playback.
 ;
 ;
-; If MIXER_ENABLE_RETURN_VECTOR is set to 1, an addition routine is available:
-;
-; MixerSetReturnVector(A0=return_function_ptr)
-;   This routine sets the optional vector the mixer can call at to at
-;   the end of interrupt execution.
-;
-;   Note: this vector should point to a standard routine ending in RTS.
-;	Note: this routine should be called after MixerSetup() has been run.
-;
-;
-; IF MIXER_EXTERNAL_IRQ_DMA is set to 1, an additional routine is available:
-;
-; MixerSetIRQDMACallbacks(A0=callback_structure)
-;	This routine sets up the vectors used for callback routines to
-;	manage setting up interrupt vectors and DMA flags. This routine and
-;	associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is set to
-;	1 in mixer_config.i.
-;
-;   Callback vectors have to be passed through the MXIRQDMACallbacks
-;   structure. This structure contains the following members:
-;   * mxicb_set_irq_vector 
-;     - Function pointer to routine that sets the IRQ vector for audio
-;       interrupts. 
-;       Parameter: A0 = vector to mixer interrupt handler
-;
-;       Note: the mixer interrupt handler will return using RTS rather
-;             than RTE when using external IRQ/DMA callbacks. This behaviour
-;             can be overridden by setting MIXER_EXTERNAL_RTE to 1, in which
-;             case the interrupt handler will exit using RTE.
-;   * mxicb_remove_irq_vector
-;     - Function pointer to routine that removes the IRQ vector for
-;       audio interrupts.
-;		
-;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, this routine is also
-;	          responsible for resetting INTENA to the value it had prior to
-;			  calling MixerInstallHandler(), if this is desired.
-;			  
-;			  when MIXER_EXTERNAL_BITWISE is set to 0, this is done by the
-;			  mixer automatically
-;   * mxicb_set_irq_bits
-;     - Function pointer to routine that sets the correct bits in INTENA
-;       to enable audio interrupts for the mixer. 
-;       Parameter: D0 = INTENA bits to set
-;		
-;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
-;		      passed as individual INTENA values, where the set/clear bit is
-;			  set as appropriate
-;   * mxicb_disable_irq
-;     - Function pointer to routine that disables audio interrupts
-;       Parameter: D0 = INTENA bits to disable
-;
-;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
-;		      passed as individual INTENA values, where the set/clear bit is
-;			  set as appropriate
-;       Note: this is a separate routine from mxicb_set_irq_bits because 
-;             disabling interrupts should also make sure to reset the 
-;             corresponding bits in INTREQ
-;   * mxicb_acknowledge_irq
-;     - Function pointer to routine that acknowledges audio interrupt.
-;       Parameter: D0 = INTREQ value
-;		
-;		Note: this will always pass the INTREQ value for a single channel.
-;   * mxicb_set_dmacon
-;     - Function pointer to routine that enables audio DMA.
-;       Parameter: D0 = DMACON value
-;		
-;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
-;		      passed as individual DMACON values, where the set/clear bit is
-;			  set as appropriate
-;
-;   Note: MixerSetup should be run before this routine
-;   Note: if MIXER_C_DEFS is set to 0, all callback routines should save &
-;         restore all registers they use. 
-;
-;         If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
-;         pushed to and popped from the stack by the mixer. All callback 
-;         routines should save & restore all other registers they use.
-;	Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set 
-;         to 1.
-;
-;
 ; If MIXER_ENABLE_CALLBACK is set to 1, additional routines are available:
 ;
 ; MixerEnableCallback(A0=callback_function_ptr)
@@ -427,7 +361,7 @@
 ;   calls of the mixer interrupt handler. Results are found in 
 ;   mixer_ticks_average.
 ;
-; If MIXER_COUNTER is set to 1, two additional routines are available:
+; If MIXER_COUNTER is set to 1, two additional rotuines are available:
 ;
 ; MixerResetCounter()
 ;   This routine sets the mixer interrupt counter to 0.
@@ -438,8 +372,8 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.7
-; Revision: 20250125
+; Version: 3.6
+; Revision: 20240204
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -447,6 +381,7 @@
 ; Includes (OS includes assume at least NDK 1.3) 
 	include	exec/types.i
 	include hardware/dmabits.i
+	
 	include mixer_config.i
 	
 	IFND	MIXER_I
@@ -454,7 +389,7 @@ MIXER_I	SET	1
 
 ; References macro
 EXREF	MACRO
-		IFD BUILD_MIXER
+		IFD BUILD_MIXER_PMIX
 			XDEF \1
 		ELSE
 			XREF \1
@@ -462,50 +397,72 @@ EXREF	MACRO
 		ENDM
 
 ; References
-	EXREF	MixerSetup
-	EXREF	MixerInstallHandler
-	EXREF	MixerRemoveHandler
-	EXREF	MixerStart
-	EXREF	MixerStop
-	EXREF	MixerVolume
-
-	EXREF	MixerPlayFX
-	EXREF	MixerPlayChannelFX
-	EXREF	MixerStopFX
-	
-	EXREF	MixerPlaySample
-	EXREF	MixerPlayChannelSample
-	
-	EXREF	MixerGetBufferSize
-	EXREF	MixerGetChannelBufferSize
-	EXREF	MixerGetSampleMinSize
-	EXREF	MixerGetChannelStatus
-	EXREF	MixerGetTotalChannelCount
-
-	EXREF	MixerSetReturnVector
-	EXREF	MixerSetIRQDMACallbacks
-	
-	EXREF	MixerEnableCallback
-	EXREF	MixerDisableCallback
-	
-	EXREF	MixerGetPluginsBufferSize
+	EXREF	PTestSetPlgRoutineOffset
 	EXREF	MixerSetPluginDeferredPtr
+	EXREF	MixerPlayFX
+	EXREF	MixerGetChannelBufferSize
 
-	IF MIXER_CIA_TIMER=1
-		EXREF	MixerCalcTicks
-
-		EXREF	mixer_ticks_last
-		EXREF	mixer_ticks_best
-		EXREF	mixer_ticks_worst
-		EXREF	mixer_ticks_average
-	ENDIF
+	EXREF	PerfTest_routines
+	EXREF	PerfTest_plg_routines
+	EXREF	PerfTest_32x_modes
+	EXREF	PerfTest_word_modes
+	EXREF	PerfTest_data
+	EXREF	PerfTest_plg_data
 	
-	IF MIXER_COUNTER=1
-		EXREF	MixerResetCounter
-		EXREF	MixerGetCounter
-	ENDIF
+	; Offsets
+	EXREF	mxsetup
+	EXREF	mxinsthandler
+	EXREF	mxstart
+	EXREF	mxplaychsam
+	EXREF	mxstopfx
+	EXREF	mxstop
+	EXREF	mxremhandler
+	EXREF	mxvolume
+	EXREF	mxsetplugindeferredptr
+	EXREF	mxcalcticks
+	EXREF	mxgetinternalbuffersize
+	EXREF	mxresetcounter
+	EXREF	mxgetcounter
 	
-	EXREF	mixer
+	EXREF	mxmixer
+	EXREF	mxmixer_fx_struct
+	EXREF	mxmixer_stored_vbr
+	EXREF	mxmixer_stored_handler
+	EXREF	mxmixer_stored_intena
+	EXREF	mxmixer_stored_cia
+	EXREF	mxmixer_ticks_last
+	EXREF	mxmixer_ticks_best
+	EXREF	mxmixer_ticks_worst
+	EXREF	mxmixer_ticks_average
+	EXREF	mxmixer_ticks_storage_off
+	EXREF	mxmixer_ticks_storage
+	
+	EXREF	mxplgsetup
+	EXREF	mxplginsthandler
+	EXREF	mxplgstart
+	EXREF	mxplgplaychfx
+	EXREF	mxplgstopfx
+	EXREF	mxplgstop
+	EXREF	mxplgremhandler
+	EXREF	mxplgvolume
+	EXREF	mxplgsetplugindeferredptr
+	EXREF	mxplgcalcticks
+	EXREF	mxplggetinternalbuffersize
+	EXREF	mxplgresetcounter
+	EXREF	mxplggetcounter
+	
+	EXREF	mxplgmixer
+	EXREF	mxplgmixer_fx_struct
+	EXREF	mxplgmixer_stored_vbr
+	EXREF	mxplgmixer_stored_handler
+	EXREF	mxplgmixer_stored_intena
+	EXREF	mxplgmixer_stored_cia
+	EXREF	mxplgmixer_ticks_last
+	EXREF	mxplgmixer_ticks_best
+	EXREF	mxplgmixer_ticks_worst
+	EXREF	mxplgmixer_ticks_average
+	EXREF	mxplgmixer_ticks_storage_off
+	EXREF	mxplgmixer_ticks_storage
 
 ; Constants
 MIX_PAL					EQU	0				; Amiga system type
@@ -529,66 +486,54 @@ MIX_PLUGIN_STD			EQU	0				; Standard plugin
 MIX_PLUGIN_NODATA		EQU	1				; Plugin that doesn't update
 											; sample data
 
-mixer_output_aud0	EQU	mixer_output_channels&1
-mixer_output_aud1	EQU	(mixer_output_channels>>1)&1
-mixer_output_aud2	EQU	(mixer_output_channels>>2)&1
-mixer_output_aud3	EQU	(mixer_output_channels>>3)&1
-mixer_output_count	EQU	mixer_output_aud0+mixer_output_aud1+mixer_output_aud2+mixer_output_aud3
+mixer_output_channels	EQU	DMAF_AUD0
+mixer_output_aud0		EQU	mixer_output_channels&1
+mixer_output_aud1		EQU	(mixer_output_channels>>1)&1
+mixer_output_aud2		EQU	(mixer_output_channels>>2)&1
+mixer_output_aud3		EQU	(mixer_output_channels>>3)&1
+mixer_output_count		EQU	mixer_output_aud0+mixer_output_aud1+mixer_output_aud2+mixer_output_aud3
 
 mixer_total_channels	EQU mixer_sw_channels*mixer_output_count
 
-mixer_PAL_cycles 		EQU	3546895
-mixer_NTSC_cycles		EQU	3579545
+mixer_PAL_cycles 	EQU	3546895
+mixer_NTSC_cycles	EQU	3579545
 
-	IF MIXER_PER_IS_NTSC=0
 mixer_PAL_period		EQU	mixer_period
 mixer_NTSC_period		EQU (mixer_period*mixer_NTSC_cycles)/mixer_PAL_cycles
-	ELSE
-mixer_NTSC_period		EQU	mixer_period
-mixer_PAL_period		EQU (mixer_period*mixer_PAL_cycles)/mixer_NTSC_cycles
-	ENDIF
 
-; Note: do not use mixer_PAL_buffer_size or mixer_NTSC_buffer_size below to
-;       get the buffer size, always refer to mixer_buffer_size instead as the
-;       mixer internally requires multiple buffers to work correctly and
-;       mixer_buffer_size takes this into account.
-	IF MIXER_68020=0
-		IF MIXER_SIZEX32=1
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
-		ELSE
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
-		ENDIF
-	ELSE
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
-	ENDIF
+mixer_PAL_buffer_size4	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
+mixer_NTSC_buffer_size4	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
+mixer_PAL_buffer_size32		EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
+mixer_NTSC_buffer_size32	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
 
-; Note: use mixer_buffer_size to get the correct size for the mixer Chip RAM
-;       block to allocate.
-mixer_buffer_size		EQU	mixer_PAL_buffer_size*(1+(mixer_output_count*2))
-mixer_32b_cnt			EQU mixer_PAL_buffer_size/32
+mixer_buffer_size4		EQU	mixer_PAL_buffer_size4*(1+(mixer_output_count*2))
+mixer_buffer_size32		EQU	mixer_PAL_buffer_size32*(1+(mixer_output_count*2))
+mixer_32b_cnt4			EQU mixer_PAL_buffer_size4/32
+mixer_32b_cnt32			EQU mixer_PAL_buffer_size32/32
+
+	IF mixer_buffer_size4>mixer_buffer_size32
+mixer_buffer_size		EQU mixer_buffer_size4
+	ELSE
+mixer_buffer_size		EQU mixer_buffer_size32
+	ENDIF
 
 .mixer_sam_mult			SET 4
 .mixer_sam_mult_ntsc	SET 4
-	IF MIXER_SIZEX32=1
-.mixer_sam_mult			SET 32
-.mixer_sam_mult_ntsc	SET 32
-	ENDIF
-	IF MIXER_SIZEXBUF=1
-.mixer_sam_mult			SET mixer_PAL_buffer_size
-.mixer_sam_mult_ntsc	SET mixer_NTSC_buffer_size
-	ENDIF
-mixer_PAL_multiple		EQU .mixer_sam_mult
-mixer_NTSC_multiple		EQU .mixer_sam_mult_ntsc
 
-; Note: use mixer_plugin_buffer_size to get the correct size for the mixer
-;       plugin memory to allocate. This memory can be in any memory region,
-;		Chip, Slow or Fast RAM.
-	IF MIXER_ENABLE_PLUGINS=1 
-mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_output_count
-	ENDIF
+.mixer_sam_mult32		SET 32
+.mixer_sam_mult_ntsc32	SET 32
+
+.mixer_sam_multbuf		SET mixer_PAL_buffer_size
+.mixer_sam_mult_ntscbuf	SET mixer_NTSC_buffer_size
+
+mixer_PAL_multiple4		EQU .mixer_sam_mult
+mixer_NTSC_multiple4	EQU .mixer_sam_mult_ntsc
+mixer_PAL_multiple32	EQU .mixer_sam_mult32
+mixer_NTSC_multiple32	EQU .mixer_sam_mult_ntsc32
+mixer_PAL_multiplebuf	EQU .mixer_sam_multbuf
+mixer_NTSC_multiplebuf	EQU .mixer_sam_mult_ntscbuf
+
+mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size4*mixer_sw_channels)*mixer_output_count
 	
 ; Public structures
  STRUCTURE MXEffect,0	
@@ -610,54 +555,25 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	APTR	mpl_plugin_ptr
 	APTR	mpl_init_data_ptr
 	LABEL	mpl_SIZEOF
-	
- STRUCTURE MXIRQDMACallbacks,0
-	APTR	mxicb_set_irq_vector
-	APTR	mxicb_remove_irq_vector
-	APTR	mxicb_set_irq_bits
-	APTR	mxicb_disable_irq
-	APTR	mxicb_acknowledge_irq
-	APTR	mxicb_set_dmacon
-	LABEL	mxicb_SIZEOF
 
 ; Internal (private) structures
  STRUCTURE MXChannel,0
-	IF MIXER_68020=0
-		IF MIXER_WORDSIZED=1
-			UWORD	mch_remaining_length
-			UWORD	mch_length
-			UWORD	mch_loop_length
-		ELSE
-			LONG	mch_remaining_length
-			LONG	mch_length
-			LONG	mch_loop_length
-		ENDIF
-	ELSE
-		LONG	mch_remaining_length
-		LONG	mch_length
-		LONG	mch_loop_length
-	ENDIF
+	LONG	mch_remaining_length
+	LONG	mch_length
+	LONG	mch_loop_length
 	APTR	mch_sample_ptr
 	APTR	mch_loop_ptr
-	IF MIXER_ENABLE_CALLBACK=1
-		APTR	mch_orig_sam_ptr
-	ENDIF
-	IF MIXER_ENABLE_PLUGINS=1
-		APTR	mch_plugin_ptr
-		APTR	mch_plugin_deferred_ptr
-		APTR	mch_plugin_data_ptr
-		APTR	mch_plugin_output_buffer
-		UWORD	mch_plugin_type
-	ENDIF
+	APTR	mch_orig_sam_ptr
+	APTR	mch_plugin_ptr
+	APTR	mch_plugin_deferred_ptr
+	APTR	mch_plugin_data_ptr
+	APTR	mch_plugin_output_buffer
+	UWORD	mch_plugin_type
 	UWORD	mch_channel_id
 	UWORD	mch_status
 	UWORD	mch_priority
 	UWORD	mch_age
-	IF MIXER_68020=1
-		IF MIXER_ENABLE_PLUGINS=1
-			UWORD	mch_align
-		ENDIF
-	ENDIF
+	UWORD	mch_align
 	LABEL	mch_SIZEOF
 	
  STRUCTURE MXMixerEntry,0
@@ -665,25 +581,14 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	STRUCT	mxe_pointers,4*4
 	STRUCT	mxe_buffers,4*2
 	STRUCT	mxe_channels,mch_SIZEOF*4
-	IF MIXER_MULTI_PAIRED=1
-		UWORD	mxe_active
-		IF MIXER_68020=1
-			UWORD	mxe_align
-		ENDIF
-	ENDIF
+	UWORD	mxe_active
+	UWORD	mxe_align
 	LABEL	mxe_SIZEOF
 
  STRUCTURE MXMixer,0
-	IF MIXER_SINGLE=1
-		STRUCT	mx_mixer_entries,mxe_SIZEOF
-	ELSE
-		STRUCT	mx_mixer_entries,mxe_SIZEOF*4
-	ENDIF
+	STRUCT	mx_mixer_entries,mxe_SIZEOF*4
 	APTR	mx_empty_buffer
-	IF MIXER_ENABLE_CALLBACK=1
-		APTR	mx_callback_ptr
-	ENDIF
-	APTR	mx_counter_ptr
+	APTR	mx_callback_ptr
 	UWORD	mx_buffer_size
 	UWORD	mx_buffer_size_w
 	UWORD	mx_irq_bits
@@ -692,9 +597,7 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_volume
 	UWORD	mx_status
 	UWORD	mx_vidsys
-	IF MIXER_COUNTER=1
-		UWORD	mx_counter
-	ENDIF
+	UWORD	mx_counter
 	LABEL	mx_SIZEOF
 	
 	ENDC	; MIXER_I
