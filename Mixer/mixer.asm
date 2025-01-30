@@ -71,118 +71,12 @@ MIXER_CHUPD_COLOUR	EQU	$909
 MIXER_PLUGIN_COLOUR	EQU	$990
 MIXER_OTHER_COLOUR	EQU	$099
 
-; Audio channel for use when MIXER_SINGLE is set
-	IF MIXER_SINGLE=1
-		IF mixer_output_aud0=1
-mxsinglechan		SET	aud0
-mxsingledma			SET DMAF_AUD0
-		ENDIF
-		IF mixer_output_aud1=1
-mxsinglechan		SET	aud1
-mxsingledma			SET DMAF_AUD1
-		ENDIF
-		IF mixer_output_aud2=1
-mxsinglechan		SET	aud2
-mxsingledma			SET DMAF_AUD2
-		ENDIF
-		IF mixer_output_aud3=1
-mxsinglechan		SET	aud3
-mxsingledma			SET DMAF_AUD3
-		ENDIF
-	ENDIF
-	
-; Sample/buffer constants
-mxslength_word		SET	0
-	IF MIXER_68020=0
-		IF MIXER_WORDSIZED=1
-mxslength_word		SET	1
-		ENDIF
-	ENDIF
+;*****************************************************************************
+;*****************************************************************************
+; Mixer macro definitions
+;*****************************************************************************
+;*****************************************************************************
 
-mxsize_x32			SET 0
-	IF MIXER_68020=0
-		IF MIXER_SIZEX32=1
-mxsize_x32			SET 1
-		ENDIF
-	ENDIF
-
-; Start of code
-	IF MIXER_SECTION=1
-			section code,code
-	ENDIF
-	
-;-----------------------------------------------------------------------------
-; Check various mixer_config.i settings
-;-----------------------------------------------------------------------------
-mixer_error	SET	0
-
-; Check if mixer count>=1
-	IF mixer_output_count=0
-mixer_error SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: no mixer output channel has been selected"
-		ENDIF
-	ENDIF
-	
-; Check if software channels between 1 and 4
-	IF mixer_sw_channels<1
-mixer_error SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: number of mixed channels out of range (1-4)"
-		ENDIF
-	ENDIF
-	
-	IF mixer_sw_channels>4
-mixer_error SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: number of mixed channels out of range (1-4)"
-		ENDIF
-	ENDIF
-
-; Check if mixer_config.i only has one mixer type selected
-.mxtype_check	EQU	MIXER_SINGLE+MIXER_MULTI+MIXER_MULTI_PAIRED
-	IF .mxtype_check=0
-mixer_error SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: no mixer type selected in mixer_config.i"
-		ENDIF
-	ENDIF
-	IF .mxtype_check>1
-mixer_error SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: more than one mixer type selected in mixer_config.i"
-		ENDIF
-	ENDIF
-	
-; Check if the single mixer only has one enabled channel
-	IF mixer_output_count>1
-		IF MIXER_SINGLE=1
-mixer_error SET 1		
-			IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: MIXER_SINGLE only supports one output channel"
-			ENDIF
-		ENDIF
-	ENDIF
-
-; Check if the paired mode has both AUD2 and AUD3 selected
-.mxchancheck EQU mixer_output_aud2+mixer_output_aud3
-	IF .mxchancheck<2
-		IF MIXER_MULTI_PAIRED=1
-mixer_error SET 1
-			IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: MIXER_MULTI_PAIRED requires DMAF_AUD2&3 selected"
-			ENDIF
-		ENDIF
-	ENDIF
-
-	IF mixer_error=0		
 ;-----------------------------------------------------------------------------
 ; CIA timer start & CIA timer stop macros (available if MIXER_CIA_TIMER=1)
 ;-----------------------------------------------------------------------------
@@ -268,775 +162,6 @@ CIAStop		MACRO
 		ENDIF
 
 ;-----------------------------------------------------------------------------
-; Setup routines
-;-----------------------------------------------------------------------------
-
-		; Routine: MixerSetup
-		; This routine sets up the data structures and buffers used by the 
-		; mixer.
-		;
-		; Note: no error checking is done, if the values in mixer_config.i are
-		;       invalid or the values passed in D0 & A0 are incorrect, the
-		;       outcome of this routine is undefined.
-		;
-		; Note: the mixer defaults to the maximum hardware volume of 64, in 
-		;       part to compensate for the lower maximum volume mixed samples
-		;       have (due to the lower maximum amplitude value of the 
-		;       individual samples).
-		;
-		; D0 - Set to MIX_PAL when running on a PAL system,
-		;      set MIX_NTSC when running on a NTSC system
-		; D1 - Set to maximum plugin data structure length. For the built-in
-		;      plugins, this value can be obtained by either using the 
-		;      constant mxplg_max_data_size from plugins.i, or by calling the
-		;      plugin support routine MixerPluginGetMaxDataSize.
-		;
-		;      If custom plugins are in use, pass either the value above, or
-		;      the maximum plugin data length for the custom plugins if this
-		;      is larger.
-		; A0 - Pointer to a block of Chip Memory to use for mixer buffers.
-		;      This block needs to be mixer_buffer_size bytes in size.
-		; A1 - Pointer to a block of memory (of any type) to use for mixer
-		;      plugin buffers. This block needs to be mixer_plugin_buffer_size
-		;      bytes in size. Only needed if MIXER_ENABLE_PLUGINS is set to 1.
-		; A2 - Pointer to a block of memory (of any type) to use for mixer
-		;      plugin data structures. This block needs to have a size in
-		;      bytes of the value passed in D1, multiplied by
-		;      mixer_total_channels.
-		;
-		;      Note: on 68020+, the blocks of memory in A0, A1 & A2 should be
-		;            longword aligned for optimal performance. On 68000, the
-		;		     blocks must be at least aligned on a word boundary.
-MixerSetup
-		movem.l	d0/d2-d7/a0-a4,-(sp)		; Stack
-
-		; Fetch mixer structure
-		lea.l	mixer(pc),a3
-		
-		; Store PAL/NTSC flag
-		move.w	d0,mx_vidsys(a3)
-
-		; Set buffer offset value based on PAL/NTSC flag
-		cmp.w	#MIX_NTSC,d0
-		beq.s	.mixer_ntsc
-		
-.mixer_pal
-		move.l	#mixer_PAL_buffer_size,d0
-		move.w	#mixer_PAL_period,d3
-		bra.s	.fill_mixer_struct
-		
-.mixer_ntsc
-		move.l	#mixer_NTSC_buffer_size,d0
-		move.w	#mixer_NTSC_period,d3
-		
-		; Fill mixer structure
-.fill_mixer_struct
-		moveq	#0,d4
-		move.w	#MIXER_STOPPED,mx_status(a3)
-		move.w	#64,mx_volume(a3)
-		move.w	d3,mx_hw_period(a3)
-		move.w	#mixer_output_channels,d6
-		move.w	d6,mx_hw_channels(a3)
-		IF MIXER_ENABLE_CALLBACK=1
-			move.l	d4,mx_callback_ptr(a3)
-		ENDIF
-		IF MIXER_ENABLE_RETURN_VECTOR=1
-			lea.l	mixer_stored_vector(pc),a4
-			move.l	d4,(a4)
-		ENDIF
-		IF MIXER_EXTERNAL_IRQ_DMA=1
-			lea	mixer_irqdma_vectors(pc),a4
-			move.l	d4,mxicb_set_irq_vector(a4)
-			move.l	d4,mxicb_remove_irq_vector(a4)
-			move.l	d4,mxicb_set_irq_bits(a4)
-			move.l	d4,mxicb_disable_irq(a4)
-			move.l	d4,mxicb_acknowledge_irq(a4)
-			move.l	d4,mxicb_set_dmacon(a4)
-		ENDIF
-		move.w	d0,mx_buffer_size(a3)
-		move.w	d0,d7
-		asr.w	#1,d7
-		move.w	d7,mx_buffer_size_w(a3)
-		move.l	a0,mx_empty_buffer(a3)
-		bsr		MixerClearBuffer		; Clear the empty buffer
-		IF MIXER_MULTI_PAIRED=1
-			and.w	#$7,d6
-		ENDIF
-		asl.w	#7,d6
-		move.w	d6,mx_irq_bits(a3)
-		
-		; Fill mixer entry structure(s)
-		IF MIXER_SINGLE=1
-			moveq	#1-1,d7
-			moveq	#1,d6
-			moveq	#mxsingledma,d2
-		ELSE
-			moveq	#4-1,d7
-			moveq	#mixer_output_channels,d6
-			moveq	#DMAF_AUD0,d2
-		ENDIF
-		IF MIXER_MULTI_PAIRED=1
-			and.w	#$7,d6
-		ENDIF
-		lea.l	mx_mixer_entries(a3),a3
-		
-		; Loop over entries
-.mixer_entry_lp
-		; Check if current HW channel is active
-		btst	#0,d6
-		beq		.mixer_entry_lp_end
-		
-		IF MIXER_MULTI_PAIRED=1
-			; Clear active bit
-			move.w	#0,mxe_active(a3)
-		ENDIF
-
-		; Set up for channel loop
-		moveq	#mixer_sw_channels-1,d5
-		move.w	#MIX_CH0,d3
-		lea.l	mxe_channels(a3),a4
-		
-		; Loop over mixer entry channels
-.mixer_channel_lp
-		IF mxslength_word=1
-			move.w	d4,mch_remaining_length
-			move.w	d4,mch_length(a4)
-			move.w	d4,mch_loop_length(a4)
-		ELSE
-			move.l	d4,mch_remaining_length(a4)
-			move.l	d4,mch_length(a4)
-			move.l	d4,mch_loop_length(a4)
-		ENDIF
-		move.l	d4,mch_sample_ptr(a4)
-		move.l	d4,mch_loop_ptr(a4)
-		IF MIXER_ENABLE_CALLBACK=1
-			move.l	d4,mch_orig_sam_ptr(a4)
-		ENDIF
-		IF MIXER_ENABLE_PLUGINS=1
-			move.l	d4,mch_plugin_ptr(a4)
-			move.l	d4,mch_plugin_deferred_ptr(a4)
-			move.l	a2,mch_plugin_data_ptr(a4)
-			move.l	a1,mch_plugin_output_buffer(a4)
-			move.w	d4,mch_plugin_type(a4)
-			movem.l	d0/a0,-(sp)
-			move.l	a1,a0
-			bsr		MixerClearBuffer
-			move.w	d1,d0
-			move.l	a2,a0
-			bsr		MixerClearPluginData
-			movem.l	(sp)+,d0/a0
-			lea.l	0(a1,d0.w),a1
-			lea.l	0(a2,d1.w),a2
-		ENDIF
-		or.w	d2,d3
-		move.w	d3,mch_channel_id(a4)
-		move.w	d4,mch_status(a4)
-		move.w	d4,mch_priority(a4)
-		move.w	d4,mch_age(a4)
-		and.w	#$f0,d3
-		lsl.w	#1,d3
-		lea.l	mch_SIZEOF(a4),a4
-		dbra	d5,.mixer_channel_lp
-
-		; Fill mixer entry current channel & sample pointers
-		moveq	#4-1,d5
-		lea.l	mxe_active_channels(a3),a4
-		
-.mixer_pointers_lp
-		move.l	d4,16(a4)
-		move.l	d4,(a4)+
-		dbra	d5,.mixer_pointers_lp
-		
-		; Fill mixer entry buffer pointers & clear buffers
-		lea.l	mxe_buffers(a3),a4
-		lea.l	0(a0,d0.w),a0
-		move.l	a0,(a4)+
-		bsr		MixerClearBuffer
-		lea.l	0(a0,d0.w),a0
-		move.l	a0,(a4)+
-		bsr		MixerClearBuffer
-
-.mixer_entry_lp_end
-		asr.w	#1,d6
-		asl.w	#1,d2
-		lea.l	mxe_SIZEOF(a3),a3
-		dbra	d7,.mixer_entry_lp
-
-		movem.l	(sp)+,d0/d2-d7/a0-a4		; Stack
-		rts
-
-		; Routine: MixerInstallHandler
-		; This routine sets up the required audio interrupt for the mixer.
-		;
-		; Note: MixerSetup must have been called prior to calling this 
-		;       routine.
-		; Note: if MIXER_CIA_TIMER is set to 1, this routine also saves the
-		;       CIA state to be able to restore it later.
-		;
-		; D0 - 0: save old interrupt vector
-		;      1: do not save old interrupt vector
-		; A0 - Pointer to VBR
-		;
-		;      Note: on systems without VBR (i.e. 68000 based systems), A0 has
-		;      to be set to 0.
-MixerInstallHandler
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	d1/a1/a6,-(sp)				; Stack
-		ELSE
-			movem.l	d1/a1/a2/a6,-(sp)			; Stack
-			lea.l	mixer_irqdma_vectors(pc),a2
-		ENDIF
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			IF MIXER_CIA_TIMER=1
-				move.w	d0,-(sp)				; Stack
-				
-				; Save CIA values
-				lea.l	mxciabase+1,a6			; CIA A
-				lea.l	mixer_stored_cia(pc),a1
-
-				move.b	ciacra(a6),d0
-				move.b	ciaicr(a6),d1
-				move.b	d0,(a1)					; Store CIA control value
-				move.b	d1,1(a1)				; Store CIA IC value
-				
-				move.w	(sp)+,d0				; Stack
-			ENDIF
-		ENDIF
-		
-		; Fetch custombase
-		lea.l	mxcustombase,a6
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Store the VBR value
-			lea.l	mixer_stored_vbr(pc),a1
-			move.l	a0,(a1)+
-			
-			; Save interrupt vector if needed
-			tst.w	d0
-			bne		.no_save
-			move.l	$70(a0),(a1)+
-
-			; Save any audio interrupt bits set
-			move.w	intenar(a6),d1
-			and.w	#%11110000000,d1			; Audio = bits 7-10
-			or.w	#$8000,d1
-			move.w	d1,(a1)+
-		
-.no_save
-			; Disable all audio interrupts
-			move.w	#%11110000000,d1			; Audio = bits 7-10
-			move.w	d1,intena(a6)				; Disable audio interrupts
-			move.w	d1,intreq(a6)				; Clear any pending interrupts
-			move.w	d1,intreq(a6)				; Twice for A4000
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1/a2,-(sp)
-			ELSE
-				move.l	a2,-(sp)
-			ENDIF
-			; Path for mask based resetting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.w	#%11110000000,d0
-				move.l	mxicb_disable_irq(a2),a2
-
-				jsr		(a2)
-			ELSE
-			; Path for bitwise resetting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Set all IRQ bits using REPT
-				move.l	mxicb_disable_irq(a2),a2
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.w	#.mixer_curr_bit,d0
-					jsr		(a2)
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1/a2
-			ELSE
-				move.l	(sp)+,a2
-			ENDIF
-		ENDIF
-		
-		; Set audio interrupt handler
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
-			move.l	a1,$70(a0)					; $70 is vector 4 / audio
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1/a2,-(sp)
-			ELSE
-				movem.l	a0/a2,-(sp)
-			ENDIF
-			lea.l	MixerIRQHandler(pc),a0		; Interrupt handler
-			move.l	mxicb_set_irq_vector(a2),a2
-
-			jsr		(a2)
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1/a2
-			ELSE
-				movem.l	(sp)+,a0/a2
-			ENDIF
-		ENDIF
-
-		; Calculate audio interrupt bit for correct channel and store result
-		lea.l	mixer(pc),a1				; Fetch mixer structure
-		move.w	#mixer_output_channels,d1	; Load audio channel bit(s)
-		lsl.w	#7,d1						; Shift by 7 to get interrupt bit
-		move.w	d1,mx_irq_bits(a1)			; Store result
-		or.w	#$c000,d1					; Prep INTENA setup
-		IF MIXER_EXTERNAL_IRQ_DMA=0			
-			; Set up audio interrupt
-			move.w	d1,intena(a6)				; Set INTENA value
-			tst.w	dmaconr(a6)					; Delay for A4000
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1/a2,-(sp)
-			ELSE
-				move.l	a2,-(sp)
-			ENDIF
-			; Path for mask based setting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.w	d1,d0
-				move.l	mxicb_set_irq_bits(a2),a2
-
-				jsr		(a2)
-			ELSE
-			; Path for bitwise setting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Set all IRQ bits using REPT
-				move.l	mxicb_set_irq_bits(a2),a2
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.w	#$c000|.mixer_curr_bit,d0
-					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1/a2
-			ELSE
-				move.l	(sp)+,a2
-			ENDIF
-		ENDIF
-		
-		; Update mixer status
-		move.w	#MIXER_RUNNING,mx_status(a1)
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	(sp)+,d1/a1/a6				; Stack
-		ELSE
-			movem.l	(sp)+,d1/a1/a2/a6			; Stack
-		ENDIF
-		
-		rts
-
-		; Routine: MixerRemoveHandler
-		; This routine disables & removes the audio interrupt.
-		; It also restores the old handler if previously stored.
-		;
-		; Note: MixerSetup & MixerInstallHandler must have been called prior to calling
-		;       this routine.
-		; Note: if MIXER_CIA_TIMER is set to 1, this routine also restores the
-		;       saved CIA state.
-		; Note: if MIXER_CIA_TIMER & MIXER_CIA_KBOARD_RES are set to 1, this
-		;       routine also restores the keyboard for AmigaOS use. Note that
-		;       in this case, the MixerRemoveHandler routine should be called
-		;       shortly before returning to the OS to prevent CIA timer 
-		;       underflows.
-MixerRemoveHandler
-		movem.l	d0/a0/a1/a6,-(sp)			; Stack
-		
-		; Fetch custom base
-		lea.l	mxcustombase,a6
-
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Disable all audio interrupts
-			move.w	#%11110000000,d0			; Audio = bits 7-10
-			move.w	d0,intena(a6)				; Disable audio interrupts
-			move.w	d0,intreq(a6)				; Clear any pending interrupts
-			move.w	d0,intreq(a6)				; Twice for A4000
-
-			; Restore interrupt vector (if set)
-			lea.l	mixer_stored_vbr(pc),a1
-			move.l	(a1)+,a0					; Get VBR
-			move.l	(a1)+,d0					; Get handler
-			beq		.no_restore
-
-			; Restore interrupt vector
-			move.l	d0,$70(a0)					; Vector 4
-			
-			; Restore INTENA value
-			move.w	(a1)+,intena(a6)			; Set old intena values
-			tst.w	dmaconr(a6)					; Delay for A4000
-.no_restore
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a2,-(sp)
-				move.l	a1,a0
-				lea.l	mixer_irqdma_vectors(pc),a1
-				move.l	a1,-(sp)
-			ELSE
-				movem.l	a0/a2,-(sp)
-				move.l	a1,a0
-				lea.l	mixer_irqdma_vectors(pc),a1
-			ENDIF
-			; Path for mask based resetting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_disable_irq(a1),a2
-				move.w	#%11110000000,d0			; Audio = bits 7-10
-				jsr		(a2)
-				IF MIXER_C_DEFS=1
-					move.l	(sp),a1
-				ENDIF
-				
-				move.l	mxicb_remove_irq_vector(a1),a2
-				jsr		(a2)
-				
-				IF MIXER_C_DEFS=1
-					move.l	(sp),a1
-				ENDIF
-				move.w	mixer_stored_intena(pc),d0
-				move.l	mxicb_set_irq_bits(a1),a2
-				jsr		(a2)
-			ELSE
-			; Path for bitwise resetting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Reset all IRQ bits using REPT
-				move.l	mxicb_disable_irq(a1),a2
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.w	#.mixer_curr_bit,d0
-					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-
-				; Remove IRQ vector (once)
-				move.l	mxicb_remove_irq_vector(a1),a2
-				jsr		(a2)
-			ENDIF
-			IF MIXER_C_DEFS=1
-				move.l	(sp)+,a1
-				movem.l	(sp)+,d0/d1/a0/a2
-			ELSE
-				movem.l	(sp)+,a0/a2
-			ENDIF
-		ENDIF
-
-		; Update mixer status
-		lea.l	mixer(pc),a1
-		move.w	#MIXER_STOPPED,mx_status(a1)
-
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			IF MIXER_CIA_TIMER=1
-				; Restore CIA values
-				lea.l	mxciabase+1,a6			; CIA A
-				lea.l	mixer_stored_cia(pc),a1
-				move.b	(a1),ciacra(a6)			; Restore CIA A control value
-				move.b	1(a1),ciaicr(a6)		; Restore CIA A IC value
-
-				IF MIXER_CIA_KBOARD_RES=1
-					; Remaining code to restore keyboard
-					move.b	#$ff,ciatblo(a6)	; TB=$ffff
-					move.b	#$ff,ciatbhi(a6)
-					; Re-enable CIA-A interrupts for AmigaOS
-					move.b	#$8f,ciaicr(a6)
-				ENDIF
-			ENDIF
-		ENDIF
-		movem.l	(sp)+,d0/a0/a1/a6			; Stack
-		rts
-
-		; Routine: MixerStart
-		; This routine enables playback of mixed samples. Initial playback is
-		; silence.
-		;
-		; Note: MixerSetup & MixerInstallHandler must have been called prior
-		;       to calling this routine.
-		; Note: if MIXER_CIA_TIMER is set to 1, this routine also clears the
-		;       stored CIA timer results.
-MixerStart
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	d0/d1/d7/a0/a6,-(sp)		; Stack
-		ELSE
-			movem.l	d0/d1/d7/a0/a1/a6,-(sp)		; Stack
-		ENDIF
-
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			IF MIXER_CIA_TIMER=1
-				; Clear stored CIA timing results
-				lea.l	mixer_ticks_last(pc),a6
-				clr.w	(a6)+
-				clr.w	(a6)+
-				move.w	#$ffff,(a6)
-			ENDIF
-		ENDIF
-
-		; Fetch custombase
-		lea.l	mxcustombase,a6
-
-		; Enable audio interrupts for all valid channels
-		lea.l	mixer(pc),a0
-		move.w	mx_irq_bits(a0),d0			; Fetch IRQ bits
-		or.w	#$c000,d0					; Prep INTENA setup
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			move.w	d0,intena(a6)				; Set INTENA value
-			tst.w	dmaconr(a6)					; Delay for A4000
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
-			ENDIF
-			
-			lea.l	mixer_irqdma_vectors(pc),a1
-			
-			; Path for mask based setting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_set_irq_bits(a1),a1
-
-				jsr		(a1)
-			ELSE
-			; Path for bitwise setting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Set all IRQ bits using REPT
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					lea.l	mixer_irqdma_vectors(pc),a1
-					move.l	mxicb_set_irq_bits(a1),a1
-					move.w	#$c000|.mixer_curr_bit,d0
-					jsr		(a1)
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-			
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
-			ENDIF
-		
-		ENDIF
-		
-		IF MIXER_SINGLE=1
-			move.w	#mxsinglechan,d1
-		ELSE
-			; Play silence on all selected channels
-			move.w	#mixer_output_channels,d0
-			move.w	#aud,d1
-			moveq	#4-1,d7
-			
-			; Loop over all channels
-.lp			btst	#0,d0
-			beq		.next_channel
-		ENDIF
-		
-		; Play silence
-		bsr		MixerPlaySilence
-
-		IF MIXER_SINGLE=0
-		; Go to next channel
-.next_channel
-			asr.w	#1,d0
-			add.w	#ac_SIZEOF,d1
-			dbra	d7,.lp
-		ENDIF
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	(sp)+,d0/d1/d7/a0/a6		; Stack
-		ELSE
-			movem.l	(sp)+,d0/d1/d7/a0/a1/a6		; Stack
-		ENDIF
-		rts
-
-		; Routine: MixerStop
-		; This routine disables playback of mixed samples.
-		;
-		; Note: MixerSetup, MixerInstallHandler & MixerStart must have been called
-		;       before calling this routine.
-MixerStop
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	d6/d7/a0/a6,-(sp)				; Stack
-		ELSE
-			movem.l	d6/d7/a0/a1/a6,-(sp)			; Stack
-		ENDIF
-		
-		; Fetch custombase
-		lea.l	mxcustombase,a6
-		
-		; Fetch mixer, irq bits & HW channels
-		lea.l	mixer(pc),a0
-		move.w	mx_irq_bits(a0),d7
-		move.w	mx_hw_channels(a0),d6
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Disable audio interrupt(s)
-			move.w	d7,intena(a6)					; Disable audio interrupts
-			move.w	d7,intreq(a6)					; Clear any pending interrupts
-			move.w	d7,intreq(a6)					; Twice for A4000
-		ELSE
-			lea.l	mixer_irqdma_vectors(pc),a1
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
-			ELSE
-				move.l	a1,-(sp)
-			ENDIF
-			
-			; Path for mask based resetting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_disable_irq(a1),a2
-				move.w	#%11110000000,d0			; Audio = bits 7-10
-				jsr		(a2)
-			ELSE
-			; Path for bitwise resetting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Reset all IRQ bits using REPT
-				move.l	mxicb_disable_irq(a1),a2
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.w	#.mixer_curr_bit,d0
-					jsr		(a2)
-					IF MIXER_C_DEFS=1
-						move.l	(sp),a1
-					ENDIF
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
-			ELSE
-				move.l	(sp)+,a1
-			ENDIF
-		ENDIF
-		
-		IF MIXER_SINGLE=1
-			move.w	#mxsinglechan,d1
-		ELSE
-			; Play silence on all selected channels
-			move.w	#mixer_output_channels,d0
-			move.w	#aud,d1
-			moveq	#4-1,d7
-			
-			; Loop over all channels
-.lp			btst	#0,d0
-			beq		.next_channel
-		ENDIF
-		
-		; Play silence & set volume to zero.
-		bsr		MixerPlaySilence
-		move.w	#0,ac_vol(a6,d1.w)
-
-		IF MIXER_SINGLE=0
-		; Go to next channel
-.next_channel
-			asr.w	#1,d0
-			add.w	#ac_SIZEOF,d1
-			dbra	d7,.lp
-		ENDIF
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Disable audio DMA for the mixing channel(s)
-			move.w	d6,dmacon(a6)
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
-			ELSE
-				move.l	a1,-(sp)
-			ENDIF
-			; Mask based path for DMACON
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_set_dmacon(a1),a1
-				move.w	d6,d0
-				jsr		(a1)
-			ELSE
-			; Bitwise path for DMACON
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%1
-				move.l	mxicb_set_dmacon(a1),a1
-				REPT 4
-					move.w	#.mixer_curr_bit,d0
-					jsr		(a1)
-				
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
-			ELSE
-				move.l	(sp)+,a1
-			ENDIF
-		ENDIF
-		
-		; Fetch mixer entries
-		lea.l	mx_mixer_entries(a0),a0
-		
-		; Loop over all mixer entries
-		IF MIXER_SINGLE=1
-			moveq	#1-1,d7
-		ELSE
-			moveq	#4-1,d7
-		ENDIF
-.enlp	lea.l	mxe_channels(a0),a6
-		
-		; Deactivate all mixer channels per entry
-		moveq	#4-1,d6
-.chlp	move.w	#MIXER_CHAN_INACTIVE,mch_status(a6)
-		lea.l	mch_SIZEOF(a6),a6
-		dbra	d6,.chlp
-		
-		; Loop back
-		lea.l	mxe_SIZEOF(a0),a0
-		dbra	d7,.enlp
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			movem.l	(sp)+,d6/d7/a0/a6				; Stack
-		ELSE
-			movem.l	(sp)+,d6/d7/a0/a1/a6			; Stack
-		ENDIF
-		rts
-		
-		; Routine: MixerVolume
-		; This routine sets the hardware volume used by the mixer hardware
-		; channels during playback.
-		;
-		; Note: when running MixerSetup, volume is set to the hardware maximum
-		;       of 64 by default.
-		;
-		; D0 - desired volume (0-64)
-MixerVolume
-		move.l	a0,-(sp)					; Stack
-
-		; Fetch mixer & set volume
-		lea.l	mixer(pc),a0
-		move.w	d0,mx_volume(a0)
-
-		move.l	(sp)+,a0					; Stack
-		rts
-		
-;-----------------------------------------------------------------------------
 ; SFX playback macros
 ;-----------------------------------------------------------------------------
 
@@ -1119,863 +244,6 @@ MixChkChan	MACRO
 		; This channel is not free, continue with the next channel.
 		lea.l	mch_SIZEOF(a1),a1
 				ENDM
-
-
-;-----------------------------------------------------------------------------
-; SFX playback routines
-;-----------------------------------------------------------------------------
-
-		; Routine: MixerFetchEntry
-		; This routine forms the common code for fetching the correct mixer
-		; entry. Used in MixPlaySam/MixPlaySamCh.
-MixerFetchEntry
-		; Fetch mixer & first entry
-		lea.l	mixer+mx_mixer_entries(pc),a1
-		
-		; Multi mixer path
-		IF MIXER_SINGLE=0
-			; Jump to selected entry
-			move.w	d0,d4
-			and.w	#$f,d4
-			add.w	d4,d4
-			add.w	d4,d4
-			jmp		.enjmp_table(pc,d4.w)
-			
-			; Jump table
-			; The empty space included in the table is required for the 
-			; conversion between entry bit and entry number.
-.enjmp_table
-			nop
-			nop
-			jmp	.en0(pc)
-			jmp	.en1(pc)
-			dc.l	0
-			jmp	.en2(pc)
-			dc.l	0,0,0
-			
-.en3		lea.l	mxe_SIZEOF(a1),a1
-.en2		lea.l	mxe_SIZEOF(a1),a1
-.en1		lea.l	mxe_SIZEOF(a1),a1
-.en0	
-		ENDIF
-
-		; Select first channel
-		lea.l	mxe_channels(a1),a1
-		rts
-
-		; Routine: MixerChannelWrite
-		; This routine forms the common code for writing the effect structure
-		; into a mixer channel.
-MixerChannelWrite
-		; Writes to the channel must be atomic (i.e. can't be interrupted by
-		; the audio mixer to prevent failures in playback)
-
-		; Test if the mixer interrupts are running
-		move.w	mixer+mx_status(pc),d7
-		beq.s	.irq_disabled
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Disable audio interrupts
-			lea.l	mxcustombase,a6
-			move.w	mixer+mx_irq_bits(pc),d7		; Fetch audio bits
-			and.w	#$7fff,d7						; Mask out SET/CLR bit
-			move.w	d7,intena(a6)					; Disable audio interrupts
-			tst.w	dmaconr(a6)						; Wait for A4000
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
-			ELSE
-				move.l	a1,-(sp)
-			ENDIF
-			
-			lea.l	mixer_irqdma_vectors(pc),a1
-			
-			; Path for mask based resetting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_disable_irq(a1),a2
-				move.w	mixer+mx_irq_bits(pc),d0	; Fetch audio bits
-				and.w	#$7fff,d0
-				jsr		(a2)
-			ELSE
-			; Path for bitwise resetting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Reset all IRQ bits using REPT
-				move.l	mxicb_disable_irq(a1),a2
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.w	#.mixer_curr_bit,d0
-					jsr		(a2)
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-				IF MIXER_C_DEFS=1
-					move.l	(sp),a1
-				ENDIF
-			ENDIF
-
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
-			ELSE
-				move.l	(sp)+,a1
-			ENDIF
-		ENDIF
-.irq_disabled
-
-		; Start of atomic part
-.write_plugin	
-		IF MIXER_ENABLE_PLUGINS=1
-			; Set pointer to plugin
-			move.l	d7,-(sp)					; Stack
-			moveq	#0,d7
-			move.l	d7,mch_plugin_ptr(a1)
-			move.l	d7,mch_plugin_deferred_ptr(a1)
-			move.l	mfx_plugin_ptr(a0),d7
-			beq.s	.no_plugin
-
-			; Initialise plugin
-			movem.l	a1/a2/a6,-(sp)				; Stack
-			
-			move.l	d7,a6						; Plugin in A6
-			move.w	mpl_plugin_type(a6),mch_plugin_type(a1)
-			move.l	mpl_plugin_ptr(a6),mch_plugin_ptr(a1)
-			move.l	mch_plugin_data_ptr(a1),a2	; Data in A2
-			move.l	mpl_init_data_ptr(a6),a1	; Init data in A1
-
-			move.l	mpl_init_ptr(a6),a6
-			IF MIXER_C_DEFS=1
-				movem.l	d0/a0,-(sp)
-				jsr		(a6)					; Call init
-				movem.l	(sp)+,d0/a0
-			ELSE
-				jsr		(a6)					; Call init
-			ENDIF
-			move.l	mfx_length(a0),d1			; Get correct length
-	
-			movem.l	(sp)+,a1/a2/a6				; Stack
-			
-.no_plugin
-			move.l	(sp)+,d7					; Stack
-		ENDIF
-
-		IF mxslength_word=1
-			move.w	d1,mch_length(a1)			; Set length
-			move.w	d1,mch_remaining_length(a1)	; Set remaining length
-		ELSE
-			move.l	d1,mch_length(a1)			; Set length
-			move.l	d1,mch_remaining_length(a1)	; Set remaining length
-		ENDIF
-		move.w	d2,mch_priority(a1)			; Set priority
-		move.w	#0,mch_age(a1)				; Set age
-
-		move.l	mfx_sample_ptr(a0),mch_sample_ptr(a1); Set sample pointer
-		IF MIXER_ENABLE_CALLBACK=1
-			move.l	mfx_sample_ptr(a0),mch_orig_sam_ptr(a1)
-		ENDIF
-
-		tst.w	mfx_loop(a0)
-		bmi.s	.write_loop_ptr				; Check for looping sample
-
-		; Not a loop, use empty buffer		
-		move.l	mixer+mx_empty_buffer(pc),mch_loop_ptr(a1)
-		IF mxslength_word=1
-			move.w	d1,mch_loop_length(a1)
-		ELSE
-			move.l	d1,mch_loop_length(a1)
-		ENDIF
-		bra.s	.write_status
-		
-.write_loop_ptr
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.write_loop_offset_ptr
-			
-		move.l	mfx_sample_ptr(a0),mch_loop_ptr(a1)	; Set sample pointer
-
-		IF mxslength_word=1
-			move.w	d1,mch_loop_length(a1)
-		ELSE
-			move.l	d1,mch_loop_length(a1)
-		ENDIF
-		bra.s	.write_status
-			
-.write_loop_offset_ptr
-		; Force loop offset to be in bounds of the sample here
-		move.l	d0,-(sp)
-		IF mxslength_word=1
-			moveq	#0,d7
-			move.w	mfx_loop_offset+2(a0),d7
-		ELSE
-			move.l	mfx_loop_offset(a0),d7
-			bpl.s	.loop_offset_larger_fx
-
-			; Loop offset must be zero or higher
-			moveq	#0,d7
-		ENDIF
-			
-.loop_offset_larger_fx
-		IF mxslength_word=1
-			moveq	#0,d0
-			move.w	d1,d0
-		ELSE
-			move.l	d1,d0
-		ENDIF
-		
-		IF mxsize_x32=1
-			and.w	#$ffe0,d7		; Limit to multiple of 32 bytes
-		ELSE
-			and.w	#$fffc,d7		; Limit to multiple of  4 bytes
-		ENDIF
-		
-		sub.l	d7,d0
-		bgt.s	.loop_offset_in_bounds_fx
-		
-		move.l	d0,d7
-		subq.l	#4,d7				; Loop offset now in range
-		moveq	#4,d0				; Length in range
-
-.loop_offset_in_bounds_fx
-		IF mxslength_word=1
-			move.w	d0,mch_loop_length(a1)
-		ELSE
-			move.l	d0,mch_loop_length(a1)
-		ENDIF
-		move.l	(sp)+,d0
-
-		add.l	mfx_sample_ptr(a0),d7
-		move.l	d7,mch_loop_ptr(a1)
-
-.write_status
-		move.w	mfx_loop(a0),mch_status(a1)	; Set status
-
-		; Test if the mixer interrupts are running
-		move.w	mixer+mx_status(pc),d7
-		beq.s	.irq_enabled
-		
-		IF MIXER_EXTERNAL_IRQ_DMA=0
-			; Re-enable audio interrupts
-			move.w	mixer+mx_irq_bits(pc),d7
-			or.w	#$8000,d7					; Set the SET/CLR bit
-			move.w	d7,intena(a6)				; Enable audio interrupts
-		ELSE
-			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
-			ELSE
-				move.l	a1,-(sp)
-			ENDIF
-			
-			lea.l	mixer_irqdma_vectors(pc),a1
-			
-			; Path for mask based setting of IRQ bits
-			IF MIXER_EXTERNAL_BITWISE=0
-				move.l	mxicb_set_irq_bits(a1),a2
-				move.w	mixer+mx_irq_bits(pc),d0
-				or.w	#$8000,d0				; Set the SET/CLR bit
-				jsr		(a2)
-			ELSE
-			; Path for bitwise resetting of IRQ bits
-.mixer_curr_chan	SET mixer_output_channels
-.mixer_curr_bit		SET	%10000000
-				; Reset all IRQ bits using REPT
-				REPT 4
-				IF .mixer_curr_chan&1=1
-					move.l	mxicb_set_irq_bits(a1),a2
-					move.w	#$8000|.mixer_curr_bit,d0
-					jsr		(a2)
-				ENDIF
-.mixer_curr_chan	SET .mixer_curr_chan>>1
-.mixer_curr_bit		SET	.mixer_curr_bit<<1
-				ENDR
-			ENDIF
-
-			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
-			ELSE
-				move.l	(sp)+,a1
-			ENDIF
-		ENDIF
-.irq_enabled
-
-		; End of atomic part
-		rts
-
-		; Routine: MixerPlaySample
-		; This routine plays the given sample on the given hardware channel, 
-		; selecting the best possible fitting mixer channel available. 
-		; Priority is taken into account.
-		;
-		; Fails if no applicable mixer channel is free.
-		;
-		; Note: this routine does not check if the HW channel selected is 
-		;       available to the mixer, if an unused HW channel is 
-		;       selected, no sample will be played back. This only applies if
-		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
-		; Note: once playing, looping samples can only be ended by calling
-		;       MixerStopFX. Until this happens, a looping sample will occupy
-		;       a mixer channel forever, regardless of the priority of any
-		;       incoming sample playback requests.
-		;
-		;       Keep in mind that the initial playback request for a looping
-		;       sample will follow priorities as normal to determine if it can
-		;       start playing.
-		;
-		; A0 - Pointer to sample data
-		; D0 - Hardware channel (f.ex. DMAF_AUD0)
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
-		;            channel.
-		;      Note: Only one HW channel can be selected at a time.
-		; D1 - Length of sample in bytes
-		; D2 - Priority (signed, higher number=higher priority)
-		; D3 - Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or MIX_FX_LOOP_OFFSET)
-		; D4 - Loop offset (used when MIX_FX_LOOP_OFFSET is set)
-		;
-		; Returns
-		; D0 - Either:
-		;      *) -1, if the sample can't be played (f.ex. due to priority)
-		;      *) Hardware/mixer channel combination the sample will be played
-		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
-MixerPlaySample
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_OTHER_COLOUR,$dff180
-		ENDIF
-		
-		move.l	a1,-(sp)					; Stack
-
-		move.l	a0,a1
-		lea.l	mixer_fx_struct(pc),a0		; Get FX struct
-		
-		; Fill FX struct
-		move.l	a1,mfx_sample_ptr(a0)
-		IF mxslength_word=1
-			move.l	d7,-(sp)
-			moveq	#0,d7
-			move.w	d1,d7
-			move.l	d7,mfx_length(a0)
-			move.w	d4,d7
-			move.l	d7,mfx_loop_offset(a0)
-			move.l	(sp)+,d7
-		ELSE
-			move.l	d1,mfx_length(a0)
-			move.l	d4,mfx_loop_offset(a0)			
-		ENDIF
-		move.w	d3,mfx_loop(a0)
-		move.w	d2,mfx_priority(a0)
-		clr.l	mfx_plugin_ptr(a0)
-		
-		; Call MixerPlayFX
-		bsr		MixerPlayFX
-		
-		move.l	a1,a0
-		move.l	(sp)+,a1					; Stack
-
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_DEFAULT_COLOUR,$dff180
-			tst.w	d0						; Restore condition code
-		ENDIF
-		rts
-
-		; Routine: MixerPlayChannelSample
-		; This routine plays the given sample on the given hardware/mixer
-		; channel combination. Priority and channel availability are taken
-		; into account.
-		;
-		; Fails if the selected hardware/mixer channel combination is not 
-		; free.
-		;
-		; Note: this routine does not check if the HW channel selected is 
-		;       available to the mixer, if an unused HW channel is 
-		;       selected, no sample will be played back. This only applies if
-		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
-		; Note: this routine does not check if the mixer is running with 
-		;       enough mixed channels for the required mixer channel to be 
-		;       in use. If the mixer channel is not in use, no sample will be
-		;       played back.
-		; Note: once playing, looping samples can only be ended by calling
-		;       MixerStopFX. Until this happens, a looping sample will occupy
-		;       a mixer channel forever, regardless of the priority of any
-		;       incoming sample playback requests.
-		;
-		;       Keep in mind that the initial playback request for a looping
-		;       sample will follow priorities as normal to determine if it can
-		;       start playing.
-		;
-		; A0 - Pointer to sample data
-		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
-		;      Supports setting exactly one mixer software channel.
-		;
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
-		;            channel.
-		;      Note: Only one HW channel can be selected at a time.
-		; D1 - Length of sample in bytes
-		; D2 - Priority (signed, higher number=higher priority)
-		; D3 - Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or MIX_FX_LOOP_OFFSET)
-		; D4 - Loop offset (used when MIX_FX_LOOP_OFFSET is set)
-		;
-		; Returns
-		; D0 - Either:
-		;      *) -1, if the sample can't be played (f.ex. due to priority)
-		;      *) Hardware/mixer channel combination the sample will be played
-		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
-MixerPlayChannelSample
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_OTHER_COLOUR,$dff180
-		ENDIF
-
-		move.l	a1,-(sp)			; Stack
-		move.l	a0,a1
-		lea.l	mixer_fx_struct(pc),a0		; Get FX struct
-		
-		; Fill FX struct
-		move.l	a1,mfx_sample_ptr(a0)
-		IF mxslength_word=1
-			move.l	d7,-(sp)
-			moveq	#0,d7
-			move.w	d1,d7
-			move.l	d7,mfx_length(a0)
-			move.w	d4,d7
-			move.l	d7,mfx_loop_offset(a0)
-			move.l	(sp)+,d7
-		ELSE
-			move.l	d1,mfx_length(a0)
-			move.l	d4,mfx_loop_offset(a0)			
-		ENDIF
-		move.w	d3,mfx_loop(a0)
-		move.w	d2,mfx_priority(a0)
-		clr.l	mfx_plugin_ptr(a0)
-		
-		; Call MixerPlayChannelFX
-		bsr		MixerPlayChannelFX
-		
-		move.l	a1,a0
-		move.l	(sp)+,a1			; Stack
-		
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_DEFAULT_COLOUR,$dff180
-			tst.w	d0						; Restore condition code
-		ENDIF
-		rts
-		
-		; Routine: MixerPlayFX
-		; This routine plays the given sample on the given hardware 
-		; channel, selecting the best possible fitting mixer channel
-		; available. Priority is taken into account.
-		;
-		; Fails quietly if no applicable mixer channel is free.
-		;
-		; Note: this routine does not check if the HW channel selected is 
-		;       available to the mixer, if an unused HW channel is 
-		;       selected, no sample will be played back. This only applies if
-		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
-		; Note: once playing, looping FX can only be ended by calling
-		;       MixerStopFX. Until this happens, a looping FX will occupy a
-		;       mixer channel forever, regardless of the priority of any
-		;       incoming FX playback requests.
-		;
-		;       Keep in mind that the initial playback request for a looping
-		;       FX will follow priorities as normal to determine if it can 
-		;       start playing.
-		;
-		; A0 - Pointer to MXEffect structure for the effect to play
-		; D0 - Hardware channel (f.ex. DMAF_AUD0)
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
-		;            channel.
-		;      Note: Only one HW channel can be selected at a time.
-		;
-		; Returns
-		; D0 - Either:
-		;      *) -1, if the FX can't be played (f.ex. due to priority)
-		;      *) Hardware/software channel combination the FX will be played
-		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
-MixerPlayFX
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_OTHER_COLOUR,$dff180
-		ENDIF
-		move.w	d2,-(sp)
-		movem.l	d1/d4-d7/a1/a2/a6,-(sp)		; Stack
-
-		; Fetch the correct mixer entry
-		bsr		MixerFetchEntry
-		
-		IF MIXER_SINGLE=1
-			; Set HW channel to correct channel for single mixing
-			move.w	#mxsingledma,d0
-		ENDIF
-		
-		; Pre-fetch elements from structure as needed
-		move.w	mfx_priority(a0),d2
-		IF mxslength_word=1
-			move.w	mfx_length+2(a0),d1
-		ELSE
-			move.l	mfx_length(a0),d1
-		ENDIF
-		
-		; Set up to search for best channel
-		move.w	#-32768,d4					; Best priority found
-		moveq	#0,d5						; Reset best age found
-		moveq	#0,d6						; Best channel found
-		move.l	d6,a2						; Reset best channel pointer
-		
-		; For each mixer channel, check availability
-		IF MIXER_68020=1
-			; Set up for loop
-			swap	d0						; Swap HW channel
-			
-			move.w	#4,d7					; Channel bit
-			swap	d7
-			move.w	#mixer_sw_channels-1,d7	; Loop counter
-			
-.chlp		swap	d7						; Channel bit
-			MixChkChan 0
-			addq.w	#1,d7					; Next channel
-			swap	d7						; Loop counter
-			dbra	d7,.chlp
-			
-			swap	d0						; Swap back HW channel
-		ELSE
-			MixChkChan 0					; Check MIX_CH0
-			IF mixer_sw_channels>=2
-				MixChkChan 1				; Check MIX_CH1
-			ENDIF
-			IF mixer_sw_channels>=3
-				MixChkChan 2				; Check MIX_CH2
-			ENDIF
-			IF mixer_sw_channels=4
-				MixChkChan 3				; Check MIX_CH3
-			ENDIF
-		ENDIF
-		
-		; Check if any channel was found based on priority
-		tst.w	d6
-		bne.s	.prio_found
-		
-		; No channels are free
-		moveq	#-1,d0
-		bra		.done
-		
-.prio_found
-		; Found a lower priority/older channel
-		move.l	a2,a1
-
-.found
-		; Found a free channel, add the sample
-		IF mxsize_x32=1
-			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
-		ELSE
-			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
-		ENDIF
-		
-		IF MIXER_ENABLE_PLUGINS=1
-			or.w	d6,d0					; Set HW/Mixer channel in D0
-		ENDIF
-		
-		bsr		MixerChannelWrite
-		tst.w	d0							; Set condition codes
-
-.done
-		movem.l	(sp)+,d1/d4-d7/a1/a2/a6		; Stack
-		move.w	(sp)+,d2
-
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_DEFAULT_COLOUR,$dff180
-			tst.w	d0						; Restore condition code
-		ENDIF
-		rts
-		
-		; Routine: MixerPlayChannelFX
-		; This routine plays the given FX on the given hardware/mixer channel
-		; combination. Priority and channel availability are taken into 
-		; account.
-		;
-		; Fails quietly if the selected hardware/mixer channel combination is not free.
-		;
-		; Note: this routine does not check if the HW channel selected is 
-		;       available to the mixer, if an unused HW channel is 
-		;       selected, no sample will be played back. This only applies if
-		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
-		; Note: this routine does not check if the mixer is running with 
-		;       enough mixed channels for the required mixer channel to be
-		;       in use. If the mixer channel is not in use, no FX will be
-		;       played back.
-		; Note: once playing, looping FX can only be ended by calling
-		;       MixerStopFX. Until this happens, a looping FX will occupy a
-		;       mixer channel forever, regardless of the priority of any
-		;       incoming FX playback requests.
-		;
-		;       Keep in mind that the initial playback request for a looping
-		;       FX will follow priorities as normal to determine if it can 
-		;       start playing.
-		;
-		; A0 - Pointer to MXEffect structure for the FX to play
-		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
-		;      Supports setting exactly one mixer channel.
-		;
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
-		;            channel.
-		;      Note: Only one HW channel can be selected at a time.
-		;
-		; Returns
-		; D0 - Either:
-		;      *) -1, if the FX can't be played (f.ex. due to priority)
-		;      *) Hardware/software channel combination the FX will be played
-		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
-MixerPlayChannelFX
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_OTHER_COLOUR,$dff180
-		ENDIF
-		move.w	d2,-(sp)
-		movem.l	d1/d6/d7/a1/a6,-(sp)			; Stack
-		
-		; Fetch the correct mixer entry
-		bsr		MixerFetchEntry
-		
-		IF MIXER_SINGLE=1
-			; Set HW channel to correct channel for single mixing
-			move.w	#mxsingledma,d2
-			and.w	#$f0,d0
-			or.w	d2,d0
-		ENDIF
-		
-		IF MIXER_ENABLE_PLUGINS=1
-			move.w	d0,d6						; Save HW/Mixer channel
-		ENDIF
-		
-		; Pre-fetch elements from structure as needed
-		move.w	mfx_priority(a0),d2
-		IF mxslength_word=1
-			move.w	mfx_length+2(a0),d1
-		ELSE
-			move.l	mfx_length(a0),d1
-		ENDIF
-
-		; Jump to selected channel
-		move.w	d0,d7
-		asr.w	#4,d7
-		add.w	d7,d7
-		add.w	d7,d7
-		jmp		.chjmp_table(pc,d7.w)
-
-		; Jump table
-		; The empty space included in the table is required for the 
-		; conversion between channel bit and channel number.
-.chjmp_table
-		nop
-		nop
-		jmp	.ch0(pc)
-		jmp	.ch1(pc)
-		dc.l	0
-		jmp	.ch2(pc)
-		dc.l	0,0,0
-			
-.ch3	lea.l	mch_SIZEOF(a1),a1
-.ch2	lea.l	mch_SIZEOF(a1),a1
-.ch1	lea.l	mch_SIZEOF(a1),a1
-.ch0		
-		; Check if the channel can be used
-		swap	d0
-		move.w	mch_status(a1),d7
-		smi		d0
-		or.b	d0,d7
-		swap	d0
-		addq.w	#1,d7
-		add.w	d7,d7
-		add.w	d7,d7
-		jmp		.stjmp_table(pc,d7.w)
-		
-		; Jump table for the different statuses (free, in use, looping)
-.stjmp_table
-		jmp		.not_free(pc)
-		jmp		.play_fx(pc)
-		jmp		.check_priority(pc)
-		
-.check_priority
-		; Check if the priority of the new FX is equal or higher than the
-		; currently playing FX.
-		cmp.w	mch_priority(a1),d2
-		bge.s	.play_fx
-		
-		; Channel is not free
-.not_free
-		moveq	#-1,d0
-		bra		.done
-		
-.play_fx
-		; Add sample to selected channel here
-		IF mxsize_x32=1
-			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
-		ELSE
-			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
-		ENDIF
-		
-		IF MIXER_ENABLE_PLUGINS=1
-			move.w	d6,d0					; Restore HW/Mixer channel
-		ENDIF
-		
-		bsr		MixerChannelWrite
-		tst.w	d0							; Set return value
-
-.done		
-		movem.l	(sp)+,d1/d6/d7/a1/a6		; Stack
-		move.w	(sp)+,d2
-		
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_DEFAULT_COLOUR,$dff180
-			tst.w	d0						; Restore condition code
-		ENDIF
-		rts
-
-		; Routine: MixerStopFX
-		; This routine stops playback on the given hardware/mixer channel(s).
-		;
-		; Note: this routine supports selecting multiple hardware and mixer
-		;       channels in a single call. In this case, the relevant mixer
-		;       channels stop playback on all selected hardware channels.
-		;
-		; D0 - Hardware channel/mixer channel mask (f.ex. DMAF_AUD0|MIX_CH1)
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-MixerStopFX
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_OTHER_COLOUR,$dff180
-		ENDIF
-		IF MIXER_SINGLE=1
-			IF MIXER_68020=1
-				movem.l	d0-d2/d7/a0,-(sp)	; Stack
-			ELSE
-				movem.l	d0/d1/a0,-(sp)		; Stack
-			ENDIF
-			and.w	#$fff0,d0
-			or.w	#mxsingledma,d0			; Set correct hardware channel
-		ELSE
-			IF MIXER_68020=1
-				movem.l	d0-d3/d6/d7/a0/a1,-(sp)	; Stack
-			ELSE
-				movem.l	d0-d2/d7/a0/a1,-(sp)	; Stack
-			ENDIF
-		ENDIF
-		
-		; Fetch mixer & setup for stopping FX
-		lea.l	mixer(pc),a0
-		moveq	#MIXER_CHAN_INACTIVE,d1
-
-		; Single mixer path
-		IF MIXER_SINGLE=1
-			; Fetch the first mixer entry/channel
-			lea.l	mx_mixer_entries+mxe_channels(a0),a0
-			
-			; Check each channel
-			IF MIXER_68020=1
-				; Set up for loop
-				moveq	#4,d2
-				moveq	#4-1,d7
-				
-.chlp			btst	d2,d0
-				beq.s	.nxt_ch
-
-				move.w	d1,mch_status(a0)
-		
-.nxt_ch			lea.l	mch_SIZEOF(a0),a0
-				addq.w	#1,d2
-				dbra	d7,.chlp
-			ELSE
-				btst	#4,d0				; Check channel 0
-				beq.s	.ch1
-
-				move.w	d1,mch_status(a0)
-			
-.ch1			btst	#5,d0				; Check channel 1
-				beq.s	.ch2
-			
-				move.w	d1,mch_status+mch_SIZEOF(a0)
-			
-.ch2			btst	#6,d0				; Check channel 2
-				beq.s	.ch3
-			
-				move.w	d1,mch_status+(mch_SIZEOF*2)(a0)
-			
-.ch3			btst	#7,d0				; Check channel 3
-				beq.s	.stopfx_done
-			
-				move.w	d1,mch_status+(mch_SIZEOF*3)(a0)
-.stopfx_done
-			ENDIF
-		ENDIF
-
-		; Multi mixer path
-		IF MIXER_SINGLE=0
-			; Fetch first mixer entry
-			lea.l	mx_mixer_entries(a0),a0
-			
-			; Set up for loop
-			moveq	#4-1,d7
-			moveq	#0,d2
-			
-			; Loop over mixer entries
-.lp			lea.l	mxe_channels(a0),a1
-			btst	d2,d0
-			beq.s	.next_entry
-			
-			; Check each channel for current entry
-			IF MIXER_68020=1
-				; Set up for loop
-				moveq	#4,d3
-				moveq	#4-1,d6
-				
-.chlp			btst	d3,d0
-				beq.s	.nxt_ch
-
-				move.w	d1,mch_status(a1)
-		
-.nxt_ch			lea.l	mch_SIZEOF(a1),a1
-				addq.w	#1,d3
-				dbra	d6,.chlp
-			ELSE
-				btst	#4,d0				; Check channel 0
-				beq.s	.ch1
-			
-				move.w	d1,mch_status(a1)
-			
-.ch1			btst	#5,d0				; Check channel 1
-				beq.s	.ch2
-			
-				move.w	d1,mch_status+mch_SIZEOF(a1)
-			
-.ch2			btst	#6,d0				; Check channel 2
-				beq.s	.ch3
-			
-				move.w	d1,mch_status+(mch_SIZEOF*2)(a1)
-			
-.ch3			btst	#7,d0				; Check channel 3
-				beq.s	.next_entry
-			
-				move.w	d1,mch_status+(mch_SIZEOF*3)(a1)
-			ENDIF
-			
-			; Loop back
-.next_entry	lea.l	mxe_SIZEOF(a0),a0
-			addq.w	#1,d2
-			dbra	d7,.lp
-		ENDIF
-		
-		IF MIXER_SINGLE=1
-			IF MIXER_68020=1
-				movem.l	(sp)+,d0-d2/d7/a0	; Stack
-			ELSE
-				movem.l	(sp)+,d0/d1/a0		; Stack
-			ENDIF
-		ELSE
-			IF MIXER_68020=1
-				movem.l	(sp)+,d0-d3/d6/d7/a0/a1	; Stack
-			ELSE
-				movem.l	(sp)+,d0-d2/d7/a0/a1	; Stack
-			ENDIF
-		ENDIF
-		IF MIXER_TIMING_BARS=1
-			move.w	#MIXER_DEFAULT_COLOUR,$dff180
-		ENDIF
-		rts
 
 ;-----------------------------------------------------------------------------
 ; Interrupt handler macros
@@ -2341,7 +609,7 @@ MixBlock32	MACRO
 		; buffer size & the size of a 32 byte mixing block.
 .mix_\1ch_jmp_table32
 		; Calculate maximum offset
-.mix_\1ch_jmpoff32	EQU .mix_\1ch_32b+((mixer_32b_cnt-1)*.mix_\1ch_32b_sz)
+.mix_\1ch_jmpoff32	SET .mix_\1ch_32b+((mixer_32b_cnt-1)*.mix_\1ch_32b_sz)
 		; Generate jump table
 		IF mxsize_x32=1
 			jmp	.mix_\1ch_calcrem4_st(pc)
@@ -2417,7 +685,7 @@ MixJump4	MACRO
 MixBlock4	MACRO
 .mix_\1ch_jmp_table4
 		; Calculate maximum offset
-.mix_\1ch_jmpoff4	EQU .mix_\1ch_4b+(6*.mix_\1ch_4b_sz)
+.mix_\1ch_jmpoff4	SET .mix_\1ch_4b+(6*.mix_\1ch_4b_sz)
 		; Generate jump table
 		jmp	.mix_\1ch_calcrem4(pc)
 		REPT 6
@@ -3580,6 +1848,1766 @@ MixDeferredActions	MACRO
 			ENDIF
 					ENDM
 
+;*****************************************************************************
+;*****************************************************************************
+; Mixer all code macro
+; This macro allows adding a postfix to mixer routines & variables. This is
+; used by the PerfomanceTest tool to be able to utilise many different 
+; configurations for the mixer.
+;
+; \1 - Postfix to use
+;
+; Note: by default, the mixer will not use a postfix. Enabling this is done by
+;       setting the USE_MIXER_POSTFIX build flag. This will disable the 
+;       automatic use of this macro at the end of mixer.asm
+; 
+;*****************************************************************************
+;*****************************************************************************
+MixAllCode	MACRO
+
+; Audio channel for use when MIXER_SINGLE is set
+	IF MIXER_SINGLE=1
+		IF mixer_output_aud0=1
+mxsinglechan		SET	aud0
+mxsingledma			SET DMAF_AUD0
+		ENDIF
+		IF mixer_output_aud1=1
+mxsinglechan		SET	aud1
+mxsingledma			SET DMAF_AUD1
+		ENDIF
+		IF mixer_output_aud2=1
+mxsinglechan		SET	aud2
+mxsingledma			SET DMAF_AUD2
+		ENDIF
+		IF mixer_output_aud3=1
+mxsinglechan		SET	aud3
+mxsingledma			SET DMAF_AUD3
+		ENDIF
+	ENDIF
+	
+; Sample/buffer constants
+mxslength_word		SET	0
+	IF MIXER_68020=0
+		IF MIXER_WORDSIZED=1
+mxslength_word		SET	1
+		ENDIF
+	ENDIF
+
+mxsize_x32			SET 0
+	IF MIXER_68020=0
+		IF MIXER_SIZEX32=1
+mxsize_x32			SET 1
+		ENDIF
+	ENDIF
+
+; Start of code
+	IF MIXER_SECTION=1
+			section code,code
+	ENDIF
+	
+;-----------------------------------------------------------------------------
+; Check various mixer_config.i settings
+;-----------------------------------------------------------------------------
+mixer_error	SET	0
+
+; Check if mixer count>=1
+	IF mixer_output_count=0
+mixer_error SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: no mixer output channel has been selected"
+		ENDIF
+	ENDIF
+	
+; Check if software channels between 1 and 4
+	IF mixer_sw_channels<1
+mixer_error SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: number of mixed channels out of range (1-4)"
+		ENDIF
+	ENDIF
+	
+	IF mixer_sw_channels>4
+mixer_error SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: number of mixed channels out of range (1-4)"
+		ENDIF
+	ENDIF
+
+; Check if mixer_config.i only has one mixer type selected
+.mxtype_check	SET	MIXER_SINGLE+MIXER_MULTI+MIXER_MULTI_PAIRED
+	IF .mxtype_check=0
+mixer_error SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: no mixer type selected in mixer_config.i"
+		ENDIF
+	ENDIF
+	IF .mxtype_check>1
+mixer_error SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: more than one mixer type selected in mixer_config.i"
+		ENDIF
+	ENDIF
+	
+; Check if the single mixer only has one enabled channel
+	IF mixer_output_count>1
+		IF MIXER_SINGLE=1
+mixer_error SET 1		
+			IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: MIXER_SINGLE only supports one output channel"
+			ENDIF
+		ENDIF
+	ENDIF
+
+; Check if the paired mode has both AUD2 and AUD3 selected
+.mxchancheck SET mixer_output_aud2+mixer_output_aud3
+	IF .mxchancheck<2
+		IF MIXER_MULTI_PAIRED=1
+mixer_error SET 1
+			IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: MIXER_MULTI_PAIRED requires DMAF_AUD2&3 selected"
+			ENDIF
+		ENDIF
+	ENDIF
+
+	IF mixer_error=0		
+
+;-----------------------------------------------------------------------------
+; Setup routines
+;-----------------------------------------------------------------------------
+
+		; Routine: MixerSetup
+		; This routine sets up the data structures and buffers used by the 
+		; mixer.
+		;
+		; Note: no error checking is done, if the values in mixer_config.i are
+		;       invalid or the values passed in D0 & A0 are incorrect, the
+		;       outcome of this routine is undefined.
+		;
+		; Note: the mixer defaults to the maximum hardware volume of 64, in 
+		;       part to compensate for the lower maximum volume mixed samples
+		;       have (due to the lower maximum amplitude value of the 
+		;       individual samples).
+		;
+		; D0 - Set to MIX_PAL when running on a PAL system,
+		;      set MIX_NTSC when running on a NTSC system
+		; D1 - Set to maximum plugin data structure length. For the built-in
+		;      plugins, this value can be obtained by either using the 
+		;      constant mxplg_max_data_size from plugins.i, or by calling the
+		;      plugin support routine MixerPluginGetMaxDataSize.
+		;
+		;      If custom plugins are in use, pass either the value above, or
+		;      the maximum plugin data length for the custom plugins if this
+		;      is larger.
+		; A0 - Pointer to a block of Chip Memory to use for mixer buffers.
+		;      This block needs to be mixer_buffer_size bytes in size.
+		; A1 - Pointer to a block of memory (of any type) to use for mixer
+		;      plugin buffers. This block needs to be mixer_plugin_buffer_size
+		;      bytes in size. Only needed if MIXER_ENABLE_PLUGINS is set to 1.
+		; A2 - Pointer to a block of memory (of any type) to use for mixer
+		;      plugin data structures. This block needs to have a size in
+		;      bytes of the value passed in D1, multiplied by
+		;      mixer_total_channels.
+		;
+		;      Note: on 68020+, the blocks of memory in A0, A1 & A2 should be
+		;            longword aligned for optimal performance. On 68000, the
+		;		     blocks must be at least aligned on a word boundary.
+MixerSetup
+		movem.l	d0/d2-d7/a0-a4,-(sp)		; Stack
+
+		; Fetch mixer structure
+		lea.l	mixer(pc),a3
+		
+		; Store PAL/NTSC flag
+		move.w	d0,mx_vidsys(a3)
+
+		; Set buffer offset value based on PAL/NTSC flag
+		cmp.w	#MIX_NTSC,d0
+		beq.s	.mixer_ntsc
+		
+.mixer_pal
+		move.l	#mixer_PAL_buffer_size,d0
+		move.w	#mixer_PAL_period,d3
+		bra.s	.fill_mixer_struct
+		
+.mixer_ntsc
+		move.l	#mixer_NTSC_buffer_size,d0
+		move.w	#mixer_NTSC_period,d3
+		
+		; Fill mixer structure
+.fill_mixer_struct
+		moveq	#0,d4
+		move.w	#MIXER_STOPPED,mx_status(a3)
+		move.w	#64,mx_volume(a3)
+		move.w	d3,mx_hw_period(a3)
+		move.w	#mixer_output_channels,d6
+		move.w	d6,mx_hw_channels(a3)
+		IF MIXER_ENABLE_CALLBACK=1
+			move.l	d4,mx_callback_ptr(a3)
+		ENDIF
+		IF MIXER_ENABLE_RETURN_VECTOR=1
+			lea.l	mixer_stored_vector(pc),a4
+			move.l	d4,(a4)
+		ENDIF
+		IF MIXER_EXTERNAL_IRQ_DMA=1
+			lea	mixer_irqdma_vectors(pc),a4
+			move.l	d4,mxicb_set_irq_vector(a4)
+			move.l	d4,mxicb_remove_irq_vector(a4)
+			move.l	d4,mxicb_set_irq_bits(a4)
+			move.l	d4,mxicb_disable_irq(a4)
+			move.l	d4,mxicb_acknowledge_irq(a4)
+			move.l	d4,mxicb_set_dmacon(a4)
+		ENDIF
+		move.w	d0,mx_buffer_size(a3)
+		move.w	d0,d7
+		asr.w	#1,d7
+		move.w	d7,mx_buffer_size_w(a3)
+		move.l	a0,mx_empty_buffer(a3)
+		bsr		MixerClearBuffer		; Clear the empty buffer
+		IF MIXER_MULTI_PAIRED=1
+			and.w	#$7,d6
+		ENDIF
+		asl.w	#7,d6
+		move.w	d6,mx_irq_bits(a3)
+		
+		; Fill mixer entry structure(s)
+		IF MIXER_SINGLE=1
+			moveq	#1-1,d7
+			moveq	#1,d6
+			moveq	#mxsingledma,d2
+		ELSE
+			moveq	#4-1,d7
+			moveq	#mixer_output_channels,d6
+			moveq	#DMAF_AUD0,d2
+		ENDIF
+		IF MIXER_MULTI_PAIRED=1
+			and.w	#$7,d6
+		ENDIF
+		lea.l	mx_mixer_entries(a3),a3
+		
+		; Loop over entries
+.mixer_entry_lp
+		; Check if current HW channel is active
+		btst	#0,d6
+		beq		.mixer_entry_lp_end
+		
+		IF MIXER_MULTI_PAIRED=1
+			; Clear active bit
+			move.w	#0,mxe_active(a3)
+		ENDIF
+
+		; Set up for channel loop
+		moveq	#mixer_sw_channels-1,d5
+		move.w	#MIX_CH0,d3
+		lea.l	mxe_channels(a3),a4
+		
+		; Loop over mixer entry channels
+.mixer_channel_lp
+		IF mxslength_word=1
+			move.w	d4,mch_remaining_length
+			move.w	d4,mch_length(a4)
+			move.w	d4,mch_loop_length(a4)
+		ELSE
+			move.l	d4,mch_remaining_length(a4)
+			move.l	d4,mch_length(a4)
+			move.l	d4,mch_loop_length(a4)
+		ENDIF
+		move.l	d4,mch_sample_ptr(a4)
+		move.l	d4,mch_loop_ptr(a4)
+		IF MIXER_ENABLE_CALLBACK=1
+			move.l	d4,mch_orig_sam_ptr(a4)
+		ENDIF
+		IF MIXER_ENABLE_PLUGINS=1
+			move.l	d4,mch_plugin_ptr(a4)
+			move.l	d4,mch_plugin_deferred_ptr(a4)
+			move.l	a2,mch_plugin_data_ptr(a4)
+			move.l	a1,mch_plugin_output_buffer(a4)
+			move.w	d4,mch_plugin_type(a4)
+			movem.l	d0/a0,-(sp)
+			move.l	a1,a0
+			bsr		MixerClearBuffer
+			move.w	d1,d0
+			move.l	a2,a0
+			bsr		MixerClearPluginData
+			movem.l	(sp)+,d0/a0
+			lea.l	0(a1,d0.w),a1
+			lea.l	0(a2,d1.w),a2
+		ENDIF
+		or.w	d2,d3
+		move.w	d3,mch_channel_id(a4)
+		move.w	d4,mch_status(a4)
+		move.w	d4,mch_priority(a4)
+		move.w	d4,mch_age(a4)
+		and.w	#$f0,d3
+		lsl.w	#1,d3
+		lea.l	mch_SIZEOF(a4),a4
+		dbra	d5,.mixer_channel_lp
+
+		; Fill mixer entry current channel & sample pointers
+		moveq	#4-1,d5
+		lea.l	mxe_active_channels(a3),a4
+		
+.mixer_pointers_lp
+		move.l	d4,16(a4)
+		move.l	d4,(a4)+
+		dbra	d5,.mixer_pointers_lp
+		
+		; Fill mixer entry buffer pointers & clear buffers
+		lea.l	mxe_buffers(a3),a4
+		lea.l	0(a0,d0.w),a0
+		move.l	a0,(a4)+
+		bsr		MixerClearBuffer
+		lea.l	0(a0,d0.w),a0
+		move.l	a0,(a4)+
+		bsr		MixerClearBuffer
+
+.mixer_entry_lp_end
+		asr.w	#1,d6
+		asl.w	#1,d2
+		lea.l	mxe_SIZEOF(a3),a3
+		dbra	d7,.mixer_entry_lp
+
+		movem.l	(sp)+,d0/d2-d7/a0-a4		; Stack
+		rts
+
+		; Routine: MixerInstallHandler
+		; This routine sets up the required audio interrupt for the mixer.
+		;
+		; Note: MixerSetup must have been called prior to calling this 
+		;       routine.
+		; Note: if MIXER_CIA_TIMER is set to 1, this routine also saves the
+		;       CIA state to be able to restore it later.
+		;
+		; D0 - 0: save old interrupt vector
+		;      1: do not save old interrupt vector
+		; A0 - Pointer to VBR
+		;
+		;      Note: on systems without VBR (i.e. 68000 based systems), A0 has
+		;      to be set to 0.
+MixerInstallHandler
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d1/a1/a6,-(sp)				; Stack
+		ELSE
+			movem.l	d1/a1/a2/a6,-(sp)			; Stack
+			lea.l	mixer_irqdma_vectors(pc),a2
+		ENDIF
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				move.w	d0,-(sp)				; Stack
+				
+				; Save CIA values
+				lea.l	mxciabase+1,a6			; CIA A
+				lea.l	mixer_stored_cia(pc),a1
+
+				move.b	ciacra(a6),d0
+				move.b	ciaicr(a6),d1
+				move.b	d0,(a1)					; Store CIA control value
+				move.b	d1,1(a1)				; Store CIA IC value
+				
+				move.w	(sp)+,d0				; Stack
+			ENDIF
+		ENDIF
+		
+		; Fetch custombase
+		lea.l	mxcustombase,a6
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Store the VBR value
+			lea.l	mixer_stored_vbr(pc),a1
+			move.l	a0,(a1)+
+			
+			; Save interrupt vector if needed
+			tst.w	d0
+			bne		.no_save
+			move.l	$70(a0),(a1)+
+
+			; Save any audio interrupt bits set
+			move.w	intenar(a6),d1
+			and.w	#%11110000000,d1			; Audio = bits 7-10
+			or.w	#$8000,d1
+			move.w	d1,(a1)+
+		
+.no_save
+			; Disable all audio interrupts
+			move.w	#%11110000000,d1			; Audio = bits 7-10
+			move.w	d1,intena(a6)				; Disable audio interrupts
+			move.w	d1,intreq(a6)				; Clear any pending interrupts
+			move.w	d1,intreq(a6)				; Twice for A4000
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.w	#%11110000000,d0
+				move.l	mxicb_disable_irq(a2),a2
+
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Set all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a2),a2
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
+		ENDIF
+		
+		; Set audio interrupt handler
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
+			move.l	a1,$70(a0)					; $70 is vector 4 / audio
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				movem.l	a0/a2,-(sp)
+			ENDIF
+			lea.l	MixerIRQHandler(pc),a0		; Interrupt handler
+			move.l	mxicb_set_irq_vector(a2),a2
+
+			jsr		(a2)
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				movem.l	(sp)+,a0/a2
+			ENDIF
+		ENDIF
+
+		; Calculate audio interrupt bit for correct channel and store result
+		lea.l	mixer(pc),a1				; Fetch mixer structure
+		move.w	#mixer_output_channels,d1	; Load audio channel bit(s)
+		lsl.w	#7,d1						; Shift by 7 to get interrupt bit
+		move.w	d1,mx_irq_bits(a1)			; Store result
+		or.w	#$c000,d1					; Prep INTENA setup
+		IF MIXER_EXTERNAL_IRQ_DMA=0			
+			; Set up audio interrupt
+			move.w	d1,intena(a6)				; Set INTENA value
+			tst.w	dmaconr(a6)					; Delay for A4000
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1/a2,-(sp)
+			ELSE
+				move.l	a2,-(sp)
+			ENDIF
+			; Path for mask based setting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.w	d1,d0
+				move.l	mxicb_set_irq_bits(a2),a2
+
+				jsr		(a2)
+			ELSE
+			; Path for bitwise setting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Set all IRQ bits using REPT
+				move.l	mxicb_set_irq_bits(a2),a2
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.w	#$c000|.mixer_curr_bit,d0
+					jsr		(a2)
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
+			ELSE
+				move.l	(sp)+,a2
+			ENDIF
+		ENDIF
+		
+		; Update mixer status
+		move.w	#MIXER_RUNNING,mx_status(a1)
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d1/a1/a6				; Stack
+		ELSE
+			movem.l	(sp)+,d1/a1/a2/a6			; Stack
+		ENDIF
+		
+		rts
+
+		; Routine: MixerRemoveHandler
+		; This routine disables & removes the audio interrupt.
+		; It also restores the old handler if previously stored.
+		;
+		; Note: MixerSetup & MixerInstallHandler must have been called prior to calling
+		;       this routine.
+		; Note: if MIXER_CIA_TIMER is set to 1, this routine also restores the
+		;       saved CIA state.
+		; Note: if MIXER_CIA_TIMER & MIXER_CIA_KBOARD_RES are set to 1, this
+		;       routine also restores the keyboard for AmigaOS use. Note that
+		;       in this case, the MixerRemoveHandler routine should be called
+		;       shortly before returning to the OS to prevent CIA timer 
+		;       underflows.
+MixerRemoveHandler
+		movem.l	d0/a0/a1/a6,-(sp)			; Stack
+		
+		; Fetch custom base
+		lea.l	mxcustombase,a6
+
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable all audio interrupts
+			move.w	#%11110000000,d0			; Audio = bits 7-10
+			move.w	d0,intena(a6)				; Disable audio interrupts
+			move.w	d0,intreq(a6)				; Clear any pending interrupts
+			move.w	d0,intreq(a6)				; Twice for A4000
+
+			; Restore interrupt vector (if set)
+			lea.l	mixer_stored_vbr(pc),a1
+			move.l	(a1)+,a0					; Get VBR
+			move.l	(a1)+,d0					; Get handler
+			beq		.no_restore
+
+			; Restore interrupt vector
+			move.l	d0,$70(a0)					; Vector 4
+			
+			; Restore INTENA value
+			move.w	(a1)+,intena(a6)			; Set old intena values
+			tst.w	dmaconr(a6)					; Delay for A4000
+.no_restore
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a2,-(sp)
+				move.l	a1,a0
+				lea.l	mixer_irqdma_vectors(pc),a1
+				move.l	a1,-(sp)
+			ELSE
+				movem.l	a0/a2,-(sp)
+				move.l	a1,a0
+				lea.l	mixer_irqdma_vectors(pc),a1
+			ENDIF
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_disable_irq(a1),a2
+				move.w	#%11110000000,d0			; Audio = bits 7-10
+				jsr		(a2)
+				IF MIXER_C_DEFS=1
+					move.l	(sp),a1
+				ENDIF
+				
+				move.l	mxicb_remove_irq_vector(a1),a2
+				jsr		(a2)
+				
+				IF MIXER_C_DEFS=1
+					move.l	(sp),a1
+				ENDIF
+				move.w	mixer_stored_intena(pc),d0
+				move.l	mxicb_set_irq_bits(a1),a2
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+
+				; Remove IRQ vector (once)
+				move.l	mxicb_remove_irq_vector(a1),a2
+				jsr		(a2)
+			ENDIF
+			IF MIXER_C_DEFS=1
+				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/d1/a0/a2
+			ELSE
+				movem.l	(sp)+,a0/a2
+			ENDIF
+		ENDIF
+
+		; Update mixer status
+		lea.l	mixer(pc),a1
+		move.w	#MIXER_STOPPED,mx_status(a1)
+
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				; Restore CIA values
+				lea.l	mxciabase+1,a6			; CIA A
+				lea.l	mixer_stored_cia(pc),a1
+				move.b	(a1),ciacra(a6)			; Restore CIA A control value
+				move.b	1(a1),ciaicr(a6)		; Restore CIA A IC value
+
+				IF MIXER_CIA_KBOARD_RES=1
+					; Remaining code to restore keyboard
+					move.b	#$ff,ciatblo(a6)	; TB=$ffff
+					move.b	#$ff,ciatbhi(a6)
+					; Re-enable CIA-A interrupts for AmigaOS
+					move.b	#$8f,ciaicr(a6)
+				ENDIF
+			ENDIF
+		ENDIF
+		movem.l	(sp)+,d0/a0/a1/a6			; Stack
+		rts
+
+		; Routine: MixerStart
+		; This routine enables playback of mixed samples. Initial playback is
+		; silence.
+		;
+		; Note: MixerSetup & MixerInstallHandler must have been called prior
+		;       to calling this routine.
+		; Note: if MIXER_CIA_TIMER is set to 1, this routine also clears the
+		;       stored CIA timer results.
+MixerStart
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d0/d1/d7/a0/a6,-(sp)		; Stack
+		ELSE
+			movem.l	d0/d1/d7/a0/a1/a6,-(sp)		; Stack
+		ENDIF
+
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			IF MIXER_CIA_TIMER=1
+				; Clear stored CIA timing results
+				lea.l	mixer_ticks_last(pc),a6
+				clr.w	(a6)+
+				clr.w	(a6)+
+				move.w	#$ffff,(a6)
+			ENDIF
+		ENDIF
+
+		; Fetch custombase
+		lea.l	mxcustombase,a6
+
+		; Enable audio interrupts for all valid channels
+		lea.l	mixer(pc),a0
+		move.w	mx_irq_bits(a0),d0			; Fetch IRQ bits
+		or.w	#$c000,d0					; Prep INTENA setup
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			move.w	d0,intena(a6)				; Set INTENA value
+			tst.w	dmaconr(a6)					; Delay for A4000
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ENDIF
+			
+			lea.l	mixer_irqdma_vectors(pc),a1
+			
+			; Path for mask based setting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_set_irq_bits(a1),a1
+
+				jsr		(a1)
+			ELSE
+			; Path for bitwise setting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Set all IRQ bits using REPT
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					lea.l	mixer_irqdma_vectors(pc),a1
+					move.l	mxicb_set_irq_bits(a1),a1
+					move.w	#$c000|.mixer_curr_bit,d0
+					jsr		(a1)
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+			
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ENDIF
+		
+		ENDIF
+		
+		IF MIXER_SINGLE=1
+			move.w	#mxsinglechan,d1
+		ELSE
+			; Play silence on all selected channels
+			move.w	#mixer_output_channels,d0
+			move.w	#aud,d1
+			moveq	#4-1,d7
+			
+			; Loop over all channels
+.lp			btst	#0,d0
+			beq		.next_channel
+		ENDIF
+		
+		; Play silence
+		bsr		MixerPlaySilence
+
+		IF MIXER_SINGLE=0
+		; Go to next channel
+.next_channel
+			asr.w	#1,d0
+			add.w	#ac_SIZEOF,d1
+			dbra	d7,.lp
+		ENDIF
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d0/d1/d7/a0/a6		; Stack
+		ELSE
+			movem.l	(sp)+,d0/d1/d7/a0/a1/a6		; Stack
+		ENDIF
+		rts
+
+		; Routine: MixerStop
+		; This routine disables playback of mixed samples.
+		;
+		; Note: MixerSetup, MixerInstallHandler & MixerStart must have been called
+		;       before calling this routine.
+MixerStop
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	d6/d7/a0/a6,-(sp)				; Stack
+		ELSE
+			movem.l	d6/d7/a0/a1/a6,-(sp)			; Stack
+		ENDIF
+		
+		; Fetch custombase
+		lea.l	mxcustombase,a6
+		
+		; Fetch mixer, irq bits & HW channels
+		lea.l	mixer(pc),a0
+		move.w	mx_irq_bits(a0),d7
+		move.w	mx_hw_channels(a0),d6
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio interrupt(s)
+			move.w	d7,intena(a6)					; Disable audio interrupts
+			move.w	d7,intreq(a6)					; Clear any pending interrupts
+			move.w	d7,intreq(a6)					; Twice for A4000
+		ELSE
+			lea.l	mixer_irqdma_vectors(pc),a1
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_disable_irq(a1),a2
+				move.w	#%11110000000,d0			; Audio = bits 7-10
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
+		ENDIF
+		
+		IF MIXER_SINGLE=1
+			move.w	#mxsinglechan,d1
+		ELSE
+			; Play silence on all selected channels
+			move.w	#mixer_output_channels,d0
+			move.w	#aud,d1
+			moveq	#4-1,d7
+			
+			; Loop over all channels
+.lp			btst	#0,d0
+			beq		.next_channel
+		ENDIF
+		
+		; Play silence & set volume to zero.
+		bsr		MixerPlaySilence
+		move.w	#0,ac_vol(a6,d1.w)
+
+		IF MIXER_SINGLE=0
+		; Go to next channel
+.next_channel
+			asr.w	#1,d0
+			add.w	#ac_SIZEOF,d1
+			dbra	d7,.lp
+		ENDIF
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio DMA for the mixing channel(s)
+			move.w	d6,dmacon(a6)
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			; Mask based path for DMACON
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_set_dmacon(a1),a1
+				move.w	d6,d0
+				jsr		(a1)
+			ELSE
+			; Bitwise path for DMACON
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%1
+				move.l	mxicb_set_dmacon(a1),a1
+				REPT 4
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a1)
+				
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
+		ENDIF
+		
+		; Fetch mixer entries
+		lea.l	mx_mixer_entries(a0),a0
+		
+		; Loop over all mixer entries
+		IF MIXER_SINGLE=1
+			moveq	#1-1,d7
+		ELSE
+			moveq	#4-1,d7
+		ENDIF
+.enlp	lea.l	mxe_channels(a0),a6
+		
+		; Deactivate all mixer channels per entry
+		moveq	#4-1,d6
+.chlp	move.w	#MIXER_CHAN_INACTIVE,mch_status(a6)
+		lea.l	mch_SIZEOF(a6),a6
+		dbra	d6,.chlp
+		
+		; Loop back
+		lea.l	mxe_SIZEOF(a0),a0
+		dbra	d7,.enlp
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			movem.l	(sp)+,d6/d7/a0/a6				; Stack
+		ELSE
+			movem.l	(sp)+,d6/d7/a0/a1/a6			; Stack
+		ENDIF
+		rts
+		
+		; Routine: MixerVolume
+		; This routine sets the hardware volume used by the mixer hardware
+		; channels during playback.
+		;
+		; Note: when running MixerSetup, volume is set to the hardware maximum
+		;       of 64 by default.
+		;
+		; D0 - desired volume (0-64)
+MixerVolume
+		move.l	a0,-(sp)					; Stack
+
+		; Fetch mixer & set volume
+		lea.l	mixer(pc),a0
+		move.w	d0,mx_volume(a0)
+
+		move.l	(sp)+,a0					; Stack
+		rts
+		
+
+
+
+;-----------------------------------------------------------------------------
+; SFX playback routines
+;-----------------------------------------------------------------------------
+
+		; Routine: MixerFetchEntry
+		; This routine forms the common code for fetching the correct mixer
+		; entry. Used in MixPlaySam/MixPlaySamCh.
+MixerFetchEntry
+		; Fetch mixer & first entry
+		lea.l	mixer+mx_mixer_entries(pc),a1
+		
+		; Multi mixer path
+		IF MIXER_SINGLE=0
+			; Jump to selected entry
+			move.w	d0,d4
+			and.w	#$f,d4
+			add.w	d4,d4
+			add.w	d4,d4
+			jmp		.enjmp_table(pc,d4.w)
+			
+			; Jump table
+			; The empty space included in the table is required for the 
+			; conversion between entry bit and entry number.
+.enjmp_table
+			nop
+			nop
+			jmp	.en0(pc)
+			jmp	.en1(pc)
+			dc.l	0
+			jmp	.en2(pc)
+			dc.l	0,0,0
+			
+.en3		lea.l	mxe_SIZEOF(a1),a1
+.en2		lea.l	mxe_SIZEOF(a1),a1
+.en1		lea.l	mxe_SIZEOF(a1),a1
+.en0	
+		ENDIF
+
+		; Select first channel
+		lea.l	mxe_channels(a1),a1
+		rts
+
+		; Routine: MixerChannelWrite
+		; This routine forms the common code for writing the effect structure
+		; into a mixer channel.
+MixerChannelWrite
+		; Writes to the channel must be atomic (i.e. can't be interrupted by
+		; the audio mixer to prevent failures in playback)
+
+		; Test if the mixer interrupts are running
+		move.w	mixer+mx_status(pc),d7
+		beq.s	.irq_disabled
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Disable audio interrupts
+			lea.l	mxcustombase,a6
+			move.w	mixer+mx_irq_bits(pc),d7		; Fetch audio bits
+			and.w	#$7fff,d7						; Mask out SET/CLR bit
+			move.w	d7,intena(a6)					; Disable audio interrupts
+			tst.w	dmaconr(a6)						; Wait for A4000
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			
+			lea.l	mixer_irqdma_vectors(pc),a1
+			
+			; Path for mask based resetting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_disable_irq(a1),a2
+				move.w	mixer+mx_irq_bits(pc),d0	; Fetch audio bits
+				and.w	#$7fff,d0
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				move.l	mxicb_disable_irq(a1),a2
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.w	#.mixer_curr_bit,d0
+					jsr		(a2)
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+				IF MIXER_C_DEFS=1
+					move.l	(sp),a1
+				ENDIF
+			ENDIF
+
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
+		ENDIF
+.irq_disabled
+
+		; Start of atomic part
+.write_plugin	
+		IF MIXER_ENABLE_PLUGINS=1
+			; Set pointer to plugin
+			move.l	d7,-(sp)					; Stack
+			moveq	#0,d7
+			move.l	d7,mch_plugin_ptr(a1)
+			move.l	d7,mch_plugin_deferred_ptr(a1)
+			move.l	mfx_plugin_ptr(a0),d7
+			beq.s	.no_plugin
+
+			; Initialise plugin
+			movem.l	a1/a2/a6,-(sp)				; Stack
+			
+			move.l	d7,a6						; Plugin in A6
+			move.w	mpl_plugin_type(a6),mch_plugin_type(a1)
+			move.l	mpl_plugin_ptr(a6),mch_plugin_ptr(a1)
+			move.l	mch_plugin_data_ptr(a1),a2	; Data in A2
+			move.l	mpl_init_data_ptr(a6),a1	; Init data in A1
+
+			move.l	mpl_init_ptr(a6),a6
+			IF MIXER_C_DEFS=1
+				movem.l	d0/a0,-(sp)
+				jsr		(a6)					; Call init
+				movem.l	(sp)+,d0/a0
+			ELSE
+				jsr		(a6)					; Call init
+			ENDIF
+			move.l	mfx_length(a0),d1			; Get correct length
+	
+			movem.l	(sp)+,a1/a2/a6				; Stack
+			
+.no_plugin
+			move.l	(sp)+,d7					; Stack
+		ENDIF
+
+		IF mxslength_word=1
+			move.w	d1,mch_length(a1)			; Set length
+			move.w	d1,mch_remaining_length(a1)	; Set remaining length
+		ELSE
+			move.l	d1,mch_length(a1)			; Set length
+			move.l	d1,mch_remaining_length(a1)	; Set remaining length
+		ENDIF
+		move.w	d2,mch_priority(a1)			; Set priority
+		move.w	#0,mch_age(a1)				; Set age
+
+		move.l	mfx_sample_ptr(a0),mch_sample_ptr(a1); Set sample pointer
+		IF MIXER_ENABLE_CALLBACK=1
+			move.l	mfx_sample_ptr(a0),mch_orig_sam_ptr(a1)
+		ENDIF
+
+		tst.w	mfx_loop(a0)
+		bmi.s	.write_loop_ptr				; Check for looping sample
+
+		; Not a loop, use empty buffer		
+		move.l	mixer+mx_empty_buffer(pc),mch_loop_ptr(a1)
+		IF mxslength_word=1
+			move.w	d1,mch_loop_length(a1)
+		ELSE
+			move.l	d1,mch_loop_length(a1)
+		ENDIF
+		bra.s	.write_status
+		
+.write_loop_ptr
+		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
+		beq.s	.write_loop_offset_ptr
+			
+		move.l	mfx_sample_ptr(a0),mch_loop_ptr(a1)	; Set sample pointer
+
+		IF mxslength_word=1
+			move.w	d1,mch_loop_length(a1)
+		ELSE
+			move.l	d1,mch_loop_length(a1)
+		ENDIF
+		bra.s	.write_status
+			
+.write_loop_offset_ptr
+		; Force loop offset to be in bounds of the sample here
+		move.l	d0,-(sp)
+		IF mxslength_word=1
+			moveq	#0,d7
+			move.w	mfx_loop_offset+2(a0),d7
+		ELSE
+			move.l	mfx_loop_offset(a0),d7
+			bpl.s	.loop_offset_larger_fx
+
+			; Loop offset must be zero or higher
+			moveq	#0,d7
+		ENDIF
+			
+.loop_offset_larger_fx
+		IF mxslength_word=1
+			moveq	#0,d0
+			move.w	d1,d0
+		ELSE
+			move.l	d1,d0
+		ENDIF
+		
+		IF mxsize_x32=1
+			and.w	#$ffe0,d7		; Limit to multiple of 32 bytes
+		ELSE
+			and.w	#$fffc,d7		; Limit to multiple of  4 bytes
+		ENDIF
+		
+		sub.l	d7,d0
+		bgt.s	.loop_offset_in_bounds_fx
+		
+		move.l	d0,d7
+		subq.l	#4,d7				; Loop offset now in range
+		moveq	#4,d0				; Length in range
+
+.loop_offset_in_bounds_fx
+		IF mxslength_word=1
+			move.w	d0,mch_loop_length(a1)
+		ELSE
+			move.l	d0,mch_loop_length(a1)
+		ENDIF
+		move.l	(sp)+,d0
+
+		add.l	mfx_sample_ptr(a0),d7
+		move.l	d7,mch_loop_ptr(a1)
+
+.write_status
+		move.w	mfx_loop(a0),mch_status(a1)	; Set status
+
+		; Test if the mixer interrupts are running
+		move.w	mixer+mx_status(pc),d7
+		beq.s	.irq_enabled
+		
+		IF MIXER_EXTERNAL_IRQ_DMA=0
+			; Re-enable audio interrupts
+			move.w	mixer+mx_irq_bits(pc),d7
+			or.w	#$8000,d7					; Set the SET/CLR bit
+			move.w	d7,intena(a6)				; Enable audio interrupts
+		ELSE
+			IF MIXER_C_DEFS=1
+				movem.l	d0/d1/a0/a1,-(sp)
+			ELSE
+				move.l	a1,-(sp)
+			ENDIF
+			
+			lea.l	mixer_irqdma_vectors(pc),a1
+			
+			; Path for mask based setting of IRQ bits
+			IF MIXER_EXTERNAL_BITWISE=0
+				move.l	mxicb_set_irq_bits(a1),a2
+				move.w	mixer+mx_irq_bits(pc),d0
+				or.w	#$8000,d0				; Set the SET/CLR bit
+				jsr		(a2)
+			ELSE
+			; Path for bitwise resetting of IRQ bits
+.mixer_curr_chan	SET mixer_output_channels
+.mixer_curr_bit		SET	%10000000
+				; Reset all IRQ bits using REPT
+				REPT 4
+				IF .mixer_curr_chan&1=1
+					move.l	mxicb_set_irq_bits(a1),a2
+					move.w	#$8000|.mixer_curr_bit,d0
+					jsr		(a2)
+				ENDIF
+.mixer_curr_chan	SET .mixer_curr_chan>>1
+.mixer_curr_bit		SET	.mixer_curr_bit<<1
+				ENDR
+			ENDIF
+
+			IF MIXER_C_DEFS=1
+				movem.l	(sp)+,d0/d1/a0/a1
+			ELSE
+				move.l	(sp)+,a1
+			ENDIF
+		ENDIF
+.irq_enabled
+
+		; End of atomic part
+		rts
+
+		; Routine: MixerPlaySample
+		; This routine plays the given sample on the given hardware channel, 
+		; selecting the best possible fitting mixer channel available. 
+		; Priority is taken into account.
+		;
+		; Fails if no applicable mixer channel is free.
+		;
+		; Note: this routine does not check if the HW channel selected is 
+		;       available to the mixer, if an unused HW channel is 
+		;       selected, no sample will be played back. This only applies if
+		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
+		; Note: once playing, looping samples can only be ended by calling
+		;       MixerStopFX. Until this happens, a looping sample will occupy
+		;       a mixer channel forever, regardless of the priority of any
+		;       incoming sample playback requests.
+		;
+		;       Keep in mind that the initial playback request for a looping
+		;       sample will follow priorities as normal to determine if it can
+		;       start playing.
+		;
+		; A0 - Pointer to sample data
+		; D0 - Hardware channel (f.ex. DMAF_AUD0)
+		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
+		;            channel.
+		;      Note: Only one HW channel can be selected at a time.
+		; D1 - Length of sample in bytes
+		; D2 - Priority (signed, higher number=higher priority)
+		; D3 - Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or MIX_FX_LOOP_OFFSET)
+		; D4 - Loop offset (used when MIX_FX_LOOP_OFFSET is set)
+		;
+		; Returns
+		; D0 - Either:
+		;      *) -1, if the sample can't be played (f.ex. due to priority)
+		;      *) Hardware/mixer channel combination the sample will be played
+		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
+MixerPlaySample
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_OTHER_COLOUR,$dff180
+		ENDIF
+		
+		move.l	a1,-(sp)					; Stack
+
+		move.l	a0,a1
+		lea.l	mixer_fx_struct(pc),a0		; Get FX struct
+		
+		; Fill FX struct
+		move.l	a1,mfx_sample_ptr(a0)
+		IF mxslength_word=1
+			move.l	d7,-(sp)
+			moveq	#0,d7
+			move.w	d1,d7
+			move.l	d7,mfx_length(a0)
+			move.w	d4,d7
+			move.l	d7,mfx_loop_offset(a0)
+			move.l	(sp)+,d7
+		ELSE
+			move.l	d1,mfx_length(a0)
+			move.l	d4,mfx_loop_offset(a0)			
+		ENDIF
+		move.w	d3,mfx_loop(a0)
+		move.w	d2,mfx_priority(a0)
+		clr.l	mfx_plugin_ptr(a0)
+		
+		; Call MixerPlayFX
+		bsr		MixerPlayFX
+		
+		move.l	a1,a0
+		move.l	(sp)+,a1					; Stack
+
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_DEFAULT_COLOUR,$dff180
+			tst.w	d0						; Restore condition code
+		ENDIF
+		rts
+
+		; Routine: MixerPlayChannelSample
+		; This routine plays the given sample on the given hardware/mixer
+		; channel combination. Priority and channel availability are taken
+		; into account.
+		;
+		; Fails if the selected hardware/mixer channel combination is not 
+		; free.
+		;
+		; Note: this routine does not check if the HW channel selected is 
+		;       available to the mixer, if an unused HW channel is 
+		;       selected, no sample will be played back. This only applies if
+		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
+		; Note: this routine does not check if the mixer is running with 
+		;       enough mixed channels for the required mixer channel to be 
+		;       in use. If the mixer channel is not in use, no sample will be
+		;       played back.
+		; Note: once playing, looping samples can only be ended by calling
+		;       MixerStopFX. Until this happens, a looping sample will occupy
+		;       a mixer channel forever, regardless of the priority of any
+		;       incoming sample playback requests.
+		;
+		;       Keep in mind that the initial playback request for a looping
+		;       sample will follow priorities as normal to determine if it can
+		;       start playing.
+		;
+		; A0 - Pointer to sample data
+		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
+		;      Supports setting exactly one mixer software channel.
+		;
+		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
+		;            channel.
+		;      Note: Only one HW channel can be selected at a time.
+		; D1 - Length of sample in bytes
+		; D2 - Priority (signed, higher number=higher priority)
+		; D3 - Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or MIX_FX_LOOP_OFFSET)
+		; D4 - Loop offset (used when MIX_FX_LOOP_OFFSET is set)
+		;
+		; Returns
+		; D0 - Either:
+		;      *) -1, if the sample can't be played (f.ex. due to priority)
+		;      *) Hardware/mixer channel combination the sample will be played
+		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
+MixerPlayChannelSample
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_OTHER_COLOUR,$dff180
+		ENDIF
+
+		move.l	a1,-(sp)			; Stack
+		move.l	a0,a1
+		lea.l	mixer_fx_struct(pc),a0		; Get FX struct
+		
+		; Fill FX struct
+		move.l	a1,mfx_sample_ptr(a0)
+		IF mxslength_word=1
+			move.l	d7,-(sp)
+			moveq	#0,d7
+			move.w	d1,d7
+			move.l	d7,mfx_length(a0)
+			move.w	d4,d7
+			move.l	d7,mfx_loop_offset(a0)
+			move.l	(sp)+,d7
+		ELSE
+			move.l	d1,mfx_length(a0)
+			move.l	d4,mfx_loop_offset(a0)			
+		ENDIF
+		move.w	d3,mfx_loop(a0)
+		move.w	d2,mfx_priority(a0)
+		clr.l	mfx_plugin_ptr(a0)
+		
+		; Call MixerPlayChannelFX
+		bsr		MixerPlayChannelFX
+		
+		move.l	a1,a0
+		move.l	(sp)+,a1			; Stack
+		
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_DEFAULT_COLOUR,$dff180
+			tst.w	d0						; Restore condition code
+		ENDIF
+		rts
+		
+		; Routine: MixerPlayFX
+		; This routine plays the given sample on the given hardware 
+		; channel, selecting the best possible fitting mixer channel
+		; available. Priority is taken into account.
+		;
+		; Fails quietly if no applicable mixer channel is free.
+		;
+		; Note: this routine does not check if the HW channel selected is 
+		;       available to the mixer, if an unused HW channel is 
+		;       selected, no sample will be played back. This only applies if
+		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
+		; Note: once playing, looping FX can only be ended by calling
+		;       MixerStopFX. Until this happens, a looping FX will occupy a
+		;       mixer channel forever, regardless of the priority of any
+		;       incoming FX playback requests.
+		;
+		;       Keep in mind that the initial playback request for a looping
+		;       FX will follow priorities as normal to determine if it can 
+		;       start playing.
+		;
+		; A0 - Pointer to MXEffect structure for the effect to play
+		; D0 - Hardware channel (f.ex. DMAF_AUD0)
+		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
+		;            channel.
+		;      Note: Only one HW channel can be selected at a time.
+		;
+		; Returns
+		; D0 - Either:
+		;      *) -1, if the FX can't be played (f.ex. due to priority)
+		;      *) Hardware/software channel combination the FX will be played
+		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
+MixerPlayFX
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_OTHER_COLOUR,$dff180
+		ENDIF
+		move.w	d2,-(sp)
+		movem.l	d1/d4-d7/a1/a2/a6,-(sp)		; Stack
+
+		; Fetch the correct mixer entry
+		bsr		MixerFetchEntry
+		
+		IF MIXER_SINGLE=1
+			; Set HW channel to correct channel for single mixing
+			move.w	#mxsingledma,d0
+		ENDIF
+		
+		; Pre-fetch elements from structure as needed
+		move.w	mfx_priority(a0),d2
+		IF mxslength_word=1
+			move.w	mfx_length+2(a0),d1
+		ELSE
+			move.l	mfx_length(a0),d1
+		ENDIF
+		
+		; Set up to search for best channel
+		move.w	#-32768,d4					; Best priority found
+		moveq	#0,d5						; Reset best age found
+		moveq	#0,d6						; Best channel found
+		move.l	d6,a2						; Reset best channel pointer
+		
+		; For each mixer channel, check availability
+		IF MIXER_68020=1
+			; Set up for loop
+			swap	d0						; Swap HW channel
+			
+			move.w	#4,d7					; Channel bit
+			swap	d7
+			move.w	#mixer_sw_channels-1,d7	; Loop counter
+			
+.chlp		swap	d7						; Channel bit
+			MixChkChan 0
+			addq.w	#1,d7					; Next channel
+			swap	d7						; Loop counter
+			dbra	d7,.chlp
+			
+			swap	d0						; Swap back HW channel
+		ELSE
+			MixChkChan 0					; Check MIX_CH0
+			IF mixer_sw_channels>=2
+				MixChkChan 1				; Check MIX_CH1
+			ENDIF
+			IF mixer_sw_channels>=3
+				MixChkChan 2				; Check MIX_CH2
+			ENDIF
+			IF mixer_sw_channels=4
+				MixChkChan 3				; Check MIX_CH3
+			ENDIF
+		ENDIF
+		
+		; Check if any channel was found based on priority
+		tst.w	d6
+		bne.s	.prio_found
+		
+		; No channels are free
+		moveq	#-1,d0
+		bra		.done
+		
+.prio_found
+		; Found a lower priority/older channel
+		move.l	a2,a1
+
+.found
+		; Found a free channel, add the sample
+		IF mxsize_x32=1
+			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
+		ELSE
+			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
+		ENDIF
+		
+		IF MIXER_ENABLE_PLUGINS=1
+			or.w	d6,d0					; Set HW/Mixer channel in D0
+		ENDIF
+		
+		bsr		MixerChannelWrite
+		tst.w	d0							; Set condition codes
+
+.done
+		movem.l	(sp)+,d1/d4-d7/a1/a2/a6		; Stack
+		move.w	(sp)+,d2
+
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_DEFAULT_COLOUR,$dff180
+			tst.w	d0						; Restore condition code
+		ENDIF
+		rts
+		
+		; Routine: MixerPlayChannelFX
+		; This routine plays the given FX on the given hardware/mixer channel
+		; combination. Priority and channel availability are taken into 
+		; account.
+		;
+		; Fails quietly if the selected hardware/mixer channel combination is not free.
+		;
+		; Note: this routine does not check if the HW channel selected is 
+		;       available to the mixer, if an unused HW channel is 
+		;       selected, no sample will be played back. This only applies if
+		;       MIXER_MULTI=1 or  MIXER_MULTI_PAIRED=1.
+		; Note: this routine does not check if the mixer is running with 
+		;       enough mixed channels for the required mixer channel to be
+		;       in use. If the mixer channel is not in use, no FX will be
+		;       played back.
+		; Note: once playing, looping FX can only be ended by calling
+		;       MixerStopFX. Until this happens, a looping FX will occupy a
+		;       mixer channel forever, regardless of the priority of any
+		;       incoming FX playback requests.
+		;
+		;       Keep in mind that the initial playback request for a looping
+		;       FX will follow priorities as normal to determine if it can 
+		;       start playing.
+		;
+		; A0 - Pointer to MXEffect structure for the FX to play
+		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
+		;      Supports setting exactly one mixer channel.
+		;
+		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
+		;            channel.
+		;      Note: Only one HW channel can be selected at a time.
+		;
+		; Returns
+		; D0 - Either:
+		;      *) -1, if the FX can't be played (f.ex. due to priority)
+		;      *) Hardware/software channel combination the FX will be played
+		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
+MixerPlayChannelFX
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_OTHER_COLOUR,$dff180
+		ENDIF
+		move.w	d2,-(sp)
+		movem.l	d1/d6/d7/a1/a6,-(sp)			; Stack
+		
+		; Fetch the correct mixer entry
+		bsr		MixerFetchEntry
+		
+		IF MIXER_SINGLE=1
+			; Set HW channel to correct channel for single mixing
+			move.w	#mxsingledma,d2
+			and.w	#$f0,d0
+			or.w	d2,d0
+		ENDIF
+		
+		IF MIXER_ENABLE_PLUGINS=1
+			move.w	d0,d6						; Save HW/Mixer channel
+		ENDIF
+		
+		; Pre-fetch elements from structure as needed
+		move.w	mfx_priority(a0),d2
+		IF mxslength_word=1
+			move.w	mfx_length+2(a0),d1
+		ELSE
+			move.l	mfx_length(a0),d1
+		ENDIF
+
+		; Jump to selected channel
+		move.w	d0,d7
+		asr.w	#4,d7
+		add.w	d7,d7
+		add.w	d7,d7
+		jmp		.chjmp_table(pc,d7.w)
+
+		; Jump table
+		; The empty space included in the table is required for the 
+		; conversion between channel bit and channel number.
+.chjmp_table
+		nop
+		nop
+		jmp	.ch0(pc)
+		jmp	.ch1(pc)
+		dc.l	0
+		jmp	.ch2(pc)
+		dc.l	0,0,0
+			
+.ch3	lea.l	mch_SIZEOF(a1),a1
+.ch2	lea.l	mch_SIZEOF(a1),a1
+.ch1	lea.l	mch_SIZEOF(a1),a1
+.ch0		
+		; Check if the channel can be used
+		swap	d0
+		move.w	mch_status(a1),d7
+		smi		d0
+		or.b	d0,d7
+		swap	d0
+		addq.w	#1,d7
+		add.w	d7,d7
+		add.w	d7,d7
+		jmp		.stjmp_table(pc,d7.w)
+		
+		; Jump table for the different statuses (free, in use, looping)
+.stjmp_table
+		jmp		.not_free(pc)
+		jmp		.play_fx(pc)
+		jmp		.check_priority(pc)
+		
+.check_priority
+		; Check if the priority of the new FX is equal or higher than the
+		; currently playing FX.
+		cmp.w	mch_priority(a1),d2
+		bge.s	.play_fx
+		
+		; Channel is not free
+.not_free
+		moveq	#-1,d0
+		bra		.done
+		
+.play_fx
+		; Add sample to selected channel here
+		IF mxsize_x32=1
+			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
+		ELSE
+			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
+		ENDIF
+		
+		IF MIXER_ENABLE_PLUGINS=1
+			move.w	d6,d0					; Restore HW/Mixer channel
+		ENDIF
+		
+		bsr		MixerChannelWrite
+		tst.w	d0							; Set return value
+
+.done		
+		movem.l	(sp)+,d1/d6/d7/a1/a6		; Stack
+		move.w	(sp)+,d2
+		
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_DEFAULT_COLOUR,$dff180
+			tst.w	d0						; Restore condition code
+		ENDIF
+		rts
+
+		; Routine: MixerStopFX
+		; This routine stops playback on the given hardware/mixer channel(s).
+		;
+		; Note: this routine supports selecting multiple hardware and mixer
+		;       channels in a single call. In this case, the relevant mixer
+		;       channels stop playback on all selected hardware channels.
+		;
+		; D0 - Hardware channel/mixer channel mask (f.ex. DMAF_AUD0|MIX_CH1)
+		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+MixerStopFX
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_OTHER_COLOUR,$dff180
+		ENDIF
+		IF MIXER_SINGLE=1
+			IF MIXER_68020=1
+				movem.l	d0-d2/d7/a0,-(sp)	; Stack
+			ELSE
+				movem.l	d0/d1/a0,-(sp)		; Stack
+			ENDIF
+			and.w	#$fff0,d0
+			or.w	#mxsingledma,d0			; Set correct hardware channel
+		ELSE
+			IF MIXER_68020=1
+				movem.l	d0-d3/d6/d7/a0/a1,-(sp)	; Stack
+			ELSE
+				movem.l	d0-d2/d7/a0/a1,-(sp)	; Stack
+			ENDIF
+		ENDIF
+		
+		; Fetch mixer & setup for stopping FX
+		lea.l	mixer(pc),a0
+		moveq	#MIXER_CHAN_INACTIVE,d1
+
+		; Single mixer path
+		IF MIXER_SINGLE=1
+			; Fetch the first mixer entry/channel
+			lea.l	mx_mixer_entries+mxe_channels(a0),a0
+			
+			; Check each channel
+			IF MIXER_68020=1
+				; Set up for loop
+				moveq	#4,d2
+				moveq	#4-1,d7
+				
+.chlp			btst	d2,d0
+				beq.s	.nxt_ch
+
+				move.w	d1,mch_status(a0)
+		
+.nxt_ch			lea.l	mch_SIZEOF(a0),a0
+				addq.w	#1,d2
+				dbra	d7,.chlp
+			ELSE
+				btst	#4,d0				; Check channel 0
+				beq.s	.ch1
+
+				move.w	d1,mch_status(a0)
+			
+.ch1			btst	#5,d0				; Check channel 1
+				beq.s	.ch2
+			
+				move.w	d1,mch_status+mch_SIZEOF(a0)
+			
+.ch2			btst	#6,d0				; Check channel 2
+				beq.s	.ch3
+			
+				move.w	d1,mch_status+(mch_SIZEOF*2)(a0)
+			
+.ch3			btst	#7,d0				; Check channel 3
+				beq.s	.stopfx_done
+			
+				move.w	d1,mch_status+(mch_SIZEOF*3)(a0)
+.stopfx_done
+			ENDIF
+		ENDIF
+
+		; Multi mixer path
+		IF MIXER_SINGLE=0
+			; Fetch first mixer entry
+			lea.l	mx_mixer_entries(a0),a0
+			
+			; Set up for loop
+			moveq	#4-1,d7
+			moveq	#0,d2
+			
+			; Loop over mixer entries
+.lp			lea.l	mxe_channels(a0),a1
+			btst	d2,d0
+			beq.s	.next_entry
+			
+			; Check each channel for current entry
+			IF MIXER_68020=1
+				; Set up for loop
+				moveq	#4,d3
+				moveq	#4-1,d6
+				
+.chlp			btst	d3,d0
+				beq.s	.nxt_ch
+
+				move.w	d1,mch_status(a1)
+		
+.nxt_ch			lea.l	mch_SIZEOF(a1),a1
+				addq.w	#1,d3
+				dbra	d6,.chlp
+			ELSE
+				btst	#4,d0				; Check channel 0
+				beq.s	.ch1
+			
+				move.w	d1,mch_status(a1)
+			
+.ch1			btst	#5,d0				; Check channel 1
+				beq.s	.ch2
+			
+				move.w	d1,mch_status+mch_SIZEOF(a1)
+			
+.ch2			btst	#6,d0				; Check channel 2
+				beq.s	.ch3
+			
+				move.w	d1,mch_status+(mch_SIZEOF*2)(a1)
+			
+.ch3			btst	#7,d0				; Check channel 3
+				beq.s	.next_entry
+			
+				move.w	d1,mch_status+(mch_SIZEOF*3)(a1)
+			ENDIF
+			
+			; Loop back
+.next_entry	lea.l	mxe_SIZEOF(a0),a0
+			addq.w	#1,d2
+			dbra	d7,.lp
+		ENDIF
+		
+		IF MIXER_SINGLE=1
+			IF MIXER_68020=1
+				movem.l	(sp)+,d0-d2/d7/a0	; Stack
+			ELSE
+				movem.l	(sp)+,d0/d1/a0		; Stack
+			ENDIF
+		ELSE
+			IF MIXER_68020=1
+				movem.l	(sp)+,d0-d3/d6/d7/a0/a1	; Stack
+			ELSE
+				movem.l	(sp)+,d0-d2/d7/a0/a1	; Stack
+			ENDIF
+		ENDIF
+		IF MIXER_TIMING_BARS=1
+			move.w	#MIXER_DEFAULT_COLOUR,$dff180
+		ENDIF
+		rts
+
+
+
 ;-----------------------------------------------------------------------------
 ; Interrupt handler / mixing routines
 ;-----------------------------------------------------------------------------
@@ -4183,4 +4211,20 @@ _MixerSetIRQDMACallbacks	EQU	MixerSetIRQDMACallbacks
 		ENDIF
 		
 	ENDIF
+	
+	ENDM
+
+;*****************************************************************************
+;*****************************************************************************
+; End of mixer code base macro
+;*****************************************************************************
+;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+; Run Mixer Macro if not in postfix mode
+;-----------------------------------------------------------------------------
+	IFND USE_MIXER_POSTFIX
+		MixAllCode
+	ENDIF
+
 ; End of File

@@ -215,7 +215,7 @@ MIXER_ENABLE_PLUGINS	EQU 1
 ;
 ; Note: enabling the return vector slightly increases CPU overhead during
 ;       interrupt processing.
-MIXER_ENABLE_RETURN_VECTOR	EQU 0
+MIXER_ENABLE_RETURN_VECTOR	EQU 1
 
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
