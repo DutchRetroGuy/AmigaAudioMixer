@@ -70,7 +70,24 @@ MPlLongDiv	MACRO
 			movem.l	(sp)+,\4/\5				; Stack
 		ENDIF
 			ENDM
-		
+
+;*****************************************************************************
+;*****************************************************************************
+; Plugins all code macro
+; This macro allows adding a postfix to plugin routines & variables. This is
+; used by the PerfomanceTest tool to be able to utilise many different 
+; configurations for the plugins.
+;
+; \1 - postfix to use
+;
+; Note: by default, the plugins will not use a postfix. Enabling this is done
+;       by setting the BUILD_MIXER_POSTFIX build flag. This will disable the
+;       automatic use of this macro at the end of mixer.asm
+; 
+;*****************************************************************************
+;*****************************************************************************
+PlgAllCode	MACRO	
+	
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
 ;-----------------------------------------------------------------------------
@@ -2053,5 +2070,19 @@ _MixerPluginGetMaxDataSize		EQU MixerPluginGetMaxDataSize
 	XDEF	_MixPluginRatioPrecalc
 
 		ENDIF
+	ENDM
+	
+;*****************************************************************************
+;*****************************************************************************
+; End of plugins code base macro
+;*****************************************************************************
+;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+; Run Plugins Macro if not in postfix mode
+;-----------------------------------------------------------------------------
+	IFND BUILD_MIXER_POSTFIX
+		PlgAllCode
+	ENDIF
 
 ; End of File

@@ -1,6 +1,6 @@
-; $VER: performance_test_wrapper.asm 3.7 (30.01.25)
+; $VER: mixer_wrapper.asm 3.7 (30.01.25)
 ;
-; performance_test_wrapper.asm
+; mixer_wrapper.asm
 ; Wrapper around mixer.asm for PerformanceTest program.
 ;  
 ;
@@ -15,7 +15,6 @@
 	include hardware/custom.i
 	include hardware/dmabits.i
 	include mixer.i
-	include mixer.asm
 	
 ; Constants
 
@@ -65,12 +64,15 @@ MIXER_SIZEXBUF				SET 0
 MIXER_ENABLE_CALLBACK		SET 0
 MIXER_ENABLE_PLUGINS		SET	0
 
-mixer_32b_cnt				SET mixer_32b_cnt4
-mixer_PAL_buffer_size		SET mixer_PAL_buffer_size4
-mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
+;mixer_32b_cnt				SET mixer_32b_cnt4
+;mixer_PAL_buffer_size		SET mixer_PAL_buffer_size4
+;mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
 
 mxslength_word				SET	0
 mxsize_x32					SET 0
+
+	; Include mixer.asm
+	include mixer.asm
 
 	; Mixer tests
 ptest_start

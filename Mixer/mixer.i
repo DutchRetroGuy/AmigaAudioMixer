@@ -452,6 +452,8 @@
 	IFND	MIXER_I
 MIXER_I	SET	1
 
+	IFND	BUILD_MIXER_WRAPPER
+
 ; References macro
 EXREF	MACRO
 		IFD BUILD_MIXER
@@ -506,6 +508,8 @@ EXREF	MACRO
 	ENDIF
 	
 	EXREF	mixer
+	
+	ENDIF	; BUILD_MIXER_WRAPPER
 
 ; Constants
 MIX_PAL					EQU	0				; Amiga system type
@@ -528,7 +532,9 @@ MIX_CH_BUSY				EQU	1				; Channel is playing a sample
 MIX_PLUGIN_STD			EQU	0				; Standard plugin
 MIX_PLUGIN_NODATA		EQU	1				; Plugin that doesn't update
 											; sample data
-
+	IFD BUILD_MIXER_WRAPPER
+mixer_output_channels	EQU	DMAF_AUD0
+	ENDIF
 mixer_output_aud0	EQU	mixer_output_channels&1
 mixer_output_aud1	EQU	(mixer_output_channels>>1)&1
 mixer_output_aud2	EQU	(mixer_output_channels>>2)&1
@@ -552,6 +558,10 @@ mixer_PAL_period		EQU (mixer_period*mixer_PAL_cycles)/mixer_NTSC_cycles
 ;       get the buffer size, always refer to mixer_buffer_size instead as the
 ;       mixer internally requires multiple buffers to work correctly and
 ;       mixer_buffer_size takes this into account.
+	IFD BUILD_MIXER_WRAPPER
+mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
+mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
+	ELSE
 	IF MIXER_68020=0
 		IF MIXER_SIZEX32=1
 mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
@@ -564,12 +574,17 @@ mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
 mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
 mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
 	ENDIF
+	ENDIF
 
 ; Note: use mixer_buffer_size to get the correct size for the mixer Chip RAM
 ;       block to allocate.
 mixer_buffer_size		EQU	mixer_PAL_buffer_size*(1+(mixer_output_count*2))
 mixer_32b_cnt			EQU mixer_PAL_buffer_size/32
 
+	IFD BUILD_MIXER_WRAPPER
+.mixer_sam_mult			SET 4
+.mixer_sam_mult_ntsc	SET 4
+	ELSE
 .mixer_sam_mult			SET 4
 .mixer_sam_mult_ntsc	SET 4
 	IF MIXER_SIZEX32=1
@@ -580,14 +595,19 @@ mixer_32b_cnt			EQU mixer_PAL_buffer_size/32
 .mixer_sam_mult			SET mixer_PAL_buffer_size
 .mixer_sam_mult_ntsc	SET mixer_NTSC_buffer_size
 	ENDIF
+	ENDIF
 mixer_PAL_multiple		EQU .mixer_sam_mult
 mixer_NTSC_multiple		EQU .mixer_sam_mult_ntsc
 
 ; Note: use mixer_plugin_buffer_size to get the correct size for the mixer
 ;       plugin memory to allocate. This memory can be in any memory region,
 ;		Chip, Slow or Fast RAM.
+	IFD BUILD_MIXER_WRAPPER
+mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_output_count
+	ELSE
 	IF MIXER_ENABLE_PLUGINS=1 
 mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_output_count
+	ENDIF
 	ENDIF
 	
 ; Public structures
@@ -621,6 +641,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	LABEL	mxicb_SIZEOF
 
 ; Internal (private) structures
+	IFND BUILD_MIXER_WRAPPER
+
  STRUCTURE MXChannel,0
 	IF MIXER_68020=0
 		IF MIXER_WORDSIZED=1
@@ -696,6 +718,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		UWORD	mx_counter
 	ENDIF
 	LABEL	mx_SIZEOF
+	
+	ENDC	; BUILD_MIXER_WRAPPER
 	
 	ENDC	; MIXER_I
 ; End of File

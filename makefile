@@ -217,7 +217,7 @@ PAIROBJS=$(PAIRMIXERDIR)$(SLASH)MultiPairedMixer.o $(PAIRMIXERDIR)$(SLASH)Mixer$
 MINIMALOBJS=$(MINIMALMIXERDIR)$(SLASH)MinimalMixer.o $(MINIMALMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.o
 CALLBOBJS=$(CALLBACKEXAMPLEDIR)$(SLASH)CallbackExample.o $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.o $(CALLBACKEXAMPLEDIR)$(SLASH)Support$(SLASH)strings.o
 PLUGINEXOBJS=$(PLUGINEXAMPLEDIR)$(SLASH)PluginExample.o $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.o $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)plugins.o $(PLUGINEXAMPLEDIR)$(SLASH)Support$(SLASH)strings.o
-PERFOBJS=$(PERFTESTDIR)$(SLASH)PerformanceTest.o $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.o $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.o $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o
+PERFOBJS=$(PERFTESTDIR)$(SLASH)PerformanceTest.o $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.o $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.o $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o
 
 # C objects
 CMIXOBJS=$(CMIXERDIR)$(SLASH)CMixer.o $(CMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.o $(CMIXERDIR)$(SLASH)Plugins$(SLASH)plugins.o
@@ -247,10 +247,23 @@ CSAMCONVOBJECTS=$(CSAMCONVOBJS)
 housekeeping:
 	$(CPDIR_MIXER)
 	$(CPDIR_PLUGINS)
+	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(PERFTESTDIR)$(SLASH)Mixer
+	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(PERFTESTDIR)$(SLASH)Mixer
+	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(PERFTESTDIR)$(SLASH)Mixer
+	$(CP) $(PLUGINSDIR)$(SLASH)plugins.asm $(PERFTESTDIR)$(SLASH)Plugins
+	$(CP) $(PLUGINSDIR)$(SLASH)plugins.i $(PERFTESTDIR)$(SLASH)Plugins
+	$(CP) $(PLUGINSDIR)$(SLASH)plugins.h $(PERFTESTDIR)$(SLASH)Plugins
 
 housekeeping_cleanup:
 	$(RMDIR_MIXER)
 	$(RMDIR_PLUGINS)
+	$(RM) $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.asm
+	$(RM) $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.i
+	$(RM) $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.h
+	$(RM) $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.asm
+	$(RM) $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.i
+	$(RM) $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.h	
+
 	
 # Targets
 ifeq ($(COMPILE_C),0)
@@ -436,11 +449,11 @@ $(PLUGINEXAMPLEDIR)$(SLASH)Support$(SLASH)strings.o: $(PLUGINEXAMPLEDIR)$(SLASH)
 
 # PerformanceTest objects
 $(PERFTESTDIR)$(SLASH)PerformanceTest.o: $(PERFTESTDIR)$(SLASH)PerformanceTest.asm $(PERFTESTDIR)$(SLASH)PerformanceTest.i $(SUPPORTDIR)$(SLASH)debug.i $(GFXDIR)$(SLASH)displaybuffers.i $(GFXDIR)$(SLASH)blitter.i $(GFXDIR)$(SLASH)copperlists.i $(GFXDIR)$(SLASH)font.i $(CONVERTERDIR)$(SLASH)converter.i $(DATADIR)$(SLASH)samples.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.i
-	$(ASM) $(ASMFLAGS_PERF) -DBUILD_DBUFFERS $< -o $@
-$(PERFTESTDIR)$(SLASH)Mixer$(SLASH)performance_test_wrapper.o: $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)performance_test_wrapper.asm $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)performance_test_wrapper.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
-	$(ASM) $(ASMFLAGS_PERF) -DBUILD_MIXER_PMIX -DBUILD_MIXER_POSTFIX $< -o $@
-$(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.o: $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.asm $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.i $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_config.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
-	$(ASM) $(ASMFLAGS_PERF) -DBUILD_PLUGINS_PMIX $< -o $@
+	$(ASM) $(ASMFLAGS_PERF) -DBUILD_DBUFFERS -DBUILD_MIXER_WRAPPER $< -o $@
+$(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.o: $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.asm $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
+	$(ASM) $(ASMFLAGS_PERF) -DBUILD_MIXER -DBUILD_MIXER_POSTFIX -DBUILD_MIXER_WRAPPER $< -o $@
+$(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.o: $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.asm $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.i $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_config.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
+	$(ASM) $(ASMFLAGS_PERF) -DBUILD_PLUGINS -DBUILD_MIXER_POSTFIX -DBUILD_MIXER_WRAPPER $< -o $@
 $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o: $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.asm $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.i
 	$(ASM) $(ASMFLAGS_PERF) -DBUILD_STRINGS_PMIX $< -o $@
 	

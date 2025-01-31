@@ -26,9 +26,9 @@
 	include copperlists.i
 	include font.i
 	include converter.i
-	include mixer_config.i
-	include performance_test_wrapper.i
-	include plugins.i
+	include mixer.i
+	include mixer_wrapper.i
+	include plugins_wrapper.i
 	include PerformanceTest.i
 	include strings.i
 	include support.i

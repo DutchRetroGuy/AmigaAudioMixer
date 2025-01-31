@@ -1,4 +1,4 @@
-; $VER: plugins.i 1.1 (04.04.24)
+; $VER: plugins.i 1.1 (04.02.24)
 ;
 ; plugins.i
 ; Include file for plugins.asm
@@ -141,7 +141,7 @@
 ;      plugins.i of naming them MixPlugin<plugin name> is suggested.
 ;
 ;    Note: the structure passed in A2 is an internal mixer structure which may
-;          change between versions. Do not alter it's contents with any plugin
+;          change between versions. Do not alter its contents with any plugin
 ;          routines. It is provided solely to enable calling 
 ;          MixerSetPluginDeferredPtr(), if needed.
 ;
@@ -374,21 +374,21 @@
 ; ----------------
 ; D0=MixPluginGetMultiplier()
 ;	Returns the type of sample size multiple the mixer expects. This can be
-;   used instead of MixerGetSampleMinSize() if the actual vaklue is not 
+;   used instead of MixerGetSampleMinSize() if the actual value is not 
 ;   relevant, only whether or not it's 4x, 32x or (buffer_size)x.
 ;
 ;   Returns either MXPLG_MULTIPLIER_4, MXPLG_MULTIPLIER_32 or 
 ;   MXPLG_MULTIPLIER_BUFSIZE.
 ;
-; MixerPluginGetMaxInitDataSize()
-;   This routine returns the maximum size of any of the built in plugin's
+; D0=MixerPluginGetMaxInitDataSize()
+;   This routine returns the maximum size of any of the built in plugin
 ;   initialisation data structures.
 ;
-; MixerPluginGetMaxDataSize()
-;   This routine returns the maximum size of any of the built in plugin's data
+; D0=MixerPluginGetMaxDataSize()
+;   This routine returns the maximum size of any of the built in plugin data
 ;   structures.
 ;
-; MixPluginRatioPrecalc()
+; MixPluginRatioPrecalc(A0=effect_structure,D0=pitch_ratio,D1=shift_value)
 ;   This routine can be used to pre-calculate length and loop offset values
 ;   for plugins that need these values divided by a FP8.8 ratio.
 ;   The routine calculates the values using a pointer to a filled MXEffect
@@ -419,7 +419,7 @@ MIXER_PLUGINS_I	SET	1
 
 ; References macro
 EXREF	MACRO
-		IFD BUILD_PLUGINS_PMIX
+		IFD BUILD_PLUGINS
 			XDEF \1
 		ELSE
 			XREF \1
@@ -427,13 +427,22 @@ EXREF	MACRO
 		ENDM
 
 ; References
-	EXREF	PLPerfTest_init_routines
-	EXREF	PLPerfTest_routines
+	EXREF	MixPluginInitDummy
+	EXREF	MixPluginInitRepeat
+	EXREF	MixPluginInitSync
+	EXREF	MixPluginInitVolume
+	EXREF	MixPluginInitPitch
 	
-	EXREF	plrepeat
-	EXREF	plsync
-	EXREF	plvolume
-	EXREF	plpitch
+	EXREF	MixPluginDummy
+	EXREF	MixPluginRepeat
+	EXREF	MixPluginSync
+	EXREF	MixPluginVolume
+	EXREF	MixPluginPitch
+	
+	EXREF	MixPluginGetMultiplier
+	EXREF	MixerPluginGetMaxInitDataSize
+	EXREF	MixerPluginGetMaxDataSize
+	EXREF	MixPluginRatioPrecalc
 
 ; Constants
 MXPLG_MULTIPLIER_4			EQU	0
@@ -490,16 +499,49 @@ MXPLG_SYNC_DEFERRED			EQU	3
 	LABEL	mpid_snc_SIZEOF
 	
 mxplg_max_idata_size	SET		0
+	IFD BUILD_MIXER_WRAPPER
 mxplg_max_idata_size	SET		mpid_rep_SIZEOF
+	ELSE
+	IF MXPLUGIN_REPEAT=1
+mxplg_max_idata_size	SET		mpid_rep_SIZEOF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpid_snc_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_snc_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_SYNC=1
+		IF mpid_snc_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_snc_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpid_vol_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_vol_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_VOLUME=1
+		IF mpid_vol_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_vol_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpid_pit_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_PITCH=1
+		IF mpid_pit_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_pit_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
 
 
 ; Structures (internal)
@@ -548,16 +590,49 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 	LABEL	mpd_snc_SIZEOF
 
 mxplg_max_data_size	SET		0
+	IFD BUILD_MIXER_WRAPPER
 mxplg_max_data_size	SET		mpd_rep_SIZEOF
+	ELSE
+	IF MXPLUGIN_REPEAT=1
+mxplg_max_data_size	SET		mpd_rep_SIZEOF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpd_snc_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_snc_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_SYNC=1
+		IF mpd_snc_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_snc_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpd_vol_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_vol_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_VOLUME=1
+		IF mpd_vol_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_vol_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
 		IF mpd_pit_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_pit_SIZEOF
 		ENDIF
+	ELSE
+	IF MXPLUGIN_PITCH=1
+		IF mpd_pit_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_pit_SIZEOF
+		ENDIF
+	ENDIF
+	ENDIF
 	
 	ENDC	; MIXER_PLUGINS_I
 ; End of File

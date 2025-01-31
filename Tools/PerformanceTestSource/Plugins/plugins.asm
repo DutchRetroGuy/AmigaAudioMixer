@@ -1,26 +1,15 @@
-;
-; IMPORTANT:
-; Plugin code below is intended *only* for the performance test program.
-;
-; It consists of the same code as the normal plugins.asm file, but has several
-; duplicated functions and hardcoded configuration settings to allow multiple
-; tests to be run in one program.
-;
-; For the plugins designed for use in non-performance tests, see the Plugins
-; directory in the AudioMixer directory/archive.
-;
-
-
-
-
-; $VER: plugins.asm 1.1 (02.04.24)
+; $VER: plugins.asm 1.1 (05.04.24)
 ;
 ; plugins.asm
 ; Audio mixer plugin routines
 ;
+; For plugin API, see plugins.i and the rest of the mixer documentation.
+;
+; Note: all plugin configuration is done via plugins_config.i.
+; 
 ; Author: Jeroen Knoester
 ; Version: 1.1
-; Revision: 20240204
+; Revision: 20240205
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -46,7 +35,7 @@
 		; \5 - Data register for use as temporary variable
 		; \6 - Set to 1 to push & pull /4 and /5 from the stack
 		;
-		; Note: each parameter requires a different register
+		; Note: parameters \1 to \5 require different registers each.
 MPlLongDiv	MACRO
 		IF \6=1
 			movem.l	\4/\5,-(sp)				; Stack
@@ -81,11 +70,24 @@ MPlLongDiv	MACRO
 			movem.l	(sp)+,\4/\5				; Stack
 		ENDIF
 			ENDM
+
+;*****************************************************************************
+;*****************************************************************************
+; Plugins all code macro
+; This macro allows adding a postfix to plugin routines & variables. This is
+; used by the PerfomanceTest tool to be able to utilise many different 
+; configurations for the plugins.
+;
+; \1 - postfix to use
+;
+; Note: by default, the plugins will not use a postfix. Enabling this is done
+;       by setting the BUILD_MIXER_POSTFIX build flag. This will disable the
+;       automatic use of this macro at the end of mixer.asm
+; 
+;*****************************************************************************
+;*****************************************************************************
+PlgAllCode	MACRO	
 	
-		; Macro: PLPerfTest
-		; This macro contains all routines with a suffix for the type of test done
-		; \1 suffix to use
-PLPerfTest	MACRO	
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
 ;-----------------------------------------------------------------------------
@@ -97,13 +99,13 @@ PLPerfTest	MACRO
 		;
 		; Plugin type: PLUGIN_NODATA or PLUGIN_STD
 		; Plugin data structure: N/A
-MixPluginInitDummy\1
+MixPluginInitDummy
 		rts
 		
 		; Routine: MixPluginInitPitch
 		; This routine is the initialisation routine for the pitch plugin.
 		; The pitch plugin changes the pitch (and duration) of the sample
-		; pointed to in the MXEffect structure. There are three modes for the
+		; pointed to in the MXEffect structure. There are two modes for the
 		; pitch plugin:
 		;    * MXPLG_PITCH_STANDARD   - resamples individual bytes (slowest)
 		;    * MXPLG_PITCH_LOWQUALITY - resamples longwords at a time, is
@@ -174,13 +176,13 @@ MixPluginInitDummy\1
 		; Plugin type: PLUGIN_STD
 		; Plugin init data structure: MXPDPitchInitData
 		;
-		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX or 
-		;      MixerPlayChannelFX
+		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX() or 
+		;      MixerPlayChannelFX()
 		; A1 - Pointer to plugin initialisation data structure, as passed by
-		;      MixerPlayFX or MixerPlayChannelFX
-		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX or
-		;      MixerPlayChannelFX
-MixPluginInitPitch\1
+		;      MixerPlayFX() or MixerPlayChannelFX()
+		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
+		;      MixerPlayChannelFX()
+MixPluginInitPitch
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d1,-(sp)					; Stack
 
@@ -294,13 +296,13 @@ MixPluginInitPitch\1
 		; Plugin type: PLUGIN_STD
 		; Plugin init data structure: MXPDVolumeInitData
 		;
-		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX or 
-		;      MixerPlayChannelFX
+		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX() or 
+		;      MixerPlayChannelFX()
 		; A1 - Pointer to plugin initialisation data structure, as passed by
-		;      MixerPlayFX or MixerPlayChannelFX
-		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX or
-		;      MixerPlayChannelFX
-MixPluginInitVolume\1
+		;      MixerPlayFX() or MixerPlayChannelFX()
+		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
+		;      MixerPlayChannelFX()
+MixPluginInitVolume
 	IF MXPLUGIN_VOLUME=1
 		move.w	d0,-(sp)					; Stack
 		
@@ -348,14 +350,14 @@ MixPluginInitVolume\1
 		; Plugin type: PLUGIN_NODATA
 		; Plugin init data structure: MXPDRepeatInitData
 		;
-		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX or 
-		;      MixerPlayChannelFX
+		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX() or 
+		;      MixerPlayChannelFX()
 		; A1 - Pointer to plugin initialisation data structure, as passed by
-		;      MixerPlayFX or MixerPlayChannelFX
-		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX or
-		;      MixerPlayChannelFX
+		;      MixerPlayFX() or MixerPlayChannelFX()
+		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
+		;      MixerPlayChannelFX()
 		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
-MixPluginInitRepeat\1
+MixPluginInitRepeat
 	IF MXPLUGIN_REPEAT=1
 		move.l	d0,-(sp)					; Stack
 	
@@ -459,13 +461,13 @@ MixPluginInitRepeat\1
 		; Plugin type: PLUGIN_NODATA
 		; Plugin init data structure: MXPDSyncInitData
 		;
-		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX or 
-		;      MixerPlayChannelFX
+		; A0 - Pointer to MXEffect structure as passed by MixerPlayFX() or
+		;      MixerPlayChannelFX()
 		; A1 - Pointer to plugin initialisation data structure, as passed by
-		;      MixerPlayFX or MixerPlayChannelFX
-		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX or
-		;      MixerPlayChannelFX
-MixPluginInitSync\1
+		;      MixerPlayFX() or MixerPlayChannelFX()
+		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
+		;      MixerPlayChannelFX()
+MixPluginInitSync
 	IF MXPLUGIN_SYNC=1
 		; Copy over mpid values
 		move.l	mpid_snc_address(a1),mpd_snc_address(a2)
@@ -526,7 +528,7 @@ MixPluginInitSync\1
 		;
 		; Plugin type: PLUGIN_NODATA or PLUGIN_STD
 		; Plugin data structure: N/A
-MixPluginDummy\1
+MixPluginDummy
 		rts
 		
 		; Routine: MixPluginPitch
@@ -537,13 +539,12 @@ MixPluginDummy\1
 		; Plugin data structure: MXPDPitchData
 		;
 		;   A0 - Pointer to the output buffer to use
-		;   A1 - Pointer to the plugin data structure as passed when calling
-		;        MixerPlayFX or MixerPlayChannelFX
+		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginPitch\1
+MixPluginPitch
 	IF MXPLUGIN_PITCH=1
 		move.l	d7,-(sp)
 		
@@ -569,15 +570,15 @@ MixPluginPitch\1
 		ENDIF
 		
 .jp_table
-		jmp		MixPluginPitch1x\1(pc)
-		jmp		MixPluginPitchStandard\1(pc)
-		jmp		MixPluginPitchLowQuality\1(pc)
+		jmp		MixPluginPitch1x(pc)
+		jmp		MixPluginPitchStandard(pc)
+		jmp		MixPluginPitchLowQuality(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
 	ENDIF
 
-MixPluginPitch1x\1
+MixPluginPitch1x
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d6/a0/a2,-(sp)			; Stack
 
@@ -623,7 +624,7 @@ MixPluginPitch1x\1
 	ENDIF
 		rts
 		
-MixPluginPitchStandard\1
+MixPluginPitchStandard
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2,-(sp)			; Stack
 		
@@ -643,7 +644,7 @@ MixPluginPitchStandard\1
 		move.l	mpd_pit_length(a1),d7
 		move.l	mpd_pit_sample_ptr(a1),a2
 		
-		; Split FP 8.8 values into two bytes (new)
+		; Split FP 8.8 values into two bytes
 		move.w	d4,d3
 		asr.w	#8,d3						; High-byte delta
 		and.w	#$00ff,d4					; Low-byte delta
@@ -755,7 +756,7 @@ MixPluginPitchStandard\1
 	ENDIF
 		rts
 		
-MixPluginPitchLowQuality\1
+MixPluginPitchLowQuality
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2,-(sp)			; Stack
 		
@@ -859,13 +860,12 @@ MixPluginPitchLowQuality\1
 		; Plugin data structure: MXPDVolumeData
 		;
 		;   A0 - Pointer to the output buffer to use
-		;   A1 - Pointer to the plugin data structure as passed when calling
-		;        MixerPlayFX or MixerPlayChannelFX
+		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)	
-MixPluginVolume\1
+MixPluginVolume
 	IF MXPLUGIN_VOLUME=1
 		move.l	d7,-(sp)
 		
@@ -891,20 +891,20 @@ MixPluginVolume\1
 		ENDIF
 		
 .jp_table
-		jmp		MixPluginVolumeTable\1(pc)
-		jmp		MixPluginVolumeShift\1(pc)
+		jmp		MixPluginVolumeTable(pc)
+		jmp		MixPluginVolumeShift(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
 	ENDIF
 
 		; Table based volume
-MixPluginVolumeTable\1
+MixPluginVolumeTable
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
 		
 			IF MIXER_68020=1
-				movem.l	d0/d5-d6/a0-a3,-(sp)	; Stack
+				movem.l	d0/d4-d6/a0-a3,-(sp)	; Stack
 			ELSE
 				movem.l	d0/d6/a0-a3,-(sp)		; Stack
 			ENDIF
@@ -921,6 +921,7 @@ MixPluginVolumeTable\1
 			move.w	d0,d7
 			lsr.w	#2,d7
 			subq.w	#1,d7
+			bmi.s	.update_sample_offset
 			
 			; Check for silence (= volume 0)
 			move.w	mpd_vol_volume(a1),d6
@@ -941,16 +942,21 @@ MixPluginVolumeTable\1
 
 .lp_vol		
 			IF MIXER_68020=1
-				move.b	(a3)+,d6
+				move.l	(a3)+,d4
+				rol.l	#8,d4
+				move.b	d4,d6
+				rol.l	#8,d4
 				move.b	0(a2,d6.w),d5
 				lsl.l	#8,d5
-				move.b	(a3)+,d6
+				move.b	d4,d6
+				rol.l	#8,d4
 				move.b	0(a2,d6.w),d5
 				lsl.l	#8,d5
-				move.b	(a3)+,d6
+				move.b	d4,d6
+				rol.l	#8,d4
 				move.b	0(a2,d6.w),d5
 				lsl.l	#8,d5
-				move.b	(a3)+,d6
+				move.b	d4,d6
 				move.b	0(a2,d6.w),d5
 				move.l	d5,(a0)+
 			ELSE
@@ -997,7 +1003,7 @@ MixPluginVolumeTable\1
 			move.l	d0,mpd_vol_sample_offset(a1)
 
 			IF MIXER_68020=1
-				movem.l	(sp)+,d0/d5-d6/a0-a3	; Stack
+				movem.l	(sp)+,d0/d4-d6/a0-a3	; Stack
 			ELSE
 				movem.l	(sp)+,d0/d6/a0-a3		; Stack
 			ENDIF
@@ -1008,7 +1014,7 @@ MixPluginVolumeTable\1
 		rts
 		
 		; Shift based volume
-MixPluginVolumeShift\1
+MixPluginVolumeShift
 	IF MXPLUGIN_VOLUME=1
 		IF MIXER_68020=1
 			movem.l	d0/d2-d6/a0-a3,-(sp)	; Stack
@@ -1091,17 +1097,17 @@ MixPluginVolumeShift\1
 			move.l	(a3)+,d4
 			btst	#31,d4
 			sne		d5
-			asl.l	#8,d5
+			lsl.l	#8,d5
 			btst	#23,d4
 			sne		d5
-			asl.l	#8,d5
+			lsl.l	#8,d5
 			btst	#15,d4
 			sne		d5
-			asl.l	#8,d5
+			lsl.l	#8,d5
 			btst	#7,d4
 			sne		d5
 			and.l	d2,d5					; Mask for upper bits in D2
-			asr.l	d6,d4					; D6 = shift value
+			lsr.l	d6,d4					; D6 = shift value
 			and.l	d3,d4					; Mask for lower bits in d3
 			or.l	d5,d4					; Correct upper bits set in D0
 			move.l	d4,(a0)+
@@ -1168,13 +1174,12 @@ MixPluginVolumeShift\1
 		; Plugin type: PLUGIN_NODATA
 		; Plugin data structure: MXPDRepeatData
 		;
-		;   A1 - Pointer to the plugin data structure as passed when calling
-		;        MixerPlayFX or MixerPlayChannelFX
+		;   A1 - Pointer to the plugin data structure
 		;	A2 - Pointer to the MXChannel structure for the current channel
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginRepeat\1
+MixPluginRepeat
 	IF MXPLUGIN_REPEAT=1
 		; Test if the effect triggered already
 		tst.w	mpd_rep_triggered(a1)
@@ -1190,7 +1195,7 @@ MixPluginRepeat\1
 		move.w	#1,mpd_rep_triggered(a1)
 		
 		; Set deferred action routine
-		lea.l	MixPluginRepeatDeferred\1(pc),a0
+		lea.l	MixPluginRepeatDeferred(pc),a0
 		bsr		MixerSetPluginDeferredPtr
 		move.l	(sp)+,a0					; Stack
 .done
@@ -1208,9 +1213,8 @@ MixPluginRepeat\1
 		;
 		; Plugin data structure: MXPDRepeatData
 		;
-		;   A1 - Pointer to the plugin data structure as passed when calling
-		;        MixerPlayFX or MixerPlayChannelFX
-MixPluginRepeatDeferred\1
+		;   A1 - Pointer to the plugin data structure
+MixPluginRepeatDeferred
 	IF MXPLUGIN_REPEAT=1
 		; Delay done, fire the repeat
 		movem.l	d0/a0,-(sp)					; Stack
@@ -1237,13 +1241,12 @@ MixPluginRepeatDeferred\1
 		; for more information.
 		;
 		;   A0 - Pointer to the output buffer to use
-		;   A1 - Pointer to the plugin data structure as passed when calling
-		;        MixerPlayFX or MixerPlayChannelFX
+		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginSync\1
+MixPluginSync
 	IF MXPLUGIN_SYNC=1
 		; Test if the sync plugin is done
 		tst.w	mpd_snc_done(a1)
@@ -1392,10 +1395,42 @@ MixPluginSync\1
 
 ;-----------------------------------------------------------------------------
 ; Plugin support routines
-;
-; Note: for performance test version MixPluginGetMultiplier & 
-;       MixerPluginGetMaxDataSize should be omitted.
 ;-----------------------------------------------------------------------------
+		; Routine: MixerPluginGetMultiplier
+		; This routine returns the minimum size a sample must be a multiple
+		; of.
+		;
+		; D0 - Minimum multiple size
+MixPluginGetMultiplier
+		IF MIXER_SIZEX32=1
+			IF MIXER_SIZEXBUF=1
+				moveq	#MXPLG_MULTIPLIER_BUFSIZE,d0
+			ELSE
+				moveq	#MXPLG_MULTIPLIER_32,d0
+			ENDIF
+		ELSE
+			IF MIXER_SIZEXBUF=1
+				moveq	#MXPLG_MULTIPLIER_BUFSIZE,d0
+			ELSE
+				moveq	#MXPLG_MULTIPLIER_4,d0
+			ENDIF
+		ENDIF
+		rts
+
+		; Routine: MixerPluginGetMaxInitDataSize
+		; This routine returns the maximum size of any of the plugin init data
+		; structures.
+MixerPluginGetMaxInitDataSize
+		move.l	#mxplg_max_idata_size,d0
+		rts
+		
+		; Routine: MixerPluginGetMaxDataSize
+		; This routine returns the maximum size of any of the plugin data
+		; structures.
+MixerPluginGetMaxDataSize
+		move.l	#mxplg_max_data_size,d0
+		rts
+
 		; Routine: MixPluginRatioPrecalc
 		; This routine can be used to pre-calculate length and loop offset
 		; values for plugins that need these values divided by a FP8.8 ratio.
@@ -1415,7 +1450,7 @@ MixPluginSync\1
 		; A0 - Pointer to filled MXEffect structure
 		; D0 - FP8.8 ratio value
 		; D1 - Shift value
-MixPluginRatioPrecalc\1
+MixPluginRatioPrecalc
 		movem.l	d0-d3/d5-d7,-(sp)			; Stack
 
 		; Save shift value in D2 & ratio in D3
@@ -1523,37 +1558,15 @@ MixPluginRatioPrecalc\1
 .done
 		movem.l	(sp)+,d0-d3/d5-d7			; Stack
 		rts
-			ENDM
-			
-;-----------------------------------------------------------------------------
-; Plugin tests
-;-----------------------------------------------------------------------------
-
-	; Plugins base configuration
-MIXER_68020					SET 0
-MIXER_WORDSIZED				SET 0
-MIXER_SIZEX32				SET 0
-MIXER_SIZEXBUF				SET 0
-
-MXPLUGIN_REPEAT				SET	1
-MXPLUGIN_SYNC				SET	1
-MXPLUGIN_VOLUME				SET	1
-MXPLUGIN_PITCH				SET	1
-MXPLUGIN_68020_ONLY			SET	0
-MXPLUGIN_NO_VOLUME_TABLES	SET	0
-
-	; Plugin tests
-pltest_start
-	PLPerfTest				; No optimisations
-pltest_end
-
 
 ; Plugin data
+	IF MIXER_68020=1
 		cnop 0,4
-pldata_start
+	ENDIF
 plugin_fx_struct		blk.b	mfx_SIZEOF
-pldata_end
 
+	IF MXPLUGIN_VOLUME=1
+		IF MXPLUGIN_NO_VOLUME_TABLES=0
 vol_level_1		dc.b -9,-8,-8,-8,-8,-8,-8,-8
 				dc.b -8,-8,-8,-8,-8,-8,-8,-8
 				dc.b -7,-7,-7,-7,-7,-7,-7,-7
@@ -2015,46 +2028,61 @@ vol_level_14	dc.b -119,-119,-118,-117,-116,-115,-114,-113
 				dc.b 97,98,99,100,101,102,103,104
 				dc.b 105,105,106,107,108,109,110,111
 				dc.b 112,113,114,115,116,117,118,119
+				
 		cnop 0,4
-vol_tab_end
-
-PLPerfTest_init_routines
-		; MixPluginInitRepeat
-		dc.l	MixPluginInitRepeat
-plperftest_block_end
-		; MixPluginInitSync
-		dc.l	MixPluginInitSync
-		; MixPluginInitVolume
-		dc.l	MixPluginInitVolume
-		; MixPluginInitPitch
-		dc.l	MixPluginInitPitch
-
-PLPerfTest_routines
-		; MixPluginRepeat
-		dc.l	MixPluginRepeat
-		; MixPluginSync
-		dc.l	MixPluginSync
-		; MixPluginVolume
-		dc.l	MixPluginVolume
-		; MixPluginPitch
-		dc.l	MixPluginPitch
-		
-plperftest_block_size	EQU plperftest_block_end-PLPerfTest_init_routines
-
-plrepeat				EQU	0
-plsync					EQU	plperftest_block_size
-plvolume				EQU	plperftest_block_size*2
-plpitch					EQU	plperftest_block_size*3
-
-	IF PLPERF_SIZE_TEST=1
-pldata_size		EQU	pldata_end-pldata_start
-pltest_vol_size	EQU	vol_tab_end-vol_level_1
-pltest_size		EQU	pltest_end-pltest_start
-		echo "Data size (excluding volume tables):"
-		printv pldata_size
-		echo "Data size (volume tables only):"
-		printv pltest_vol_size
-		echo "Code size:"
-		printv pltest_size
+		ENDIF
 	ENDIF
+		
+		IF MIXER_C_DEFS=1
+; C style routine aliases
+_MixPluginInitDummy				EQU MixPluginInitDummy
+_MixPluginInitRepeat			EQU MixPluginInitRepeat
+_MixPluginInitSync				EQU MixPluginInitSync
+_MixPluginInitVolume			EQU MixPluginInitVolume
+_MixPluginInitPitch				EQU MixPluginInitPitch
+
+_MixPluginDummy					EQU MixPluginDummy
+_MixPluginRepeat				EQU MixPluginRepeat
+_MixPluginSync					EQU MixPluginSync
+_MixPluginVolume				EQU MixPluginVolume
+_MixPluginPitch					EQU MixPluginPitch
+_MixPluginRatioPrecalc			EQU	MixPluginRatioPrecalc
+
+_MixPluginGetMultiplier			EQU MixPluginGetMultiplier
+_MixerPluginGetMaxInitDataSize	EQU MixerPluginGetMaxInitDataSize
+_MixerPluginGetMaxDataSize		EQU MixerPluginGetMaxDataSize
+
+	XDEF	_MixPluginInitDummy
+	XDEF	_MixPluginInitRepeat
+	XDEF	_MixPluginInitSync
+	XDEF	_MixPluginInitVolume
+	XDEF	_MixPluginInitPitch
+
+	XDEF	_MixPluginDummy
+	XDEF	_MixPluginRepeat
+	XDEF	_MixPluginSync
+	XDEF	_MixPluginVolume
+	XDEF	_MixPluginPitch
+
+	XDEF	_MixPluginGetMultiplier
+	XDEF	_MixerPluginGetMaxInitDataSize
+	XDEF	_MixerPluginGetMaxDataSize
+	XDEF	_MixPluginRatioPrecalc
+
+		ENDIF
+	ENDM
+	
+;*****************************************************************************
+;*****************************************************************************
+; End of plugins code base macro
+;*****************************************************************************
+;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+; Run Plugins Macro if not in postfix mode
+;-----------------------------------------------------------------------------
+	IFND BUILD_MIXER_POSTFIX
+		PlgAllCode
+	ENDIF
+
 ; End of File
