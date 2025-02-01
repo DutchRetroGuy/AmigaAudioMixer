@@ -16,6 +16,7 @@
 
 ; Includes (OS includes assume at least NDK 1.3) 
 	include	mixer.i
+	include mixer_wrapper.i
 	include plugins_config.i
 	include	plugins.i
 	
@@ -42,41 +43,50 @@ MXPLUGIN_68020_ONLY			EQU 0
 MIXER_68020					SET 0
 	
 	; Unoptimised tests
-	PlgAllCode _000
+	PlgAllCode _pl
+	PlgAllCode _cbpl
 
 	; 68020 optimised tests
 MIXER_68020		SET 1
 
-	PlgAllCode _020
+	PlgAllCode _pl020
 	
 PLPerfTest_init_routines
 		; MixPluginInitRepeat
-		dc.l	MixPluginInitRepeat_000
-		dc.l	MixPluginInitRepeat_020
+		dc.l	MixPluginInitRepeat_pl
+		dc.l	MixPluginInitRepeat_cbpl
+		dc.l	MixPluginInitRepeat_pl020
 plperftest_block_end
 		; MixPluginInitSync
-		dc.l	MixPluginInitSync_000
-		dc.l	MixPluginInitSync_020
+		dc.l	MixPluginInitSync_pl
+		dc.l	MixPluginInitSync_cbpl
+		dc.l	MixPluginInitSync_pl020
 		; MixPluginInitVolume
-		dc.l	MixPluginInitVolume_000
-		dc.l	MixPluginInitVolume_020
+		dc.l	MixPluginInitVolume_pl
+		dc.l	MixPluginInitVolume_cbpl
+		dc.l	MixPluginInitVolume_pl020
 		; MixPluginInitPitch
-		dc.l	MixPluginInitPitch_000
-		dc.l	MixPluginInitPitch_020
+		dc.l	MixPluginInitPitch_pl
+		dc.l	MixPluginInitPitch_cbpl
+		dc.l	MixPluginInitPitch_pl020
 
 PLPerfTest_routines
 		; MixPluginRepeat
-		dc.l	MixPluginRepeat_000
-		dc.l	MixPluginRepeat_020
+		dc.l	MixPluginRepeat_pl
+		dc.l	MixPluginRepeat_cbpl
+		dc.l	MixPluginRepeat_pl020
 		; MixPluginSync
-		dc.l	MixPluginSync_000
-		dc.l	MixPluginSync_020
+		dc.l	MixPluginSync_pl
+		dc.l	MixPluginSync_cbpl
+		dc.l	MixPluginSync_pl020
 		; MixPluginVolume
-		dc.l	MixPluginVolume_000
-		dc.l	MixPluginVolume_020
+		dc.l	MixPluginVolume_pl
+		dc.l	MixPluginVolume_cbpl
+		dc.l	MixPluginVolume_pl020
 		; MixPluginPitch
-		dc.l	MixPluginPitch_000
-		dc.l	MixPluginPitch_020
+		dc.l	MixPluginPitch_pl
+		dc.l	MixPluginPitch_cbpl
+		dc.l	MixPluginPitch_pl020
 		
 plperftest_block_size	EQU plperftest_block_end-PLPerfTest_init_routines
 

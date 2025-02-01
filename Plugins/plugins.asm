@@ -1196,7 +1196,7 @@ MixPluginRepeat\1
 		
 		; Set deferred action routine
 		lea.l	MixPluginRepeatDeferred\1(pc),a0
-		bsr		MixerSetPluginDeferredPtr\1
+		bsr		MixerSetPluginDeferredPtr
 		move.l	(sp)+,a0					; Stack
 .done
 	ENDIF
