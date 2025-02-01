@@ -258,7 +258,7 @@ MixSingIHstart	MACRO
 		ENDIF
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
-				CIAStart
+				CIAStart \1
 			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)				; Stack
@@ -314,7 +314,7 @@ MixSingIHend	MACRO
 		movem.l	(sp)+,d0-d7/a0-a6		; Stack
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
-				CIAStop
+				CIAStop \1
 			ENDIF
 		ENDIF
 		IF MIXER_COUNTER=1
@@ -362,7 +362,7 @@ MixMultIHstart	MACRO
 		ENDIF
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
-				CIAStart
+				CIAStart \1
 			ENDIF
 		ENDIF
 		movem.l	d0-d7/a0-a6,-(sp)			; Stack
@@ -507,7 +507,7 @@ MixMultIHend	MACRO
 		movem.l	(sp)+,d0-d7/a0-a6			; Stack
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
-				CIAStop
+				CIAStop \1
 			ENDIF
 		ENDIF
 		IF MIXER_COUNTER=1
@@ -1522,14 +1522,14 @@ MixUpdateChannels	MACRO
 			moveq	#mixer_sw_channels-1,d3
 
 .mix_upd_ch_lp
-			MixUpdateChannel
+			MixUpdateChannel \1
 			dbra	d3,.mix_upd_ch_lp
 		ELSE
 			REPT mixer_sw_channels
 				IF MIXER_SIZEXBUF=1
-					MixUpdateChannelBufSize
+					MixUpdateChannelBufSize \1
 				ELSE
-					MixUpdateChannel
+					MixUpdateChannel \1
 				ENDIF
 			ENDR
 		ENDIF
@@ -2280,7 +2280,7 @@ MixerInstallHandler\1
 		
 		; Set audio interrupt handler
 		IF MIXER_EXTERNAL_IRQ_DMA=0
-			lea.l	MixerIRQHandler(pc),a1		; Interrupt handler
+			lea.l	MixerIRQHandler\1(pc),a1		; Interrupt handler
 			move.l	a1,$70(a0)					; $70 is vector 4 / audio
 		ELSE
 			IF MIXER_C_DEFS=1
@@ -2288,7 +2288,7 @@ MixerInstallHandler\1
 			ELSE
 				movem.l	a0/a2,-(sp)
 			ENDIF
-			lea.l	MixerIRQHandler(pc),a0		; Interrupt handler
+			lea.l	MixerIRQHandler\1(pc),a0		; Interrupt handler
 			move.l	mxicb_set_irq_vector(a2),a2
 
 			jsr		(a2)
@@ -3627,22 +3627,22 @@ MixerStopFX\1
 MixerIRQHandler\1
 		; Interrupt handler start
 		IF MIXER_SINGLE=1
-			MixSingIHstart
+			MixSingIHstart \1
 		ELSE
-			MixMultIHstart
+			MixMultIHstart \1
 		ENDIF
 		
 		; Update & mix channels
-		MixUpdateChannels
+		MixUpdateChannels \1
 
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_AUD_COLOUR,$dff180
 		ENDIF
 		
 		IF MIXER_68020=1
-			MixChannels020
+			MixChannels020 \1
 		ELSE
-			MixChannels
+			MixChannels \1
 		ENDIF
 		
 		; deferred plugin actions
@@ -3652,9 +3652,9 @@ MixerIRQHandler\1
 		
 		; Interrupt handler end
 		IF MIXER_SINGLE=1
-			MixSingIHend
+			MixSingIHend \1
 		ELSE
-			MixMultIHend
+			MixMultIHend \1
 		ENDIF
 
 ;-----------------------------------------------------------------------------

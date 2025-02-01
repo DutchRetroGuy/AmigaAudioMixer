@@ -32,6 +32,61 @@ EXREF	MACRO
 	EXREF	PerfTest_data
 	EXREF	PerfTest_plg_data
 	
+	; Offsets
+	EXREF	mxsetup
+	EXREF	mxinsthandler
+	EXREF	mxstart
+	EXREF	mxplaychsam
+	EXREF	mxstopfx
+	EXREF	mxstop
+	EXREF	mxremhandler
+	EXREF	mxvolume
+	EXREF	mxsetplugindeferredptr
+	EXREF	mxcalcticks
+	EXREF	mxgetinternalbuffersize
+	EXREF	mxresetcounter
+	EXREF	mxgetcounter
+	
+	EXREF	mxmixer
+	EXREF	mxmixer_fx_struct
+	EXREF	mxmixer_stored_vbr
+	EXREF	mxmixer_stored_handler
+	EXREF	mxmixer_stored_intena
+	EXREF	mxmixer_stored_cia
+	EXREF	mxmixer_ticks_last
+	EXREF	mxmixer_ticks_best
+	EXREF	mxmixer_ticks_worst
+	EXREF	mxmixer_ticks_average
+	EXREF	mxmixer_ticks_storage_off
+	EXREF	mxmixer_ticks_storage
+	
+	EXREF	mxplgsetup
+	EXREF	mxplginsthandler
+	EXREF	mxplgstart
+	EXREF	mxplgplaychfx
+	EXREF	mxplgstopfx
+	EXREF	mxplgstop
+	EXREF	mxplgremhandler
+	EXREF	mxplgvolume
+	EXREF	mxplgsetplugindeferredptr
+	EXREF	mxplgcalcticks
+	EXREF	mxplggetinternalbuffersize
+	EXREF	mxplgresetcounter
+	EXREF	mxplggetcounter
+	
+	EXREF	mxplgmixer
+	EXREF	mxplgmixer_fx_struct
+	EXREF	mxplgmixer_stored_vbr
+	EXREF	mxplgmixer_stored_handler
+	EXREF	mxplgmixer_stored_intena
+	EXREF	mxplgmixer_stored_cia
+	EXREF	mxplgmixer_ticks_last
+	EXREF	mxplgmixer_ticks_best
+	EXREF	mxplgmixer_ticks_worst
+	EXREF	mxplgmixer_ticks_average
+	EXREF	mxplgmixer_ticks_storage_off
+	EXREF	mxplgmixer_ticks_storage
+	
 ;-----------------------------------------------------------------------------
 ; Performance test configuration
 ;-----------------------------------------------------------------------------

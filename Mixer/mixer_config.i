@@ -178,12 +178,6 @@ MIXER_CIA_TIMER			EQU 0
 ; set to 0.
 MIXER_CIA_KBOARD_RES	EQU	1
 
-; Set define below to 1 to enable the mixer interrupt counter. This word sized
-; counter increases by one every time the mixer interrupt has been executed
-; and can be accessed using the routines MixerResetCounter() and
-; MixerGetCounter()
-MIXER_COUNTER			EQU 0
-
 
 ;-----------------------------------------------------------------------------
 ; Advanced options
@@ -217,11 +211,6 @@ MIXER_ENABLE_PLUGINS	EQU 0
 ;       interrupt processing.
 MIXER_ENABLE_RETURN_VECTOR	EQU 0
 
-; Set define below to 1 to include the mixer in section code,code.
-; If set to 0, the mixer will not be set a specific section (normally this is
-; not needed, but it can be useful in certain cases)
-MIXER_SECTION			EQU	1
-
 ; Set define below to 1 to change the mixer such that it no longer uses its
 ; built-in interrupt handler and DMACON handling, but rather uses callbacks to
 ; deal with these aspects. These callback can be set up by calling the routine
@@ -252,6 +241,11 @@ MIXER_EXTERNAL_BITWISE	EQU 0
 ;
 ; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
 MIXER_EXTERNAL_RTE		EQU	0
+
+; Set define below to 1 to include the mixer in section code,code.
+; If set to 0, the mixer will not be set a specific section (normally this is
+; not needed, but it can be useful in certain cases)
+MIXER_SECTION			EQU	1
 
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.

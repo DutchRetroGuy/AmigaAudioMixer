@@ -559,27 +559,27 @@ mixer_PAL_period		EQU (mixer_period*mixer_PAL_cycles)/mixer_NTSC_cycles
 ;       mixer internally requires multiple buffers to work correctly and
 ;       mixer_buffer_size takes this into account.
 	IFD BUILD_MIXER_WRAPPER
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
+mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
+mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
 	ELSE
 	IF MIXER_68020=0
 		IF MIXER_SIZEX32=1
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
+mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
+mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
 		ELSE
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
+mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
+mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
 		ENDIF
 	ELSE
-mixer_PAL_buffer_size	EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
-mixer_NTSC_buffer_size	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
+mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
+mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
 	ENDIF
 	ENDIF
 
 ; Note: use mixer_buffer_size to get the correct size for the mixer Chip RAM
 ;       block to allocate.
-mixer_buffer_size		EQU	mixer_PAL_buffer_size*(1+(mixer_output_count*2))
-mixer_32b_cnt			EQU mixer_PAL_buffer_size/32
+mixer_buffer_size		SET	mixer_PAL_buffer_size*(1+(mixer_output_count*2))
+mixer_32b_cnt			SET mixer_PAL_buffer_size/32
 
 	IFD BUILD_MIXER_WRAPPER
 .mixer_sam_mult			SET 4
@@ -641,9 +641,12 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	LABEL	mxicb_SIZEOF
 
 ; Internal (private) structures
-	IFND BUILD_MIXER_WRAPPER
-
  STRUCTURE MXChannel,0
+	IFD BUILD_MIXER_WRAPPER
+		LONG	mch_remaining_length
+		LONG	mch_length
+		LONG	mch_loop_length
+	ELSE
 	IF MIXER_68020=0
 		IF MIXER_WORDSIZED=1
 			UWORD	mch_remaining_length
@@ -659,11 +662,23 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		LONG	mch_length
 		LONG	mch_loop_length
 	ENDIF
+	ENDIF
 	APTR	mch_sample_ptr
 	APTR	mch_loop_ptr
+	IFD BUILD_MIXER_WRAPPER
+		APTR	mch_orig_sam_ptr
+	ELSE
 	IF MIXER_ENABLE_CALLBACK=1
 		APTR	mch_orig_sam_ptr
 	ENDIF
+	ENDIF
+	IFD BUILD_MIXER_WRAPPER
+		APTR	mch_plugin_ptr
+		APTR	mch_plugin_deferred_ptr
+		APTR	mch_plugin_data_ptr
+		APTR	mch_plugin_output_buffer
+		UWORD	mch_plugin_type
+	ELSE
 	IF MIXER_ENABLE_PLUGINS=1
 		APTR	mch_plugin_ptr
 		APTR	mch_plugin_deferred_ptr
@@ -671,14 +686,19 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		APTR	mch_plugin_output_buffer
 		UWORD	mch_plugin_type
 	ENDIF
+	ENDIF
 	UWORD	mch_channel_id
 	UWORD	mch_status
 	UWORD	mch_priority
 	UWORD	mch_age
+	IFD BUILD_MIXER_WRAPPER
+		UWORD	mch_align
+	ELSE
 	IF MIXER_68020=1
 		IF MIXER_ENABLE_PLUGINS=1
 			UWORD	mch_align
 		ENDIF
+	ENDIF
 	ENDIF
 	LABEL	mch_SIZEOF
 	
@@ -687,23 +707,33 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	STRUCT	mxe_pointers,4*4
 	STRUCT	mxe_buffers,4*2
 	STRUCT	mxe_channels,mch_SIZEOF*4
+	IFND BUILD_MIXER_WRAPPER
 	IF MIXER_MULTI_PAIRED=1
 		UWORD	mxe_active
 		IF MIXER_68020=1
 			UWORD	mxe_align
 		ENDIF
 	ENDIF
+	ENDIF
 	LABEL	mxe_SIZEOF
 
  STRUCTURE MXMixer,0
+	IFD BUILD_MIXER_WRAPPER
+		STRUCT	mx_mixer_entries,mxe_SIZEOF*4
+	ELSE
 	IF MIXER_SINGLE=1
 		STRUCT	mx_mixer_entries,mxe_SIZEOF
 	ELSE
 		STRUCT	mx_mixer_entries,mxe_SIZEOF*4
 	ENDIF
+	ENDIF
 	APTR	mx_empty_buffer
+	IFD BUILD_MIXER_WRAPPER
+		APTR	mx_callback_ptr
+	ELSE
 	IF MIXER_ENABLE_CALLBACK=1
 		APTR	mx_callback_ptr
+	ENDIF
 	ENDIF
 	APTR	mx_counter_ptr
 	UWORD	mx_buffer_size
@@ -714,12 +744,14 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_volume
 	UWORD	mx_status
 	UWORD	mx_vidsys
+	IFD BUILD_MIXER_WRAPPER
+		UWORD	mx_counter
+	ELSE
 	IF MIXER_COUNTER=1
 		UWORD	mx_counter
 	ENDIF
+	ENDIF
 	LABEL	mx_SIZEOF
-	
-	ENDC	; BUILD_MIXER_WRAPPER
 	
 	ENDC	; MIXER_I
 ; End of File

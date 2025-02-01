@@ -15,6 +15,7 @@
 	include hardware/custom.i
 	include hardware/dmabits.i
 	include mixer.i
+	include mixer_wrapper.i
 	
 ; Constants
 
@@ -52,7 +53,17 @@ PlgRoutineOffset	dc.w	0
 ;-----------------------------------------------------------------------------
 
 	; Mixer base configuration
+MIXER_MULTI_PAIRED			EQU 0
+MIXER_CIA_TIMER				EQU 1
+MIXER_CIA_KBOARD_RES		EQU 1
+MIXER_COUNTER				EQU 1
+MIXER_ENABLE_RETURN_VECTOR	EQU 0
+MIXER_EXTERNAL_IRQ_DMA		EQU 0
+MIXER_EXTERNAL_BITWISE		EQU 0
+MIXER_EXTERNAL_RTE			EQU 0
+MIXER_SECTION				EQU 1
 MIXER_C_DEFS				EQU	0
+
 MIXER_TIMING_BARS			EQU	0
 MIXER_DEFAULT_COLOUR		EQU	$000
 
@@ -64,9 +75,25 @@ MIXER_SIZEXBUF				SET 0
 MIXER_ENABLE_CALLBACK		SET 0
 MIXER_ENABLE_PLUGINS		SET	0
 
-;mixer_32b_cnt				SET mixer_32b_cnt4
-;mixer_PAL_buffer_size		SET mixer_PAL_buffer_size4
-;mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
+mixer_PAL_buffer_size4		EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
+mixer_NTSC_buffer_size4		EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65532)+4
+mixer_PAL_buffer_size32		EQU	((mixer_PAL_cycles/mixer_PAL_period/50)&65504)+32
+mixer_NTSC_buffer_size32	EQU	((mixer_NTSC_cycles/mixer_NTSC_period/60)&65504)+32
+
+mixer_buffer_size4			EQU	mixer_PAL_buffer_size4*(1+(mixer_output_count*2))
+mixer_buffer_size32			EQU	mixer_PAL_buffer_size32*(1+(mixer_output_count*2))
+mixer_32b_cnt4				EQU mixer_PAL_buffer_size4/32
+mixer_32b_cnt32				EQU mixer_PAL_buffer_size32/32
+
+	IF mixer_buffer_size4>mixer_buffer_size32
+mixer_buffer_size			SET mixer_buffer_size4
+	ELSE
+mixer_buffer_size			SET mixer_buffer_size32
+	ENDIF
+
+mixer_32b_cnt				SET mixer_32b_cnt4
+mixer_PAL_buffer_size		SET mixer_PAL_buffer_size4
+mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
 
 mxslength_word				SET	0
 mxsize_x32					SET 0

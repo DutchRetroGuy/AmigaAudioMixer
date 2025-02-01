@@ -417,6 +417,8 @@
 	IFND	MIXER_PLUGINS_I
 MIXER_PLUGINS_I	SET	1
 
+	IFND	BUILD_MIXER_WRAPPER
+
 ; References macro
 EXREF	MACRO
 		IFD BUILD_PLUGINS
@@ -443,6 +445,8 @@ EXREF	MACRO
 	EXREF	MixerPluginGetMaxInitDataSize
 	EXREF	MixerPluginGetMaxDataSize
 	EXREF	MixPluginRatioPrecalc
+	
+	ENDIF
 
 ; Constants
 MXPLG_MULTIPLIER_4			EQU	0
