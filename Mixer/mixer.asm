@@ -430,9 +430,9 @@ MixMultIHstart	MACRO
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Reset all IRQ bits using REPT
+				move.l	mxicb_acknowledge_irq(a1),a2
 				REPT 4
 					IF .mixer_curr_chan&1=1
-						move.l	mxicb_acknowledge_irq(a1),a2
 						move.w	#.mixer_curr_bit,d0
 						jsr		(a2)
 					ENDIF
@@ -2688,10 +2688,14 @@ MixerStop\1
 			; Bitwise path for DMACON
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%1
-				move.l	mxicb_set_dmacon(a1),a1
 				REPT 4
+					move.l	mxicb_set_dmacon(a1),a1
 					move.w	#.mixer_curr_bit,d0
 					jsr		(a1)
+					
+					IF MIXER_C_DEFS=1
+						move.l	(sp),a1
+					ENDIF
 				
 .mixer_curr_chan	SET .mixer_curr_chan>>1
 .mixer_curr_bit		SET	.mixer_curr_bit<<1
@@ -3009,9 +3013,9 @@ MixerChannelWrite\1
 .mixer_curr_chan	SET mixer_output_channels
 .mixer_curr_bit		SET	%10000000
 				; Reset all IRQ bits using REPT
+				move.l	mxicb_set_irq_bits(a1),a2
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					move.l	mxicb_set_irq_bits(a1),a2
 					move.w	#$8000|.mixer_curr_bit,d0
 					jsr		(a2)
 				ENDIF
