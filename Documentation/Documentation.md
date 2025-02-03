@@ -70,8 +70,10 @@ Release notes for the Audio Mixer
   - The callbacks can be set by calling MixerSetIRQDMACallbacks().
 - (NEW) The mixer now supports calling a routine at the end of interrupt processing, to allow user code to execute actions as close to the mixer interrupt loop as possible. This option is configured to be off by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
   - The vector for this routine can be set by calling MixerSetReturnVector().
+- (BUGFIX) Performance test now correctly uses 68020 routines for 68020 plugin tests.
 - (BUGFIX) Fixed a potential issue with the include guard in mixer_config.i
-- (MAINTENANCE) The makefile now automatically synchronises the mixer & plugin files from the main Mixer & Plugin directories to the various example Mixer & Plugin directories.
+- (MAINTENANCE) mixer.asm, mixer.i, mixer.h, plugins.asm, plugins.i. plugins.h are now kept in only one directory, their main ones. Any duplicates needed for building the examples are now temporarily placed in the example directories and cleaned updated afterwards.
+- (MAINTENANCE) The makefile now uses batch based copy and delete operations where possible.
 - (MAINTENANCE) The makefile is now platform agnostic and will work on both Windows based systems and Unix-like systems (including Linux, BSD & Mac OS X).
 
 #### v3.6

@@ -727,8 +727,8 @@ RunSingleTestPlg
 		bra		.set_vars
 		
 .setup_pitch_020
-		lea.l	plpitch(a4),a4
-		lea.l	plpitch(a5),a5
+		lea.l	plpitch+4(a4),a4
+		lea.l	plpitch+4(a5),a5
 		moveq	#MIX_PLUGIN_STD,d4
 		moveq	#16-1,d7
 		
@@ -742,8 +742,8 @@ RunSingleTestPlg
 		bra		.set_vars
 		
 .setup_voltab_020
-		lea.l	plvolume(a4),a4
-		lea.l	plvolume(a5),a5
+		lea.l	plvolume+4(a4),a4
+		lea.l	plvolume+4(a5),a5
 		moveq	#MIX_PLUGIN_STD,d4
 		moveq	#16-1,d7
 
@@ -756,8 +756,8 @@ RunSingleTestPlg
 		bra		.set_vars
 		
 .setup_volshift_020
-		lea.l	plvolume(a4),a4
-		lea.l	plvolume(a5),a5
+		lea.l	plvolume+4(a4),a4
+		lea.l	plvolume+4(a5),a5
 		moveq	#MIX_PLUGIN_STD,d4
 		moveq	#16-1,d7
 

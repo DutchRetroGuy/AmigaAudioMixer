@@ -59,6 +59,7 @@ CC=vc
 
 # Setup assembler flags
 ASMFLAGS_BASE=-nowarn=62 -kick1hunks -Fhunk -m68000 -allmp
+ASMFLAGS_020=-nowarn=62 -kick1hunks -Fhunk -m68020 -allmp
 ASMFLAGS_STARTUP=-no-opt -nowarn=62 -kick1hunks -Fhunk -m68010 -allmp
 
 # Setup linker flags

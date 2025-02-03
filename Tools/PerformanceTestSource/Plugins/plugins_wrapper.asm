@@ -39,54 +39,45 @@ MIXER_SIZEX32				EQU 0
 MIXER_SIZEXBUF				EQU 0
 MXPLUGIN_NO_VOLUME_TABLES	EQU 0
 MIXER_C_DEFS				EQU 1
-MXPLUGIN_68020_ONLY			EQU 0
+MXPLUGIN_68020_ONLY			SET 0
 
 MIXER_68020					SET 0
 	
 	; Unoptimised tests
 	PlgAllCode _pl
-	PlgAllCode _cbpl
 
 	; 68020 optimised tests
-MIXER_68020		SET 1
-
+MIXER_68020					SET 1
+MXPLUGIN_68020_ONLY			SET 1
 	PlgAllCode _pl020
 	
 PLPerfTest_init_routines
 		; MixPluginInitRepeat
 		dc.l	MixPluginInitRepeat_pl
-		dc.l	MixPluginInitRepeat_cbpl
 		dc.l	MixPluginInitRepeat_pl020
 plperftest_block_end
 		; MixPluginInitSync
 		dc.l	MixPluginInitSync_pl
-		dc.l	MixPluginInitSync_cbpl
 		dc.l	MixPluginInitSync_pl020
 		; MixPluginInitVolume
 		dc.l	MixPluginInitVolume_pl
-		dc.l	MixPluginInitVolume_cbpl
 		dc.l	MixPluginInitVolume_pl020
 		; MixPluginInitPitch
 		dc.l	MixPluginInitPitch_pl
-		dc.l	MixPluginInitPitch_cbpl
 		dc.l	MixPluginInitPitch_pl020
 
 PLPerfTest_routines
 		; MixPluginRepeat
 		dc.l	MixPluginRepeat_pl
-		dc.l	MixPluginRepeat_cbpl
 		dc.l	MixPluginRepeat_pl020
 		; MixPluginSync
 		dc.l	MixPluginSync_pl
-		dc.l	MixPluginSync_cbpl
 		dc.l	MixPluginSync_pl020
 		; MixPluginVolume
 		dc.l	MixPluginVolume_pl
-		dc.l	MixPluginVolume_cbpl
 		dc.l	MixPluginVolume_pl020
 		; MixPluginPitch
 		dc.l	MixPluginPitch_pl
-		dc.l	MixPluginPitch_cbpl
 		dc.l	MixPluginPitch_pl020
 		
 plperftest_block_size	EQU plperftest_block_end-PLPerfTest_init_routines
