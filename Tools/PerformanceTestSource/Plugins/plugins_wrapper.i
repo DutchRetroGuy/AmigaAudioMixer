@@ -15,7 +15,7 @@
 
 ; References macro
 EXREF	MACRO
-		IFD BUILD_MIXER
+		IFD BUILD_PLUGINS_WRAPPER
 			XDEF \1
 		ELSE
 			XREF \1

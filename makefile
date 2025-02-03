@@ -453,7 +453,7 @@ $(PERFTESTDIR)$(SLASH)PerformanceTest.o: $(PERFTESTDIR)$(SLASH)PerformanceTest.a
 $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.o: $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.asm $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.asm $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
 	$(ASM) $(ASMFLAGS_PERF) -DBUILD_MIXER -DBUILD_MIXER_POSTFIX -DBUILD_MIXER_WRAPPER $< -o $@
 $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.o: $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.asm $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.i $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.asm $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins.i $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_config.i $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
-	$(ASM) $(ASMFLAGS_PERF) -DBUILD_PLUGINS -DBUILD_MIXER_POSTFIX -DBUILD_MIXER_WRAPPER $< -o $@
+	$(ASM) $(ASMFLAGS_PERF) -DBUILD_PLUGINS -DBUILD_MIXER_POSTFIX -DBUILD_MIXER_WRAPPER -DBUILD_PLUGINS_WRAPPER $< -o $@
 $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o: $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.asm $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.i
 	$(ASM) $(ASMFLAGS_PERF) -DBUILD_STRINGS_PMIX $< -o $@
 	

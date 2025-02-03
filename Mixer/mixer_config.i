@@ -178,6 +178,12 @@ MIXER_CIA_TIMER			EQU 0
 ; set to 0.
 MIXER_CIA_KBOARD_RES	EQU	1
 
+; Set define below to 1 to enable the mixer interrupt counter. This word sized
+; counter increases by one every time the mixer interrupt has been executed
+; and can be accessed using the routines MixerResetCounter() and
+; MixerGetCounter()
+MIXER_COUNTER			EQU 0
+
 
 ;-----------------------------------------------------------------------------
 ; Advanced options

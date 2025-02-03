@@ -19,6 +19,7 @@
 	include mixer_wrapper.i
 	include plugins_config.i
 	include	plugins.i
+	include plugins_wrapper.i
 	
 ; Set constants for wrapper
 MXPLUGIN_REPEAT		EQU	1

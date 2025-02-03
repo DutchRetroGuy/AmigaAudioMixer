@@ -3225,6 +3225,9 @@ MixerPlayChannelSample\1
 		;      *) -1, if the FX can't be played (f.ex. due to priority)
 		;      *) Hardware/software channel combination the FX will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
+		IFD BUILD_MIXER_POSTFIX
+			XDEF MixerPlayFX\1
+		ENDIF
 MixerPlayFX\1
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_OTHER_COLOUR,$dff180
@@ -3358,6 +3361,9 @@ MixerPlayFX\1
 		;      *) -1, if the FX can't be played (f.ex. due to priority)
 		;      *) Hardware/software channel combination the FX will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
+		IFD BUILD_MIXER_POSTFIX
+			XDEF MixerPlayChannelFX\1
+		ENDIF
 MixerPlayChannelFX\1
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_OTHER_COLOUR,$dff180
@@ -3687,6 +3693,9 @@ MixerGetBufferSize\1
 		;
 		; Returns
 		; D0 - value of mixer_buffer_size
+		IFD BUILD_MIXER_POSTFIX
+			XDEF MixerGetChannelBufferSize\1
+		ENDIF
 MixerGetChannelBufferSize\1
 		move.l	a0,-(sp)					; Stack
 		lea.l	mixer\1(pc),a0
@@ -3915,6 +3924,9 @@ MixerSetIRQDMACallbacks\1
 		;
 		; A0 - Pointer to routine to use for the deferred action
 		; A2 - Pointer to MXChannel structure
+		IFD BUILD_MIXER_POSTFIX
+			XDEF MixerSetPluginDeferredPtr\1
+		ENDIF
 MixerSetPluginDeferredPtr\1
 		IF MIXER_ENABLE_PLUGINS=1
 			move.l	a0,mch_plugin_deferred_ptr(a2)

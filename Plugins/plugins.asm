@@ -87,6 +87,7 @@ MPlLongDiv	MACRO
 ;*****************************************************************************
 ;*****************************************************************************
 PlgAllCode	MACRO	
+
 	
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
@@ -256,7 +257,7 @@ MixPluginInitPitch\1
 
 		; 6) Calculate new length/loop offset values
 		moveq	#3,d1						; Set length/offset shift to 3
-		bsr		MixPluginRatioPrecalc
+		bsr		MixPluginRatioPrecalc\1
 	
 .done
 		movem.l	(sp)+,d0/d1					; Stack
@@ -493,7 +494,11 @@ MixPluginInitSync\1
 		movem.l	d0/d1,-(sp)					; Stack
 		
 		; Set up correct delay value for MXPLG_SYNC_END
-		bsr		MixerGetChannelBufferSize
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
 		move.l	mfx_length(a0),d1
 		divu.w	d0,d1
 		swap	d1
@@ -891,8 +896,8 @@ MixPluginVolume\1
 		ENDIF
 		
 .jp_table
-		jmp		MixPluginVolumeTable(pc)
-		jmp		MixPluginVolumeShift(pc)
+		jmp		MixPluginVolumeTable\1(pc)
+		jmp		MixPluginVolumeShift\1(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
@@ -932,7 +937,7 @@ MixPluginVolumeTable\1
 			beq.s	.max_volume
 			
 			; Fill output buffer based on volume table
-			lea.l	vol_level_1(pc),a2
+			lea.l	vol_level_1\1(pc),a2
 			move.l	mpd_vol_sample_ptr(a1),a3
 			add.l	mpd_vol_sample_offset(a1),a3
 			move.w	mpd_vol_table_offset(a1),d6
@@ -1196,7 +1201,11 @@ MixPluginRepeat\1
 		
 		; Set deferred action routine
 		lea.l	MixPluginRepeatDeferred\1(pc),a0
-		bsr		MixerSetPluginDeferredPtr
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerSetPluginDeferredPtr\1
+		ELSE
+			bsr		MixerSetPluginDeferredPtr\1
+		ENDIF
 		move.l	(sp)+,a0					; Stack
 .done
 	ENDIF
@@ -1220,7 +1229,7 @@ MixPluginRepeatDeferred\1
 		movem.l	d0/a0,-(sp)					; Stack
 
 		; Fill FX struct
-		lea.l	plugin_fx_struct(pc),a0
+		lea.l	plugin_fx_struct\1(pc),a0
 		move.l	mpd_rep_length(a1),mfx_length(a0)
 		move.l	mpd_rep_sample_ptr(a1),mfx_sample_ptr(a0)
 		move.w	mpd_rep_loop(a1),mfx_loop(a0)
@@ -1230,7 +1239,11 @@ MixPluginRepeatDeferred\1
 		
 		; Play the sample again (if a channel is free)
 		move.w	mpd_rep_channel(a1),d0
-		bsr		MixerPlayFX
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerPlayFX\1
+		ELSE
+			bsr		MixerPlayFX\1
+		ENDIF
 
 		movem.l	(sp)+,d0/a0					; Stack
 	ENDIF
@@ -1384,7 +1397,11 @@ MixPluginSync\1
 		
 .sync_deferred
 		; Set deferred action routine
-		bsr		MixerSetPluginDeferredPtr
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerSetPluginDeferredPtr\1
+		ELSE
+			bsr		MixerSetPluginDeferredPtr\1
+		ENDIF
 
 .sync_update_done
 		movem.l	(sp)+,d6/d7/a0				; Stack
