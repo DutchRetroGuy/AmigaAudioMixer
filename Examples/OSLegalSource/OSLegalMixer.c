@@ -33,6 +33,7 @@
 #include <proto/exec.h>
 #include <hardware/custom.h>
 #include <hardware/dmabits.h>
+#include <hardware/intbits.h>
 #include "mixer/mixer.h"
 #include "plugins/plugins.h"
 
@@ -49,8 +50,10 @@
 
 /* Global variables */
 volatile struct Custom* custom;
-volatile APTR mixer_interrupt_handler;
+void (*mixer_interrupt_handler)();
 volatile APTR old_vector;
+
+struct Interrupt *audio_interrupt;
 
 /* Support functions */
 char *LoadSample(char *filename, ULONG *size)
@@ -146,58 +149,78 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* IRQ handler */
-/*void InterruptHandler()
+void InterruptHandler()
 {
 	void (*interrupt_handler)();
 	interrupt_handler = mixer_interrupt_handler;
 
 	interrupt_handler();
-}*/
+}
 
 /* IRQ/DMA control functions */
 void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 {
-	volatile APTR* vector;
-	vector = (APTR *) 0x70;
+	//volatile APTR* vector;
+	//vector = (APTR *) 0x70;
 	
 	// Routine that sets the IRQ vector for audio interrupts
-	mixer_interrupt_handler = (APTR) interrupt_handler;
+	mixer_interrupt_handler = interrupt_handler;
 	
 	// TODO - set up actual interrupt value
-	old_vector = (APTR *) *vector;
-	*vector = (APTR *)mixer_interrupt_handler;
+	//old_vector = (APTR *) *vector;
+	//*vector = (APTR *)mixer_interrupt_handler;
+	
+	// Set up OS interrupt structure
+	audio_interrupt = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+	if (audio_interrupt)
+	{
+		audio_interrupt->is_Node.ln_Type = NT_INTERRUPT;         /* Initialize the node. */
+		audio_interrupt->is_Node.ln_Pri = 0;
+		audio_interrupt->is_Node.ln_Name = "Audio Mixer Example";
+		audio_interrupt->is_Data = NULL;
+		audio_interrupt->is_Code = *mixer_interrupt_handler;
+	
+		// Add interrupt server
+		AddIntServer(INTB_AUD2, audio_interrupt);
+	}
 }
 
 void RemoveIRQVector()
 {
 	// routine that removes the IRQ vector for audio interrupts
-	volatile APTR* vector;
-	vector = (APTR *) 0x70;
+	//volatile APTR* vector;
+	//vector = (APTR *) 0x70;
 	
-	*vector = (APTR *) old_vector;
+	//*vector = (APTR *) old_vector;
+	if (audio_interrupt)
+	{
+		RemIntServer(INTB_AUD2, audio_interrupt);
+		FreeMem(audio_interrupt, sizeof(struct Interrupt));
+	}
 }
 
 void SetIRQBits(MIX_REGARG(UWORD intena_value,"d0"))
 {
 	// Routine that sets the correct bits in INTENA
-	custom->intena = intena_value;
+	//custom->intena = intena_value;
+	//Enable();
 }
 
 void DisableIRQ(MIX_REGARG(UWORD intena_value,"d0"))
 {
 	// Routine that disables audio interrupts
 	//Disable();
-	custom->intena = intena_value;
-	custom->intreq = intena_value;
-	custom->intreq = intena_value;
+	//custom->intena = intena_value;
+	//custom->intreq = intena_value;
+	//custom->intreq = intena_value;
 }
 
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
 {
 	// Routine that acknowledges audio interrupt
 	// Documentation suggests that this is not needed for OS legal interrupts.
-	custom->intreq = intreq_value;
-	custom->intreq = intreq_value;
+	//custom->intreq = intreq_value;
+	//custom->intreq = intreq_value;
 }
 
 void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
@@ -289,7 +312,11 @@ int main()
 	MixerInstallHandler(vbr,0);
 
 	/* Start Mixer */
-	MixerStart();
+	//MixerStart();
+	
+	while (1)
+	{
+	}
 	
 	/* Set up MXEffect structure for all four samples to play */
 	effect1.mfx_length = sample1_size;
@@ -326,10 +353,10 @@ int main()
 	 *       with a zero, but for the sake of completeness it's included here
 	 *       anyway.
 	 */
-	MixerPlayFX(&effect1,DMAF_AUD2);
-	MixerPlayFX(&effect2,DMAF_AUD2);
-	MixerPlayFX(&effect3,DMAF_AUD2);
-	MixerPlayFX(&effect4,DMAF_AUD2);
+	//MixerPlayFX(&effect1,DMAF_AUD2);
+	//MixerPlayFX(&effect2,DMAF_AUD2);
+	//MixerPlayFX(&effect3,DMAF_AUD2);
+	//MixerPlayFX(&effect4,DMAF_AUD2);
 	
 	/* Wait for keyboard input to continue program */
 	printf ("Press enter to end playback:");

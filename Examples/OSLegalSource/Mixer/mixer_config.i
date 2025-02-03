@@ -246,7 +246,7 @@ MIXER_EXTERNAL_BITWISE	EQU 0
 ; interrupt, rather than an RTS.
 ;
 ; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
-MIXER_EXTERNAL_RTE		EQU	1
+MIXER_EXTERNAL_RTE		EQU	0
 
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
