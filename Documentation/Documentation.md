@@ -65,6 +65,9 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 Release notes for the Audio Mixer
 
 #### v3.7
+- (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.
+- (NEW) A new C based example has been added that showcases using the new external IRQ/DMA option to run the mixer using Amiga OS interrupt handlers. The example is called OSLegalExample.
+- (NEW) A new example has been added that showcases the use of external IRQ/DMA callbacks to handle IRQ and DMA registers. The example is called ExternalIRQExample.
 - (NEW) The mixer now optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively. This option allows for, amongst other things, implementing an OS-legal interrupt server for the mixer, or implementing the mixer as part of another API.
   - This option is configured to be off by default, use MIXER_EXTERNAL_IRQ_DMA to enable it.
   - The callbacks can be set by calling MixerSetIRQDMACallbacks().
@@ -382,6 +385,7 @@ The configuration consists of six sections. In the first section, the mixer type
 
       NOTE: setting this option to 1 assumes CIA-A timer A is available for use.  
       NOTE: the routine *MixerCalcTicks()* and the values mixer_ticks_last/best/ worst/average are only available if this option is set to 1.
+	  NOTE: this option should not be enabled if MIXER_EXTERNAL_IRQ_DMA is set with the goal of using Amiga OS interrupt handlers for the mixer interrupt.
 
       The option *MIXER_CIA_KBOARD_RES* is used to restore the keyboard for Amiga OS if *MIXER_CIA_TIMER* is set to one and *MixerRemoveHandler()* is called. If this option is not set, the CIA-A timer will merely be stopped. If this option is set, the CIA-A timer registers and control register A will be set such that the keyboard will function correctly in the OS.
 
@@ -818,6 +822,10 @@ The mixer comes with a number of example programs which show the abilities of th
 
   It also allows you to select a plugin to use. You can select no plugin, an example custom plugin that replaces the sample played back by a simple sine wave, the built-in repeat plugin, the built-in synchronisation plugin, the built-in volume plugin and the built-in pitch change plugin.
 
+- #### ExternalIRQExample
+
+  An example program with external IRQ/DMA handling enabled and a minimum of extra features or support code. The purpose of the example is to show a simple case of using external IRQ/DMA handling with the mixer. Note that this example does not disable the OS, assumes the VBR is at address 0 and that the code is running on a PAL Amiga.
+
 - #### CMixerExample
 
   An example program that shows the ability of the mixer to be integrated in C programs. Like the MinimalMixerExample, the example is kept as simple as possible. Note that this example does not disable the OS, assumes the VBR is at address 0 and that the code is running on a PAL Amiga.
@@ -826,7 +834,7 @@ The mixer comes with a number of example programs which show the abilities of th
 
 - #### OSLegalExample
 
-  An example program that shows how to use the mixer in an OS legal way. This example, like CMixerExample, is written in C.
+  An example program in C that shows how to use the mixer in an OS legal way.
 
 ### Tools
 
@@ -1020,7 +1028,7 @@ For 68020+ based systems, it's recommended to store samples on 4 byte boundaries
     Gives the length of the structure in bytes
 
 - MXIRQDMACallbacks
-  This structure is only available if *MIXER_EXTERNAL_DMA_IRQ* is set to 1 and is used by the function
+  This structure is only available if *MIXER_EXTERNAL_IRQ_DMA* is set to 1 and is used by the function
   MixerSetIRQDMACallbacks() to set the callback function pointers it requires.
 
   The structure elements are as follows:
@@ -1842,13 +1850,13 @@ In order to use the Mixer in C programs, several steps need to be followed:
 
 - mixer.h must be included into the C program which is to use the mixer
 
-  Note: mixer.h is designed for VBCC & Bebbo's GCC compiler. Other compilers will need a different method for calling the functions. It should be possible to make the mixer work with other compilers, but only VBCC and Bebbo's GCC compiler are officially supported.
+  Note: mixer.h is designed for VBCC, Bebbo's GCC compiler and Bartman's GCC compiler. Other compilers will need a different method for calling the functions. It should be possible to make the mixer work with other compilers, but only VBCC, Bebbo and Bartman are officially supported.
 
 If the above is done, the mixer API (as described in ["Mixer API"](#mixer-api)) becomes available to the C program. The C program will now need to follow the steps in ["Using the mixer"](#using-the-mixer) to enable mixing.
 
 The complete function prototypes that can be used by C programs can be found in mixer.h (note that this is the same set of routines that are offered through mixer.i for assembly programs).
 
-As pointed out above, the supplied mixer.h file is designed for use with VBCC and Bebbo's version of the GCC compiler. To use the mixer using other GCC based compilers, a set of calling routines needs to be constructed. (these are not provided in this package)
+As pointed out above, the supplied mixer.h file is designed for use with VBCC, Bebbo and Bartman. To use the mixer using other GCC based compilers, a set of calling routines needs to be constructed. (these are not provided in this package)
 
 #### Two examples of how to make these routines follows:
 

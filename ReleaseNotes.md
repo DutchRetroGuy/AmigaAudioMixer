@@ -1,6 +1,9 @@
 #Release notes for the Audio Mixer
 
 ## v3.7
+- (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.
+- (NEW) A new C based example has been added that showcases using the new external IRQ/DMA option to run the mixer using Amiga OS interrupt handlers. The example is called OSLegalExample.
+- (NEW) A new example has been added that showcases the use of external IRQ/DMA callbacks to handle IRQ and DMA registers. The example is called ExternalIRQExample.
 - (NEW) The mixer now optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively. This option allows for, amongst other things, implementing an OS-legal interrupt server for the mixer, or implementing the mixer as part of another API.
   - This option is configured to be off by default, use MIXER_EXTERNAL_IRQ_DMA to enable it.
   - The callbacks can be set by calling MixerSetIRQDMACallbacks().

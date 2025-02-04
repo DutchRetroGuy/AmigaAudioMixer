@@ -154,6 +154,31 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* IRQ/DMA control functions */
+/* NOTE: some of these functions need slight differences in syntax to account
+         for compiler differences between VBCC/Bebbo GCC and Bartman GCC.
+	
+         to improve readability over using a bunch of pre-processor 
+		 directives, two versions of each routine are provided and the 
+		 pre-processor is used to select which ones to use.
+ */
+
+void RemoveIRQVector()
+{
+	// Routine that removes the IRQ vector for audio interrupts
+	if (audio_interrupt)
+	{
+		// Restore old interrupt vector for OS
+		SetIntVector(INTB_AUD2, old_vector);
+		
+		if (irq_was_active) 
+		{
+			custom->intena = INTF_SETCLR|INTF_AUD2;
+		}
+		FreeMem(audio_interrupt, sizeof(struct Interrupt));
+	}
+}
+ 
+#if !defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
 void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 {
 	// Routine that sets the IRQ vector for audio interrupts
@@ -171,30 +196,8 @@ void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 	
 		// Add interrupt vector
 		irq_was_active = custom->intenar & INTF_AUD2 ? TRUE : FALSE;
-		Disable();
 		old_vector = SetIntVector(INTB_AUD2, audio_interrupt);
-		Enable();
 	}
-}
-
-void RemoveIRQVector()
-{
-	// Routine that removes the IRQ vector for audio interrupts
-	if (audio_interrupt)
-	{
-		// Restore old interrupt vector for OS
-		Disable();
-		SetIntVector(INTB_AUD2, old_vector);
-		Enable();
-		
-		if (irq_was_active) 
-		{
-			custom->intena = INTF_SETCLR|INTF_AUD2;
-		}
-		FreeMem(audio_interrupt, sizeof(struct Interrupt));
-	}
-	
-
 }
 
 void SetIRQBits(MIX_REGARG(UWORD intena_value,"d0"))
@@ -208,14 +211,14 @@ void DisableIRQ(MIX_REGARG(UWORD intena_value,"d0"))
 	// Routine that disables audio interrupts
 	custom->intena = intena_value;
 	custom->intreq = intena_value;
-	custom->intreq = intena_value;
+	custom->intreq = intena_value; // 2x for A4000
 }
 
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
 {
 	// Routine that acknowledges audio interrupt
 	custom->intreq = intreq_value;
-	custom->intreq = intreq_value;
+	custom->intreq = intreq_value; // 2x for A4000
 }
 
 void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
@@ -223,6 +226,70 @@ void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
 	// Routine that sets DMACON
 	custom->dmacon = dmacon_value;
 }
+#else // Bartman versions
+void SetIRQVector(void (*interrupt_handler)())
+{
+	// Fetch register content
+	register volatile void (*reg_interrupt_handler)() __asm("a0") = interrupt_handler;
+
+	// Routine that sets the IRQ vector for audio interrupts
+	mixer_interrupt_handler = reg_interrupt_handler;
+	
+	// Set up OS interrupt structure
+	audio_interrupt = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+	if (audio_interrupt)
+	{
+		audio_interrupt->is_Node.ln_Type = NT_INTERRUPT;         /* Initialize the node. */
+		audio_interrupt->is_Node.ln_Pri = 0;
+		audio_interrupt->is_Node.ln_Name = "Audio Mixer Example";
+		audio_interrupt->is_Data = NULL;
+		audio_interrupt->is_Code = *mixer_interrupt_handler;
+	
+		// Add interrupt vector
+		irq_was_active = custom->intenar & INTF_AUD2 ? TRUE : FALSE;
+		old_vector = SetIntVector(INTB_AUD2, audio_interrupt);
+	}
+}
+
+void SetIRQBits(UWORD intena_value)
+{
+	// Fetch register content
+	register volatile UWORD reg_intena_value __asm("d0") = intena_value;
+	
+	// Routine that sets the correct bits in INTENA
+	custom->intena = reg_intena_value;
+}
+
+void DisableIRQ(UWORD intena_value)
+{
+	// Fetch register content
+	register volatile UWORD reg_intena_value __asm("d0") = intena_value;
+
+	// Routine that disables audio interrupts
+	custom->intena = reg_intena_value;
+	custom->intreq = reg_intena_value;
+	custom->intreq = reg_intena_value; // 2x for A4000
+}
+
+void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
+{
+	// Fetch register content
+	register volatile UWORD reg_intreq_value __asm("d0") = intreq_value;
+
+	// Routine that acknowledges audio interrupt
+	custom->intreq = reg_intreq_value;
+	custom->intreq = reg_intreq_value; // 2x for A4000
+}
+
+void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
+{
+	// Fetch register content
+	register volatile UWORD reg_dmacon_value __asm("d0") = dmacon_value;
+
+	// Routine that sets DMACON
+	custom->dmacon = reg_dmacon_value;
+}
+#endif
 
 
 /* Main program */
