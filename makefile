@@ -67,7 +67,7 @@ LNKFLAGS=$(LIBS) -l amiga -bamigahunk -s -Z
 
 # Setup C compiler flags
 CCFLAGS=+$(VCCFG) -c 
-CCLNKFLAGS=+$(VCCFG)
+CCLNKFLAGS=+$(VCCFG) -lamiga
 
 # Detect type of OS used (Windows or Unix-like)
 # Note: the $(strip \) is used to avoid problems with escaping '\'.

@@ -172,6 +172,10 @@ MIXER_DEFAULT_COLOUR	EQU	$000
 
 ; Set define below to 1 to enable CIA based timing of the performance of the
 ; interrupt handler. This uses the CIA-A timer.
+;
+; Note: this option should not be enabled if the mixer option 
+;       MIXER_EXTERNAL_IRQ_DMA has been enabled and the mixer has been set up
+;       to run using the OS's interrupt mechanism.
 MIXER_CIA_TIMER			EQU 0
 ; Set define below to 1 to enable restoring the keyboard for OS use after
 ; using CIA based performance timing. Has no function if MIXER_CIA_TIMER is

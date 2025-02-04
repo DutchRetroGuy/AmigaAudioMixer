@@ -2303,10 +2303,6 @@ MixerInstallHandler\1
 			ENDIF
 		ENDIF
 
-		IFD BUILD_MIXER_DEBUG
-			DBGBreakPnt
-		ENDIF
-
 		; Calculate audio interrupt bit for correct channel and store result
 		lea.l	mixer\1(pc),a1				; Fetch mixer structure
 		move.w	#mixer_output_channels,d1	; Load audio channel bit(s)
