@@ -38,17 +38,20 @@ MIXER_SIZEX32				EQU 0
 MIXER_SIZEXBUF				EQU 0
 MXPLUGIN_NO_VOLUME_TABLES	EQU 0
 MIXER_C_DEFS				EQU 1
-MXPLUGIN_68020_ONLY			SET 0
 
 MIXER_68020					SET 0
 	
 	; Unoptimised tests
+pltest_start
 	PlgAllCode _pl
+pltest_end
 
 	; 68020 optimised tests
 MIXER_68020					SET 1
-MXPLUGIN_68020_ONLY			SET 1
+
+pltest_020_start
 	PlgAllCode _pl020
+pltest_020_end
 	
 PLPerfTest_init_routines
 		; MixPluginInitRepeat
@@ -87,14 +90,11 @@ plvolume				EQU	plperftest_block_size*2
 plpitch					EQU	plperftest_block_size*3
 
 	IF PLPERF_SIZE_TEST=1
-pldata_size		EQU	pldata_end-pldata_start
-pltest_vol_size	EQU	vol_tab_end-vol_level_1
-pltest_size		EQU	pltest_end-pltest_start
-		echo "Data size (excluding volume tables):"
-		printv pldata_size
-		echo "Data size (volume tables only):"
-		printv pltest_vol_size
-		echo "Code size:"
+pltest_size			EQU	pltest_end-pltest_start
+pltest_020_size		EQU	pltest_020_end-pltest_020_start
+		echo "Code & data size (including volume tables, no optimisations):"
 		printv pltest_size
+		echo "Code & data size (including volume tables, 68020):"
+		printv pltest_020_size
 	ENDIF
 ; End of File

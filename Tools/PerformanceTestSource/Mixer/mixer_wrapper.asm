@@ -105,12 +105,7 @@ mxsize_x32					SET 0
 ptest_start
 	MixAllCode _000			; No optimisations
 ptest_end
-;ptest_start_other
-;	PerfTestSupport _000
-;ptest_end_other
-;ptest_start_var
-;	PerfTestData _000
-;ptest_end_var
+
 
 MIXER_WORDSIZED				SET 0	
 MIXER_SIZEX32				SET 0
@@ -125,8 +120,7 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
 ptest_start_020
 	MixAllCode _020			; CPU type = 68020
 ptest_end_020
-;	PerfTestSupport _020
-;	PerfTestData _020
+
 
 MIXER_68020					SET 0
 MIXER_SIZEX32				SET 1
@@ -138,8 +132,6 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size32
 ptest_start_32
 	MixAllCode _32			; Size x32
 ptest_end_32
-;	PerfTestSupport _32
-;	PerfTestData _32
 
 
 MIXER_SIZEX32				SET 0
@@ -152,8 +144,6 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
 ptest_start_bufsz
 	MixAllCode _bufsz			; Size xBuf
 ptest_end_bufsz
-;	PerfTestSupport _bufsz
-;	PerfTestData _bufsz
 
 
 MIXER_SIZEXBUF				SET 0
@@ -163,8 +153,6 @@ mxslength_word				SET	1
 ptest_start_word
 	MixAllCode _word			; Length xWord
 ptest_end_word
-;	PerfTestSupport _word
-;	PerfTestData _word
 
 
 MIXER_SIZEX32				SET 1
@@ -176,8 +164,6 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size32
 ptest_start_word32
 	MixAllCode _word32		; Length xWord/Size x32
 ptest_end_word32
-;	PerfTestSupport _word32
-;	PerfTestData _word32
 
 
 MIXER_SIZEX32				SET 0
@@ -190,8 +176,6 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size4
 ptest_start_wordbufsz
 	MixAllCode _wordbufsz		; Length xWord/Size xBuf
 ptest_end_wordbufsz
-;	PerfTestSupport _wordbufsz
-;	PerfTestData _wordbufsz
 
 
 MIXER_SIZEX32				SET 1
@@ -203,8 +187,6 @@ mixer_NTSC_buffer_size		SET mixer_NTSC_buffer_size32
 ptest_start_word32bufsz
 	MixAllCode _word32bufsz	; Length xWord/Size xBuf/x32
 ptest_end_word32bufsz
-;	PerfTestSupport _word32bufsz
-;	PerfTestData _word32bufsz
 
 
 MIXER_WORDSIZED				SET 0	
@@ -221,16 +203,12 @@ MIXER_68020					SET 0
 ptest_start_hq
 	MixAllCode _HQ			; HQ mode
 ptest_end_hq
-;	PerfTestSupport _HQ
-;	PerfTestData _HQ
 
 
 MIXER_68020					SET 1
 ptest_start_hq020
 	MixAllCode _HQ020		; HQ mode (68020)
 ptest_end_hq020
-;	PerfTestSupport _HQ020
-;	PerfTestData _HQ020
 
 
 MIXER_HQ_MODE				SET 0
@@ -240,8 +218,6 @@ MIXER_ENABLE_PLUGINS		SET	0
 ptest_start_cb
 	MixAllCode _cb
 ptest_end_cb
-;	PerfTestSupport _cb
-;	PerfTestData _cb
 
 
 MIXER_ENABLE_CALLBACK		SET 0
@@ -249,8 +225,6 @@ MIXER_ENABLE_PLUGINS		SET	1
 ptest_start_pl
 	MixAllCode _pl
 ptest_end_pl
-;	PerfTestSupport _pl
-;	PerfTestData _pl
 
 
 MIXER_ENABLE_CALLBACK		SET 1
@@ -258,8 +232,6 @@ MIXER_ENABLE_PLUGINS		SET	1
 ptest_start_cbpl
 	MixAllCode _cbpl
 ptest_end_cbpl
-;	PerfTestSupport _cbpl
-;	PerfTestData _cbpl
 
 
 MIXER_68020					SET 1
@@ -268,8 +240,6 @@ MIXER_ENABLE_PLUGINS		SET	1
 ptest_start_pl020
 	MixAllCode _pl020
 ptest_end_pl020
-;	PerfTestSupport _pl020
-;	PerfTestData _pl020
 
 
 PerfTest_routines
@@ -535,10 +505,6 @@ mxplgmixer_ticks_storage		EQU		perftest_plg_block_size*11
 	
 
 	IF PERF_SIZE_TEST=1
-;ptest_other_size			EQU ptest_end_other-ptest_start_other
-;ptest_overhead_size			EQU ptest_end_var-ptest_start_var
-;		echo "Data size (includes 268 bytes for timer statistics):"
-;		printv ptest_overhead_size
 ptest_size					EQU ptest_end-ptest_start
 ptest_size_32				EQU ptest_end_32-ptest_start_32
 ptest_size_bufz				EQU ptest_end_bufsz-ptest_start_bufsz
@@ -553,33 +519,33 @@ ptest_size_cb				EQU ptest_end_cb-ptest_start_cb
 ptest_size_pl				EQU ptest_end_pl-ptest_start_pl
 ptest_size_pl020			EQU ptest_end_pl020-ptest_start_pl020
 ptest_size_cbpl				EQU ptest_end_cbpl-ptest_start_cbpl
-		echo "Code size (no optimisations):"
+		echo "Code & data size (no optimisations):"
 		printv ptest_size
-		echo "Code size (MIXER_SIZEX32):"
+		echo "Code & data size (MIXER_SIZEX32):"
 		printv ptest_size_32
-		echo "Code size (MIXER_SIZEXBUF):"
+		echo "Code & data size (MIXER_SIZEXBUF):"
 		printv ptest_size_bufz
-		echo "Code size (MIXER_WORDSIZED):"
+		echo "Code & data size (MIXER_WORDSIZED):"
 		printv ptest_size_word
-		echo "Code size (MIXER_WORDSIZED/MIXER_SIZEX32):"
+		echo "Code & data size (MIXER_WORDSIZED/MIXER_SIZEX32):"
 		printv ptest_size_word32
-		echo "Code size (MIXER_WORDSIZED/MIXER_SIZEXBUF):"
+		echo "Code & data size (MIXER_WORDSIZED/MIXER_SIZEXBUF):"
 		printv ptest_size_wordbufsz
-		echo "Code size (MIXER_WORDSIZED/MIXER_SIZEX32/MIXER_SIZEXBUF):"
+		echo "Code & data size (MIXER_WORDSIZED/MIXER_SIZEX32/MIXER_SIZEXBUF):"
 		printv ptest_size_word32bufsz
-		echo "Code size (68020):"
+		echo "Code & data size (68020):"
 		printv ptest_size_020
-		echo "Code size (HQ):"
+		echo "Code & data size (HQ):"
 		printv ptest_size_HQ
-		echo "Code size (HQ/68020):"
+		echo "Code & data size (HQ/68020):"
 		printv ptest_size_HQ020
-		echo "Code size (Callback):"
+		echo "Code & data size (Callback):"
 		printv ptest_size_cb
-		echo "Code size (Plugins):"
+		echo "Code & data size (Plugins):"
 		printv ptest_size_pl
-		echo "Code size (Plugins/68020):"
+		echo "Code & data size (Plugins/68020):"
 		printv ptest_size_pl020
-		echo "Code size (Callback/Plugins):"
+		echo "Code & data size (Callback/Plugins):"
 		printv ptest_size_cbpl
 	ENDIF
 ; End of File
