@@ -26,6 +26,7 @@
 #include <exec/exec.h>
 #include <proto/exec.h>
 #include <hardware/dmabits.h>
+
 #include "mixer/mixer.h"
 #include "plugins/plugins.h"
 

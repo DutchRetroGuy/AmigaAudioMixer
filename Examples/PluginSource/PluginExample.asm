@@ -19,7 +19,6 @@
 	include hardware/intbits.i
 	include hardware/cia.i
 
-	include	debug.i
 	include displaybuffers.i
 	include blitter.i
 	include copperlists.i

@@ -17,7 +17,6 @@
 ; Includes (OS includes assume at least NDK 1.3) 
 	include	mixer.i
 	include mixer_wrapper.i
-	include plugins_config.i
 	include	plugins.i
 	include plugins_wrapper.i
 	

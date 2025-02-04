@@ -24,7 +24,6 @@
 	include hardware/intbits.i
 	include hardware/cia.i
 
-	include	debug.i
 	include converter.i
 	include mixer.i
 	include samples.i

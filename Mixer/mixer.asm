@@ -47,7 +47,11 @@
 ; Includes (OS includes assume at least NDK 1.3)
 	include hardware/custom.i
 	include hardware/dmabits.i
+
 	include mixer.i
+	IFD BUILD_MIXER_DEBUG
+		include debug.i
+	ENDIF
 	IF MIXER_CIA_TIMER=1
 		include hardware/cia.i
 	ENDIF
@@ -2297,6 +2301,10 @@ MixerInstallHandler\1
 			ELSE
 				movem.l	(sp)+,a0/a2
 			ENDIF
+		ENDIF
+
+		IFD BUILD_MIXER_DEBUG
+			DBGBreakPnt
 		ENDIF
 
 		; Calculate audio interrupt bit for correct channel and store result

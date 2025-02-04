@@ -18,6 +18,10 @@
 	include	mixer.i
 	include plugins_config.i
 	include	plugins.i
+
+	IFD BUILD_MIXER_DEBUG
+		include debug.i
+	ENDIF
 	
 ; Start of code
 		section code,code
