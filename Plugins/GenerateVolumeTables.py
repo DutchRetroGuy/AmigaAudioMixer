@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # $VER: GenerateVolumeTables 1.0 (12.11.23)
 #
 # GenerateVolumeTables.py
