@@ -179,9 +179,9 @@ void RemoveIRQVector()
 }
  
 #if !defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
+// Callback routine that sets the IRQ vector for audio interrupts
 void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 {
-	// Routine that sets the IRQ vector for audio interrupts
 	mixer_interrupt_handler = interrupt_handler;
 	
 	// Set up OS interrupt structure
@@ -200,39 +200,39 @@ void SetIRQVector(MIX_REGARG(void (*interrupt_handler)(),"a0"))
 	}
 }
 
+// Callback routine that sets the correct bits in INTENA
 void SetIRQBits(MIX_REGARG(UWORD intena_value,"d0"))
 {
-	// Routine that sets the correct bits in INTENA
 	custom->intena = intena_value;
 }
 
+// Callback routine that disables audio interrupts
 void DisableIRQ(MIX_REGARG(UWORD intena_value,"d0"))
 {
-	// Routine that disables audio interrupts
 	custom->intena = intena_value;
 	custom->intreq = intena_value;
 	custom->intreq = intena_value; // 2x for A4000
 }
 
+// Callback routine that acknowledges audio interrupt
 void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
 {
-	// Routine that acknowledges audio interrupt
 	custom->intreq = intreq_value;
 	custom->intreq = intreq_value; // 2x for A4000
 }
 
+// Callback routine that sets DMACON
 void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
 {
-	// Routine that sets DMACON
 	custom->dmacon = dmacon_value;
 }
 #else // Bartman versions
-void SetIRQVector(void (*interrupt_handler)())
+// Callback routine that sets the IRQ vector for audio interrupts
+void SetIRQVector()
 {
 	// Fetch register content
-	register volatile void (*reg_interrupt_handler)() __asm("a0") = interrupt_handler;
+	register volatile void (*reg_interrupt_handler)() __asm("a0");
 
-	// Routine that sets the IRQ vector for audio interrupts
 	mixer_interrupt_handler = reg_interrupt_handler;
 	
 	// Set up OS interrupt structure
@@ -251,42 +251,42 @@ void SetIRQVector(void (*interrupt_handler)())
 	}
 }
 
-void SetIRQBits(UWORD intena_value)
+// Callback routine that sets the correct bits in INTENA
+void SetIRQBits()
 {
 	// Fetch register content
-	register volatile UWORD reg_intena_value __asm("d0") = intena_value;
+	register volatile UWORD reg_intena_value __asm("d0");
 	
-	// Routine that sets the correct bits in INTENA
 	custom->intena = reg_intena_value;
 }
 
-void DisableIRQ(UWORD intena_value)
+// Callback routine that disables audio interrupts
+void DisableIRQ()
 {
 	// Fetch register content
-	register volatile UWORD reg_intena_value __asm("d0") = intena_value;
+	register volatile UWORD reg_intena_value __asm("d0");
 
-	// Routine that disables audio interrupts
 	custom->intena = reg_intena_value;
 	custom->intreq = reg_intena_value;
 	custom->intreq = reg_intena_value; // 2x for A4000
 }
 
-void AcknowledgeIRQ(MIX_REGARG(UWORD intreq_value,"d0"))
+// Callback routine that acknowledges audio interrupt
+void AcknowledgeIRQ()
 {
 	// Fetch register content
-	register volatile UWORD reg_intreq_value __asm("d0") = intreq_value;
+	register volatile UWORD reg_intreq_value __asm("d0");
 
-	// Routine that acknowledges audio interrupt
 	custom->intreq = reg_intreq_value;
 	custom->intreq = reg_intreq_value; // 2x for A4000
 }
 
-void SetDMA(MIX_REGARG(UWORD dmacon_value,"d0"))
+// Callback routine that sets DMACON
+void SetDMA()
 {
 	// Fetch register content
-	register volatile UWORD reg_dmacon_value __asm("d0") = dmacon_value;
+	register volatile UWORD reg_dmacon_value __asm("d0");
 
-	// Routine that sets DMACON
 	custom->dmacon = reg_dmacon_value;
 }
 #endif
