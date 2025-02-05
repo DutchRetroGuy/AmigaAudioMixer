@@ -239,7 +239,7 @@ InterruptHandler
 		rte
 
 		; Routine: SetIRQVector
-		; This routine sets up the audio interrupt vector
+		; This callback routine sets up the audio interrupt vector
 		;
 		; A0 - pointer to the audio mixer interrupt handler.
 		;
@@ -264,8 +264,8 @@ SetIRQVector
 		rts
 
 		; Routine: RemoveIRQVector
-		; This routine removes the IRQ vector used by the audio mixer, 
-		; resetting it to it's prior value.
+		; This callback routine removes the IRQ vector used by the audio
+		; mixer, resetting it to its prior value.
 		;
 		; Note: this variant assumes a VBR of 0, which may not be correct on
 		;       all machines!
@@ -288,7 +288,7 @@ SetIRQBits
 		rts
 
 		; Routine: DisableIRQ
-		; This routine disables the audio interrupt
+		; This callback routine disables the audio interrupt
 		;
 		; D0 - INTENA/INTREQ value to use
 DisableIRQ
@@ -303,7 +303,7 @@ DisableIRQ
 		rts
 
 		; Routine: AcknowledgeIRQ
-		; This routine acknowledges the audio interrupt 
+		; This callback routine acknowledges the audio interrupt 
 		;
 		; D0 - INTREQ value to use
 AcknowledgeIRQ
@@ -317,7 +317,7 @@ AcknowledgeIRQ
 		rts
 
 		; Routine: SetDMACON
-		; This routine sets the DMACON register to the value given
+		; This callback routine sets the DMACON register to the value given
 		;
 		; D0 - DMACON value to set
 SetDMACON
