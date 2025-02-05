@@ -683,34 +683,34 @@ MixPluginPitchStandard\1
 		bmi.s	.lp_done
 		
 		; Process D2 longwords
-		IF MIXER_68020=1
-			move.l	d0,-(sp)
-
-.lp		
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.l	d0,(a0)+
-			dbra	d2,.lp
-			
-			move.l	(sp)+,d0
-		ELSE
+;		IF MIXER_68020=1
+;			move.l	d0,-(sp)
+;
+;.lp		
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.l	d0,(a0)+
+;			dbra	d2,.lp
+;			
+;			move.l	(sp)+,d0
+;		ELSE
 .lp		
 			move.b	0(a2,d1.l),(a0)+
 			add.b	d4,d5
@@ -731,7 +731,7 @@ MixPluginPitchStandard\1
 			dbra	d2,.lp
 			
 			tst.w	d0
-		ENDIF
+;		ENDIF
 		beq.s	.lp_done
 		
 		; More bytes to process
@@ -950,25 +950,25 @@ MixPluginVolumeTable\1
 			moveq	#0,d6
 
 .lp_vol		
-			IF MIXER_68020=1
-				move.l	(a3)+,d4
-				rol.l	#8,d4
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				move.b	0(a2,d6.w),d5
-				move.l	d5,(a0)+
-			ELSE
+;			IF MIXER_68020=1
+;				move.l	(a3)+,d4
+;				rol.l	#8,d4
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				move.b	0(a2,d6.w),d5
+;				move.l	d5,(a0)+
+;			ELSE
 				move.b	(a3)+,d6
 				move.b	0(a2,d6.w),(a0)+
 				move.b	(a3)+,d6
@@ -977,7 +977,7 @@ MixPluginVolumeTable\1
 				move.b	0(a2,d6.w),(a0)+
 				move.b	(a3)+,d6
 				move.b	0(a2,d6.w),(a0)+
-			ENDIF
+;			ENDIF
 			dbra	d7,.lp_vol
 			bra.s	.update_sample_offset
 		
