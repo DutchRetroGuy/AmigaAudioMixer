@@ -40,7 +40,7 @@ MXPLUGIN_PITCH				EQU	1
 ;       use 68020+ only instructions. Setting the define below to 1 changes
 ;       this so that the plugin code will use 68020+ only instructions as
 ;       well.
-MXPLUGIN_68020_ONLY			EQU	0
+MXPLUGIN_68020_ONLY			EQU	1
 
 ; Set define below to 1 to remove the tables for the volume plugin. This saves
 ; memory and disables table based volume selection in the volume plugin. Shift
