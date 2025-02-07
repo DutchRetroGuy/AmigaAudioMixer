@@ -189,7 +189,7 @@ MixPluginInitDummy\1
 		;      MixerPlayChannelFX()
 MixPluginInitPitch\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0/d1,-(sp)					; Stack
+		movem.l	d0/d1/d2,-(sp)					; Stack
 
 		; Write base values
 		move.l	mfx_sample_ptr(a0),mpd_pit_sample_ptr(a2)
@@ -197,10 +197,30 @@ MixPluginInitPitch\1
 		clr.l	mpd_pit_sample_offset(a2)
 		clr.w	mpd_pit_current_fp8(a2)
 		
+		; 0) Check for MXPLG_PITCH_LEVELS
+		moveq	#MXPLG_PITCH_LEVELS,d0
+		cmp.w	mpid_pit_mode(a1),d0
+		bne		.check_ratio
+		
+		; MXPLG_PITCH_LEVELS ratio needs to be looked up
+		move.l	a0,-(sp)					; Stack
+		
+		; Fetch correct FP8.8 ratio
+		lea.l	MixPluginLevels_pitch_table\1(pc),a0
+		move.w	mpid_pit_ratio_fp8(a1),d2
+		moveq	#0,d0
+		move.w	d2,d0
+		add.w	d0,d0
+		move.w	0(a0,d0.w),d0
+		
+		move.l	(sp)+,a0					; Stack
+		bra		.pitch_test_1x
+		
+.check_ratio
 		; 1) Check if the ratio is valid
 		moveq	#0,d0
 		move.w	mpid_pit_ratio_fp8(a1),d0
-		
+	
 		tst.w	d0
 		bne.s	.pitch_test_1x
 		
@@ -263,8 +283,17 @@ MixPluginInitPitch\1
 		moveq	#3,d1						; Set length/offset shift to 3
 		bsr		MixPluginRatioPrecalc\1
 	
+		; 7) Check for MXPLG_PITCH_LEVELS
+		; TODO: neater path for MXPLG_PITCH_LEVELS than double compare
+.check_levels
+		moveq	#MXPLG_PITCH_LEVELS,d0
+		cmp.w	mpid_pit_mode(a1),d0
+		bne		.done
+		
+		move.w	d2,mpd_pit_ratio_fp8(a2)
+
 .done
-		movem.l	(sp)+,d0/d1					; Stack
+		movem.l	(sp)+,d0/d1/d2				; Stack
 		rts
 
 .precalc
@@ -582,6 +611,7 @@ MixPluginPitch\1
 		jmp		MixPluginPitch1x\1(pc)
 		jmp		MixPluginPitchStandard\1(pc)
 		jmp		MixPluginPitchLowQuality\1(pc)
+		jmp		MixPluginPitchLevels\1(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
@@ -861,17 +891,101 @@ MixPluginPitchLowQuality\1
 	ENDIF
 		rts
 
-MixPluginLevels\1
+MixPluginPitchLevels\1
 	IF MXPLUGIN_PITCH=1
-	; TODO!!!
+		movem.l	d0-d6/a0/a2,-(sp)			; Stack
+		
+		; Check if sample looped
+		tst.w	d1
+		beq.s	.no_loop
+		
+		; Sample looped, reset offset to loop offset
+		move.l	mpd_pit_loop_offset(a1),mpd_pit_sample_offset(a1)
+.no_loop
+
+		; Set up for loop
+		moveq	#0,d3
+		move.w	mpd_pit_ratio_fp8(a1),d4
+		;move.w	mpd_pit_current_fp8(a1),d5
+		move.l	mpd_pit_sample_offset(a1),d1
+		move.l	mpd_pit_length(a1),d7
+		move.l	mpd_pit_sample_ptr(a1),a2
+
+		; Split FP 8.8 values into two bytes
+		;move.w	d4,d3
+		;lsr.w	#6,d3						; High-byte delta << 2
+		;and.w	#$fffc,d3					; Round to nearest 4 bytes
+		;and.w	#$00ff,d4					; Low-byte delta
+
+		; Determine amount of bytes to process
+.determine_length
+		moveq	#0,d2
+		moveq	#0,d6
+		move.l	d7,d6
+		sub.l	d1,d6
+		move.w	d0,d2
+		
+		cmp.l	d2,d6
+		blt.s	.lp_rem_smaller
+
+		moveq	#0,d0				; Nothing remains after loop
+		bra.s	.lp_size_calculated
+	
+.lp_rem_smaller
+		move.w	d6,d2				; remaining bytes < bytes to process
+		sub.w	d6,d0				; remaining bytes to process after loop
+
+.lp_size_calculated
+		moveq	#0,d7
+		moveq	#4,d6
+		; Below is handled by MixPluginLevels_internal
+		;asr.w	#2,d2
+		;subq.w	#1,d2
+		;bmi.s	.lp_done
+	
+		lea.l	0(a2,d1.l),a2
+		bsr		MixPluginLevels_internal\1
+	
+		tst.w	d0
+		beq.s	.lp_done
+		
+		; More bytes to process
+		tst.w	mpd_pit_loop(a1)
+		bpl.s	.silence
+
+		move.l	mpd_pit_loop_offset(a1),d1
+		move.l	mpd_pit_length(a1),d7
+		bra.s	.determine_length
+
+.lp_done
+		; Write resulting values back into data
+		;move.w	d5,mpd_pit_current_fp8(a1)
+		move.l	d1,mpd_pit_sample_offset(a1)
+	
+.done
+		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		move.l	(sp)+,d7
+		rts
+		
+.silence
+		; Write silence to remainder of buffer
+		lsr.w	#2,d0						; Convert to longwords
+		subq.w	#1,d0
+		bmi.s	.done
+
+.si_lp	move.l	d6,(a0)+
+		dbra	d0,.si_lp
+
+		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		move.l	(sp)+,d7
 	ENDIF
 		rts
 
 MixPluginLevels_internal\1
 	IF MXPLUGIN_PITCH=1
-		add.w	d0,d0
-		add.w	d0,d0
-		jmp .jt_table(pc,d0.w)
+		add.w	d4,d4
+		add.w	d4,d4
+		jmp .jt_table(pc,d4.w)
 
 .jt_table
 		bra.w	.pitch_level_0
@@ -941,6 +1055,9 @@ MixPluginLevels_internal\1
 
 .pitch_level_0:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_0
+
 .lp_0
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -951,12 +1068,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		addq.w	#2,a2
+		addq.l	#2,d1
 		dbra	d2,.lp_0
+		rts
+
+.lp_done_0
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.30952380952380953 to nearest rational of 4/13 (0.3076923076923077)
 .pitch_level_1:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_1
+
 .lp_1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -975,12 +1100,20 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		addq.w	#5,a2
+		addq.l	#5,d1
 		dbra	d2,.lp_1
+		rts
+
+.lp_done_1
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.36904761904761907 to nearest rational of 4/11 (0.36363636363636365)
 .pitch_level_2:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_2
+
 .lp_2
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -999,11 +1132,19 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		addq.w	#6,a2
+		addq.l	#6,d1
 		dbra	d2,.lp_2
+		rts
+
+.lp_done_2
+		moveq	#0,d0
 		rts
 
 .pitch_level_3:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_3
+
 .lp_3
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1014,24 +1155,40 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		addq.w	#3,a2
+		addq.l	#3,d1
 		dbra	d2,.lp_3
+		rts
+
+.lp_done_3
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.4880952380952381 to nearest rational of 1/2 (0.5)
 .pitch_level_4:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_4
+
 .lp_4
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		addq.w	#2,a2
+		addq.l	#2,d1
 		dbra	d2,.lp_4
+		rts
+
+.lp_done_4
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.5476190476190477 to nearest rational of 6/11 (0.5454545454545454)
 .pitch_level_5:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_5
+
 .lp_5
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1050,12 +1207,20 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		add.w	#9,a2
+		add.l	#9,d1
 		dbra	d2,.lp_5
+		rts
+
+.lp_done_5
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.6071428571428571 to nearest rational of 3/5 (0.6)
 .pitch_level_6:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_6
+
 .lp_6
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1066,11 +1231,19 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		addq.w	#5,a2
+		addq.l	#5,d1
 		dbra	d2,.lp_6
+		rts
+
+.lp_done_6
+		moveq	#0,d0
 		rts
 
 .pitch_level_7:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_7
+
 .lp_7
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1081,12 +1254,20 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		addq.w	#5,a2
+		addq.l	#5,d1
 		dbra	d2,.lp_7
+		rts
+
+.lp_done_7
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.7261904761904762 to nearest rational of 8/11 (0.7272727272727273)
 .pitch_level_8:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_8
+
 .lp_8
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1105,11 +1286,19 @@ MixPluginLevels_internal\1
 		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		add.w	#12,a2
+		add.l	#12,d1
 		dbra	d2,.lp_8
+		rts
+
+.lp_done_8
+		moveq	#0,d0
 		rts
 
 .pitch_level_9:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_9
+
 .lp_9
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1128,11 +1317,19 @@ MixPluginLevels_internal\1
 		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		add.w	#13,a2
+		add.l	#13,d1
 		dbra	d2,.lp_9
+		rts
+
+.lp_done_9
+		moveq	#0,d0
 		rts
 
 .pitch_level_10:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_10
+
 .lp_10
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1151,12 +1348,20 @@ MixPluginLevels_internal\1
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
 		add.w	#14,a2
+		add.l	#14,d1
 		dbra	d2,.lp_10
+		rts
+
+.lp_done_10
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.9047619047619048 to nearest rational of 10/11 (0.9090909090909091)
 .pitch_level_11:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_11
+
 .lp_11
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1175,12 +1380,20 @@ MixPluginLevels_internal\1
 		move.b	12(a2),(a0)+
 		move.b	13(a2),(a0)+
 		add.w	#15,a2
+		add.l	#15,d1
 		dbra	d2,.lp_11
+		rts
+
+.lp_done_11
+		moveq	#0,d0
 		rts
 
 ; Rounded 0.9642857142857142 to nearest rational of 15/16 (0.9375)
 .pitch_level_12:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_12
+
 .lp_12
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1199,23 +1412,39 @@ MixPluginLevels_internal\1
 		move.b	13(a2),(a0)+
 		move.b	14(a2),(a0)+
 		add.w	#15,a2
+		add.l	#15,d1
 		dbra	d2,.lp_12
+		rts
+
+.lp_done_12
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.0238095238095237 to nearest rational of 1/1 (1.0)
 .pitch_level_13:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_13
+
 .lp_13
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		addq.w	#4,a2
+		addq.l	#4,d1
 		dbra	d2,.lp_13
+		rts
+
+.lp_done_13
+		moveq	#0,d0
 		rts
 
 .pitch_level_14:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_14
+
 .lp_14
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1234,11 +1463,19 @@ MixPluginLevels_internal\1
 		move.b	15(a2),(a0)+
 		move.b	16(a2),(a0)+
 		add.w	#17,a2
+		add.l	#17,d1
 		dbra	d2,.lp_14
+		rts
+
+.lp_done_14
+		moveq	#0,d0
 		rts
 
 .pitch_level_15:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_15
+
 .lp_15
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1249,12 +1486,20 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	8(a2),(a0)+
 		add.w	#9,a2
+		add.l	#9,d1
 		dbra	d2,.lp_15
+		rts
+
+.lp_done_15
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.2023809523809523 to nearest rational of 6/5 (1.2)
 .pitch_level_16:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_16
+
 .lp_16
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1265,12 +1510,20 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		add.w	#10,a2
+		add.l	#10,d1
 		dbra	d2,.lp_16
+		rts
+
+.lp_done_16
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.2619047619047619 to nearest rational of 19/15 (1.2666666666666666)
 .pitch_level_17:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_17
+
 .lp_17
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1289,12 +1542,20 @@ MixPluginLevels_internal\1
 		move.b	17(a2),(a0)+
 		move.b	19(a2),(a0)+
 		add.w	#20,a2
+		add.l	#20,d1
 		dbra	d2,.lp_17
+		rts
+
+.lp_done_17
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.3214285714285714 to nearest rational of 21/16 (1.3125)
 .pitch_level_18:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_18
+
 .lp_18
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1313,12 +1574,20 @@ MixPluginLevels_internal\1
 		move.b	18(a2),(a0)+
 		move.b	19(a2),(a0)+
 		add.w	#21,a2
+		add.l	#21,d1
 		dbra	d2,.lp_18
+		rts
+
+.lp_done_18
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.380952380952381 to nearest rational of 18/13 (1.3846153846153846)
 .pitch_level_19:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_19
+
 .lp_19
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1337,12 +1606,20 @@ MixPluginLevels_internal\1
 		move.b	19(a2),(a0)+
 		move.b	20(a2),(a0)+
 		add.w	#22,a2
+		add.l	#22,d1
 		dbra	d2,.lp_19
+		rts
+
+.lp_done_19
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.4404761904761905 to nearest rational of 23/16 (1.4375)
 .pitch_level_20:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_20
+
 .lp_20
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1361,23 +1638,39 @@ MixPluginLevels_internal\1
 		move.b	20(a2),(a0)+
 		move.b	21(a2),(a0)+
 		add.w	#23,a2
+		add.l	#23,d1
 		dbra	d2,.lp_20
+		rts
+
+.lp_done_20
+		moveq	#0,d0
 		rts
 
 .pitch_level_21:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_21
+
 .lp_21
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		addq.w	#6,a2
+		addq.l	#6,d1
 		dbra	d2,.lp_21
+		rts
+
+.lp_done_21
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.5595238095238095 to nearest rational of 25/16 (1.5625)
 .pitch_level_22:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_22
+
 .lp_22
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1396,12 +1689,20 @@ MixPluginLevels_internal\1
 		move.b	21(a2),(a0)+
 		move.b	23(a2),(a0)+
 		add.w	#25,a2
+		add.l	#25,d1
 		dbra	d2,.lp_22
+		rts
+
+.lp_done_22
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.619047619047619 to nearest rational of 21/13 (1.6153846153846154)
 .pitch_level_23:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_23
+
 .lp_23
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1420,12 +1721,20 @@ MixPluginLevels_internal\1
 		move.b	22(a2),(a0)+
 		move.b	24(a2),(a0)+
 		add.w	#26,a2
+		add.l	#26,d1
 		dbra	d2,.lp_23
+		rts
+
+.lp_done_23
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.6785714285714284 to nearest rational of 27/16 (1.6875)
 .pitch_level_24:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_24
+
 .lp_24
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1444,12 +1753,20 @@ MixPluginLevels_internal\1
 		move.b	23(a2),(a0)+
 		move.b	25(a2),(a0)+
 		add.w	#27,a2
+		add.l	#27,d1
 		dbra	d2,.lp_24
+		rts
+
+.lp_done_24
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.738095238095238 to nearest rational of 26/15 (1.7333333333333334)
 .pitch_level_25:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_25
+
 .lp_25
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1468,12 +1785,20 @@ MixPluginLevels_internal\1
 		move.b	24(a2),(a0)+
 		move.b	26(a2),(a0)+
 		add.w	#28,a2
+		add.l	#28,d1
 		dbra	d2,.lp_25
+		rts
+
+.lp_done_25
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.7976190476190474 to nearest rational of 9/5 (1.8)
 .pitch_level_26:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_26
+
 .lp_26
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1484,11 +1809,19 @@ MixPluginLevels_internal\1
 		move.b	10(a2),(a0)+
 		move.b	12(a2),(a0)+
 		add.w	#14,a2
+		add.l	#14,d1
 		dbra	d2,.lp_26
+		rts
+
+.lp_done_26
+		moveq	#0,d0
 		rts
 
 .pitch_level_27:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_27
+
 .lp_27
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1499,11 +1832,19 @@ MixPluginLevels_internal\1
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
 		add.w	#15,a2
+		add.l	#15,d1
 		dbra	d2,.lp_27
+		rts
+
+.lp_done_27
+		moveq	#0,d0
 		rts
 
 .pitch_level_28:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_28
+
 .lp_28
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1522,24 +1863,40 @@ MixPluginLevels_internal\1
 		move.b	26(a2),(a0)+
 		move.b	28(a2),(a0)+
 		add.w	#31,a2
+		add.l	#31,d1
 		dbra	d2,.lp_28
+		rts
+
+.lp_done_28
+		moveq	#0,d0
 		rts
 
 ; Rounded 1.976190476190476 to nearest rational of 2/1 (2.0)
 .pitch_level_29:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_29
+
 .lp_29
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	6(a2),(a0)+
 		addq.w	#8,a2
+		addq.l	#8,d1
 		dbra	d2,.lp_29
+		rts
+
+.lp_done_29
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.0357142857142856 to nearest rational of 33/16 (2.0625)
 .pitch_level_30:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_30
+
 .lp_30
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1558,12 +1915,20 @@ MixPluginLevels_internal\1
 		move.b	28(a2),(a0)+
 		move.b	30(a2),(a0)+
 		add.w	#33,a2
+		add.l	#33,d1
 		dbra	d2,.lp_30
+		rts
+
+.lp_done_30
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.095238095238095 to nearest rational of 23/11 (2.090909090909091)
 .pitch_level_31:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_31
+
 .lp_31
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1582,11 +1947,19 @@ MixPluginLevels_internal\1
 		move.b	29(a2),(a0)+
 		move.b	31(a2),(a0)+
 		add.w	#33,a2
+		add.l	#33,d1
 		dbra	d2,.lp_31
+		rts
+
+.lp_done_31
+		moveq	#0,d0
 		rts
 
 .pitch_level_32:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_32
+
 .lp_32
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1605,11 +1978,19 @@ MixPluginLevels_internal\1
 		move.b	30(a2),(a0)+
 		move.b	32(a2),(a0)+
 		add.w	#34,a2
+		add.l	#34,d1
 		dbra	d2,.lp_32
+		rts
+
+.lp_done_32
+		moveq	#0,d0
 		rts
 
 .pitch_level_33:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_33
+
 .lp_33
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1628,12 +2009,20 @@ MixPluginLevels_internal\1
 		move.b	31(a2),(a0)+
 		move.b	33(a2),(a0)+
 		add.w	#35,a2
+		add.l	#35,d1
 		dbra	d2,.lp_33
+		rts
+
+.lp_done_33
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.2738095238095237 to nearest rational of 25/11 (2.272727272727273)
 .pitch_level_34:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_34
+
 .lp_34
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1652,11 +2041,19 @@ MixPluginLevels_internal\1
 		move.b	31(a2),(a0)+
 		move.b	34(a2),(a0)+
 		add.w	#36,a2
+		add.l	#36,d1
 		dbra	d2,.lp_34
+		rts
+
+.lp_done_34
+		moveq	#0,d0
 		rts
 
 .pitch_level_35:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_35
+
 .lp_35
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1667,12 +2064,20 @@ MixPluginLevels_internal\1
 		move.b	13(a2),(a0)+
 		move.b	16(a2),(a0)+
 		add.w	#19,a2
+		add.l	#19,d1
 		dbra	d2,.lp_35
+		rts
+
+.lp_done_35
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.392857142857143 to nearest rational of 12/5 (2.4)
 .pitch_level_36:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_36
+
 .lp_36
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1683,12 +2088,20 @@ MixPluginLevels_internal\1
 		move.b	14(a2),(a0)+
 		move.b	16(a2),(a0)+
 		add.w	#19,a2
+		add.l	#19,d1
 		dbra	d2,.lp_36
+		rts
+
+.lp_done_36
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.452380952380952 to nearest rational of 27/11 (2.4545454545454546)
 .pitch_level_37:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_37
+
 .lp_37
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1707,23 +2120,39 @@ MixPluginLevels_internal\1
 		move.b	34(a2),(a0)+
 		move.b	36(a2),(a0)+
 		add.w	#39,a2
+		add.l	#39,d1
 		dbra	d2,.lp_37
+		rts
+
+.lp_done_37
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.511904761904762 to nearest rational of 5/2 (2.5)
 .pitch_level_38:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_38
+
 .lp_38
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	7(a2),(a0)+
 		add.w	#10,a2
+		add.l	#10,d1
 		dbra	d2,.lp_38
+		rts
+
+.lp_done_38
+		moveq	#0,d0
 		rts
 
 .pitch_level_39:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_39
+
 .lp_39
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1734,12 +2163,20 @@ MixPluginLevels_internal\1
 		move.b	15(a2),(a0)+
 		move.b	18(a2),(a0)+
 		add.w	#21,a2
+		add.l	#21,d1
 		dbra	d2,.lp_39
+		rts
+
+.lp_done_39
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.630952380952381 to nearest rational of 29/11 (2.6363636363636362)
 .pitch_level_40:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_40
+
 .lp_40
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1758,12 +2195,20 @@ MixPluginLevels_internal\1
 		move.b	36(a2),(a0)+
 		move.b	39(a2),(a0)+
 		add.w	#42,a2
+		add.l	#42,d1
 		dbra	d2,.lp_40
+		rts
+
+.lp_done_40
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.6904761904761902 to nearest rational of 35/13 (2.6923076923076925)
 .pitch_level_41:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_41
+
 .lp_41
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1782,11 +2227,19 @@ MixPluginLevels_internal\1
 		move.b	37(a2),(a0)+
 		move.b	40(a2),(a0)+
 		add.w	#43,a2
+		add.l	#43,d1
 		dbra	d2,.lp_41
+		rts
+
+.lp_done_41
+		moveq	#0,d0
 		rts
 
 .pitch_level_42:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_42
+
 .lp_42
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1797,12 +2250,20 @@ MixPluginLevels_internal\1
 		move.b	16(a2),(a0)+
 		move.b	19(a2),(a0)+
 		add.w	#22,a2
+		add.l	#22,d1
 		dbra	d2,.lp_42
+		rts
+
+.lp_done_42
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.8095238095238093 to nearest rational of 45/16 (2.8125)
 .pitch_level_43:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_43
+
 .lp_43
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1821,12 +2282,20 @@ MixPluginLevels_internal\1
 		move.b	39(a2),(a0)+
 		move.b	42(a2),(a0)+
 		add.w	#45,a2
+		add.l	#45,d1
 		dbra	d2,.lp_43
+		rts
+
+.lp_done_43
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.869047619047619 to nearest rational of 43/15 (2.8666666666666667)
 .pitch_level_44:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_44
+
 .lp_44
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1845,11 +2314,19 @@ MixPluginLevels_internal\1
 		move.b	40(a2),(a0)+
 		move.b	43(a2),(a0)+
 		add.w	#46,a2
+		add.l	#46,d1
 		dbra	d2,.lp_44
+		rts
+
+.lp_done_44
+		moveq	#0,d0
 		rts
 
 .pitch_level_45:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_45
+
 .lp_45
 		move.b	(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1868,24 +2345,40 @@ MixPluginLevels_internal\1
 		move.b	41(a2),(a0)+
 		move.b	43(a2),(a0)+
 		add.w	#47,a2
+		add.l	#47,d1
 		dbra	d2,.lp_45
+		rts
+
+.lp_done_45
+		moveq	#0,d0
 		rts
 
 ; Rounded 2.988095238095238 to nearest rational of 3/1 (3.0)
 .pitch_level_46:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_46
+
 .lp_46
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	9(a2),(a0)+
 		add.w	#12,a2
+		add.l	#12,d1
 		dbra	d2,.lp_46
+		rts
+
+.lp_done_46
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.0476190476190474 to nearest rational of 49/16 (3.0625)
 .pitch_level_47:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_47
+
 .lp_47
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1904,12 +2397,20 @@ MixPluginLevels_internal\1
 		move.b	42(a2),(a0)+
 		move.b	45(a2),(a0)+
 		add.w	#49,a2
+		add.l	#49,d1
 		dbra	d2,.lp_47
+		rts
+
+.lp_done_47
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.1071428571428568 to nearest rational of 28/9 (3.111111111111111)
 .pitch_level_48:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_48
+
 .lp_48
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1928,11 +2429,19 @@ MixPluginLevels_internal\1
 		move.b	43(a2),(a0)+
 		move.b	46(a2),(a0)+
 		add.w	#50,a2
+		add.l	#50,d1
 		dbra	d2,.lp_48
+		rts
+
+.lp_done_48
+		moveq	#0,d0
 		rts
 
 .pitch_level_49:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_49
+
 .lp_49
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1943,12 +2452,20 @@ MixPluginLevels_internal\1
 		move.b	19(a2),(a0)+
 		move.b	22(a2),(a0)+
 		add.w	#25,a2
+		add.l	#25,d1
 		dbra	d2,.lp_49
+		rts
+
+.lp_done_49
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.226190476190476 to nearest rational of 29/9 (3.2222222222222223)
 .pitch_level_50:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_50
+
 .lp_50
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1967,11 +2484,19 @@ MixPluginLevels_internal\1
 		move.b	45(a2),(a0)+
 		move.b	48(a2),(a0)+
 		add.w	#52,a2
+		add.l	#52,d1
 		dbra	d2,.lp_50
+		rts
+
+.lp_done_50
+		moveq	#0,d0
 		rts
 
 .pitch_level_51:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_51
+
 .lp_51
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1982,12 +2507,20 @@ MixPluginLevels_internal\1
 		move.b	19(a2),(a0)+
 		move.b	23(a2),(a0)+
 		add.w	#26,a2
+		add.l	#26,d1
 		dbra	d2,.lp_51
+		rts
+
+.lp_done_51
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.345238095238095 to nearest rational of 10/3 (3.3333333333333335)
 .pitch_level_52:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_52
+
 .lp_52
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1998,12 +2531,20 @@ MixPluginLevels_internal\1
 		move.b	20(a2),(a0)+
 		move.b	23(a2),(a0)+
 		add.w	#27,a2
+		add.l	#27,d1
 		dbra	d2,.lp_52
+		rts
+
+.lp_done_52
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.4047619047619047 to nearest rational of 17/5 (3.4)
 .pitch_level_53:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_53
+
 .lp_53
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2014,12 +2555,20 @@ MixPluginLevels_internal\1
 		move.b	20(a2),(a0)+
 		move.b	23(a2),(a0)+
 		add.w	#27,a2
+		add.l	#27,d1
 		dbra	d2,.lp_53
+		rts
+
+.lp_done_53
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.464285714285714 to nearest rational of 52/15 (3.466666666666667)
 .pitch_level_54:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_54
+
 .lp_54
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2038,12 +2587,20 @@ MixPluginLevels_internal\1
 		move.b	48(a2),(a0)+
 		move.b	52(a2),(a0)+
 		add.w	#55,a2
+		add.l	#55,d1
 		dbra	d2,.lp_54
+		rts
+
+.lp_done_54
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.5238095238095237 to nearest rational of 53/15 (3.533333333333333)
 .pitch_level_55:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_55
+
 .lp_55
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2062,11 +2619,19 @@ MixPluginLevels_internal\1
 		move.b	49(a2),(a0)+
 		move.b	53(a2),(a0)+
 		add.w	#57,a2
+		add.l	#57,d1
 		dbra	d2,.lp_55
+		rts
+
+.lp_done_55
+		moveq	#0,d0
 		rts
 
 .pitch_level_56:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_56
+
 .lp_56
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2085,11 +2650,19 @@ MixPluginLevels_internal\1
 		move.b	50(a2),(a0)+
 		move.b	53(a2),(a0)+
 		add.w	#57,a2
+		add.l	#57,d1
 		dbra	d2,.lp_56
+		rts
+
+.lp_done_56
+		moveq	#0,d0
 		rts
 
 .pitch_level_57:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_57
+
 .lp_57
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2108,12 +2681,20 @@ MixPluginLevels_internal\1
 		move.b	51(a2),(a0)+
 		move.b	54(a2),(a0)+
 		add.w	#58,a2
+		add.l	#58,d1
 		dbra	d2,.lp_57
+		rts
+
+.lp_done_57
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.702380952380952 to nearest rational of 37/10 (3.7)
 .pitch_level_58:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_58
+
 .lp_58
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2132,12 +2713,20 @@ MixPluginLevels_internal\1
 		move.b	51(a2),(a0)+
 		move.b	55(a2),(a0)+
 		add.w	#59,a2
+		add.l	#59,d1
 		dbra	d2,.lp_58
+		rts
+
+.lp_done_58
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.761904761904762 to nearest rational of 49/13 (3.769230769230769)
 .pitch_level_59:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_59
+
 .lp_59
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2156,12 +2745,20 @@ MixPluginLevels_internal\1
 		move.b	52(a2),(a0)+
 		move.b	56(a2),(a0)+
 		add.w	#60,a2
+		add.l	#60,d1
 		dbra	d2,.lp_59
+		rts
+
+.lp_done_59
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.821428571428571 to nearest rational of 42/11 (3.8181818181818183)
 .pitch_level_60:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_60
+
 .lp_60
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2180,12 +2777,20 @@ MixPluginLevels_internal\1
 		move.b	53(a2),(a0)+
 		move.b	57(a2),(a0)+
 		add.w	#61,a2
+		add.l	#61,d1
 		dbra	d2,.lp_60
+		rts
+
+.lp_done_60
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.880952380952381 to nearest rational of 31/8 (3.875)
 .pitch_level_61:
 		asr.w	#3,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_61
+
 .lp_61
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2196,12 +2801,20 @@ MixPluginLevels_internal\1
 		move.b	23(a2),(a0)+
 		move.b	27(a2),(a0)+
 		add.w	#31,a2
+		add.l	#31,d1
 		dbra	d2,.lp_61
+		rts
+
+.lp_done_61
+		moveq	#0,d0
 		rts
 
 ; Rounded 3.9404761904761902 to nearest rational of 63/16 (3.9375)
 .pitch_level_62:
 		asr.w	#4,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_62
+
 .lp_62
 		move.b	(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2220,19 +2833,33 @@ MixPluginLevels_internal\1
 		move.b	55(a2),(a0)+
 		move.b	59(a2),(a0)+
 		add.w	#63,a2
+		add.l	#63,d1
 		dbra	d2,.lp_62
+		rts
+
+.lp_done_62
+		moveq	#0,d0
 		rts
 
 .pitch_level_63:
 		asr.w	#2,d2
+		subq.w	#1,d2
+		bmi.s	.lp_done_63
+
 .lp_63
 		move.b	(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	12(a2),(a0)+
 		add.w	#16,a2
+		add.l	#16,d1
 		dbra	d2,.lp_63
 		rts
+
+.lp_done_63
+		moveq	#0,d0
+		rts
+
 	ENDIF
 .end_pitch_routines\1
 .pitch_routines_size\1 EQU .end_pitch_routines\1-MixPluginLevels_internal\1
@@ -2964,6 +3591,16 @@ MixPluginRatioPrecalc\1
 		cnop 0,4
 	ENDIF
 plugin_fx_struct\1		blk.b	mfx_SIZEOF
+
+MixPluginLevels_pitch_table\1
+		dc.w	64,79,93,110,128,140,154,171
+		dc.w	186,201,217,233,240,256,277,293
+		dc.w	307,324,336,354,368,384,400,414
+		dc.w	432,444,461,475,491,512,528,535
+		dc.w	551,567,582,597,614,628,640,658
+		dc.w	675,689,704,720,734,750,768,784
+		dc.w	796,811,825,841,853,870,887,905
+		dc.w	917,933,947,965,977,992,1008,1024
 
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0

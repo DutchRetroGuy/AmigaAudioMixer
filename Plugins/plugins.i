@@ -457,6 +457,7 @@ MXPLG_PITCH_1x				EQU 0			; For internal use only, do not
 											; use when filling plugin data
 MXPLG_PITCH_STANDARD		EQU	1
 MXPLG_PITCH_LOWQUALITY		EQU	2
+MXPLG_PITCH_LEVELS			EQU	3
 
 MXPLG_PITCH_NO_PRECALC		EQU	0
 MXPLG_PITCH_PRECALC			EQU	1

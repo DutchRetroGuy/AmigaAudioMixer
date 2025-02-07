@@ -55,6 +55,10 @@ def generate_pitch_routine(pitch_factor, level_num):
 
     code.append(f".pitch_level_{level_num}:")
     code.append(f"\t\tasr.w\t#{shift_amount},d2")
+    code.append(f"\t\tsubq.w\t#1,d2")
+    code.append(f"\t\tbmi.s\t.lp_done_{level_num}")
+    code.append("")
+
     code.append(f".lp_{level_num}")
 
     # Generate move.b instructions
@@ -68,10 +72,16 @@ def generate_pitch_routine(pitch_factor, level_num):
     # Add the pointer increment
     if input_bytes <= 8:
         code.append(f"\t\taddq.w\t#{input_bytes},a2")
+        code.append(f"\t\taddq.l\t#{input_bytes},d1")
     else:
         code.append(f"\t\tadd.w\t#{input_bytes},a2")
+        code.append(f"\t\tadd.l\t#{input_bytes},d1")
 
     code.append(f"\t\tdbra\td2,.lp_{level_num}")
+    code.append("\t\trts")
+    code.append("")
+    code.append(f".lp_done_{level_num}")
+    code.append("\t\tmoveq\t#0,d0")
     code.append("\t\trts")
     code.append("")
 
@@ -108,9 +118,34 @@ def generate_jumptable(routine_name,num_steps):
     code.append("")
     return "\n".join(code)
 
+def generate_fp88_pitch_ratios(label_name,min_pitch, max_pitch, num_steps):
+    # Generates a table with the pitch ratios used in fixed point 8.8 format
+
+    pitch_step = (max_pitch - min_pitch) / (num_steps-1)
+    code = [label_name]
+    out = ""
+
+    for i in range(num_steps):
+        if i % 8 == 0:
+            if out != "":
+                out = out[:len(out) - 1]
+                code.append(out)
+            out = "\t\tdc.w\t"
+        pitch = min_pitch + (i * pitch_step)
+        ratio = find_best_rational(pitch)
+        fp88 = int(round(float(ratio) * 256))  # fixed point 8.8 version of resulting ratio
+        out = out + f"{fp88},"
+
+    if out!="":
+        out = out[:len(out) - 1]
+        code.append(out)
+
+    return "\n".join(code)
 
 # Routine name
-routine_name = "MixPluginLevels_internal\\1"
+prefix="MixPluginLevels"
+routine_name = f"{prefix}_internal\\1"
+label_name = f"{prefix}_pitch_table\\1"
 
 # Pitch range to use
 min_pitch = 0.25
@@ -121,4 +156,8 @@ num_steps = 64
 output = generate_jumptable(routine_name,num_steps)
 print(output)
 output = generate_all_routines(min_pitch,max_pitch,num_steps)
+print(output)
+
+print("\n\n; Pitch ratios in fp8.8 format")
+output = generate_fp88_pitch_ratios(label_name,min_pitch,max_pitch,num_steps)
 print(output)
