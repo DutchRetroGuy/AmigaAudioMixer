@@ -12,11 +12,13 @@
 # Imports
 import math
 from fractions import Fraction
+from math import floor
+
 
 # Functions
 
 
-def find_best_rational(num, max_denominator=16):
+def find_best_rational(num, max_denominator=64):
     # Find the best rational approximation with denominator <= max_denominator
     return Fraction(num).limit_denominator(max_denominator)
 
@@ -44,7 +46,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
             pattern_length = 16
 
     output_bytes = pattern_length
-    input_bytes = round(output_bytes * pitch_factor)
+    input_bytes = math.floor(output_bytes * pitch_factor)
     shift_amount = int(math.log2(output_bytes))
 
     code = []
@@ -109,7 +111,7 @@ def generate_pitch_routine_68020(pitch_factor, level_num):
             pattern_length = 16
 
     output_bytes = pattern_length
-    input_bytes = round(output_bytes * pitch_factor)
+    input_bytes = math.floor(output_bytes * pitch_factor)
     shift_amount = int(math.log2(output_bytes))
 
     code = []
@@ -186,7 +188,7 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
     # num_steps: number of pitch levels to generate
 
     pitch_step = (max_pitch - min_pitch) / (num_steps - 1)
-    all_code = [".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY\n\t\tIF .m68020_indicator=2"]
+    all_code = ["\t\tIF .m68020_indicator=2"]
 
     for i in range(num_steps):
         pitch = min_pitch + (i * pitch_step)
@@ -209,7 +211,12 @@ def generate_jump_table(routine_name, num_steps):
     code = ["\t\t; Internal pitch shifting subroutines\n\t\t; 68020 version uses non-aligned reads"]
     code.append(routine_name)
     code.append("\tIF MXPLUGIN_PITCH=1")
-    code.append("\t\tadd.w\td4,d4\n\t\tadd.w\td4,d4\n\t\tjmp .jt_table(pc,d4.w)\n\n.jt_table")
+    code.append(".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY")
+    code.append("\t\tIF .m68020_indicator=2")
+    code.append("\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d4.w*4)\n\t\t\tmc68000")
+    code.append("\t\tELSE")
+    code.append("\t\t\tadd.w\td4,d4\n\t\t\tadd.w\td4,d4\n\t\t\tjmp .jt_table(pc,d4.w)")
+    code.append("\t\tENDIF\n\n.jt_table")
     for i in range(num_steps):
         code.append(f"\t\tbra.w\t.pitch_level_{i}")
 
@@ -248,8 +255,8 @@ routine = f"{prefix}_internal\\1"
 label = f"{prefix}_pitch_table\\1"
 
 # Pitch range to use
-min_pitch = 0.25
-max_pitch = 4.00
+min_pitch = 0.1
+max_pitch = 1.00
 num_steps = 64
 
 # Generate and display result
