@@ -44,12 +44,13 @@ def generate_pitch_loop(params: PitchParams):
             output_code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
 
     # Add the pointer increment
-    if params.input_bytes <= 8:
-        output_code.append(f"\t\taddq.w\t#{params.input_bytes},a2")
-        output_code.append(f"\t\taddq.l\t#{params.input_bytes},d1")
-    else:
-        output_code.append(f"\t\tadd.w\t#{params.input_bytes},a2")
-        output_code.append(f"\t\tadd.l\t#{params.input_bytes},d1")
+    if params.input_bytes > 0:
+        if params.input_bytes <= 8:
+            output_code.append(f"\t\taddq.w\t#{params.input_bytes},a2")
+            output_code.append(f"\t\taddq.l\t#{params.input_bytes},d1")
+        else:
+            output_code.append(f"\t\tadd.w\t#{params.input_bytes},a2")
+            output_code.append(f"\t\tadd.l\t#{params.input_bytes},d1")
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
 
@@ -101,22 +102,26 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         pitch_factor=pitch_factor
     )
     code.extend(generate_pitch_loop(params))
-    code.append("")
 
     # Continue here to reach 4 bytes-output offset
     if output_bytes > 4:
         bytes_remaining = output_bytes-4
-        code.append(f"\t\tmoveq\t#{(bytes_remaining>>3)-1},d2\n")
+        bytes_input = math.floor(bytes_remaining * pitch_factor)
+        #code.append(f"\t\tmoveq\t#{(bytes_remaining>>3)-1},d2\n")
+
+        # Add empty line between loop and remainder
+        code.append("")
 
         # Call generate_pitch_loop
         params = PitchParams(
-            loop_label="lp_remainder",
+            loop_label="remainder",
             level_num=level_num,
-            input_bytes=bytes_remaining,
+            input_bytes=bytes_input,
             output_bytes=bytes_remaining,
             pitch_factor=pitch_factor
         )
         code.extend(generate_pitch_loop(params))
+        code.pop()
 
     code.append("\t\trts")
     code.append("")
@@ -135,13 +140,7 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
     # num_steps: number of pitch levels to generate
 
     pitch_step = (max_pitch - min_pitch) / (num_steps - 1)
-    all_code = []  #["\t\tIF .m68020_indicator=2"]
-
-    #for i in range(num_steps):
-    #    pitch = min_pitch + (i * pitch_step)
-    #    all_code.append(generate_pitch_routine_68020(pitch, i))
-    #
-    #all_code.append("\t\tELSE\n")
+    all_code = []
 
     for i in range(num_steps):
         pitch = min_pitch + (i * pitch_step)

@@ -990,10 +990,9 @@ MixPluginLevels_internal\1
 			jmp .jt_table(pc,d4.w*4)
 			mc68000
 		ELSE
-			move.w	d4,d3
-			add.w	d3,d3
-			add.w	d3,d3
-			jmp .jt_table(pc,d3.w)
+			add.w	d4,d4
+			add.w	d4,d4
+			jmp .jt_table(pc,d4.w)
 		ENDIF
 
 .jt_table
@@ -1088,9 +1087,7 @@ MixPluginLevels_internal\1
 		addq.l	#1,d1
 		dbra	d2,.lp_0
 
-		moveq	#0,d2
-
-.lp_remainder_0
+.remainder_0
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1103,9 +1100,8 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_0
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_0
@@ -1138,9 +1134,7 @@ MixPluginLevels_internal\1
 		addq.l	#1,d1
 		dbra	d2,.lp_1
 
-		moveq	#0,d2
-
-.lp_remainder_1
+.remainder_1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1153,9 +1147,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_1
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_1
@@ -1188,9 +1181,7 @@ MixPluginLevels_internal\1
 		addq.l	#2,d1
 		dbra	d2,.lp_2
 
-		moveq	#0,d2
-
-.lp_remainder_2
+.remainder_2
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1203,9 +1194,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_2
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_2
@@ -1230,16 +1220,11 @@ MixPluginLevels_internal\1
 		addq.l	#1,d1
 		dbra	d2,.lp_3
 
-		moveq	#-1,d2
-
-.lp_remainder_3
+.remainder_3
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_3
 		rts
 
 .lp_done_3
@@ -1272,9 +1257,7 @@ MixPluginLevels_internal\1
 		addq.l	#2,d1
 		dbra	d2,.lp_4
 
-		moveq	#0,d2
-
-.lp_remainder_4
+.remainder_4
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1287,9 +1270,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_4
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_4
@@ -1322,9 +1304,7 @@ MixPluginLevels_internal\1
 		addq.l	#2,d1
 		dbra	d2,.lp_5
 
-		moveq	#0,d2
-
-.lp_remainder_5
+.remainder_5
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1337,9 +1317,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_5
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_5
@@ -1372,9 +1351,7 @@ MixPluginLevels_internal\1
 		addq.l	#2,d1
 		dbra	d2,.lp_6
 
-		moveq	#0,d2
-
-.lp_remainder_6
+.remainder_6
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1387,9 +1364,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_6
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_6
@@ -1414,16 +1390,11 @@ MixPluginLevels_internal\1
 		addq.l	#1,d1
 		dbra	d2,.lp_7
 
-		moveq	#-1,d2
-
-.lp_remainder_7
+.remainder_7
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_7
 		rts
 
 .lp_done_7
@@ -1456,9 +1427,7 @@ MixPluginLevels_internal\1
 		addq.l	#3,d1
 		dbra	d2,.lp_8
 
-		moveq	#0,d2
-
-.lp_remainder_8
+.remainder_8
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1471,9 +1440,8 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_8
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_8
@@ -1506,9 +1474,7 @@ MixPluginLevels_internal\1
 		addq.l	#3,d1
 		dbra	d2,.lp_9
 
-		moveq	#0,d2
-
-.lp_remainder_9
+.remainder_9
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1521,9 +1487,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_9
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_9
@@ -1556,9 +1521,7 @@ MixPluginLevels_internal\1
 		addq.l	#3,d1
 		dbra	d2,.lp_10
 
-		moveq	#0,d2
-
-.lp_remainder_10
+.remainder_10
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1571,9 +1534,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_10
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_10
@@ -1606,9 +1568,7 @@ MixPluginLevels_internal\1
 		addq.l	#4,d1
 		dbra	d2,.lp_11
 
-		moveq	#0,d2
-
-.lp_remainder_11
+.remainder_11
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1621,9 +1581,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_11
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_11
@@ -1656,9 +1615,7 @@ MixPluginLevels_internal\1
 		addq.l	#4,d1
 		dbra	d2,.lp_12
 
-		moveq	#0,d2
-
-.lp_remainder_12
+.remainder_12
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1671,9 +1628,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_12
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_12
@@ -1698,16 +1654,13 @@ MixPluginLevels_internal\1
 		addq.l	#2,d1
 		dbra	d2,.lp_13
 
-		moveq	#-1,d2
-
-.lp_remainder_13
+.remainder_13
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_13
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_13
@@ -1740,9 +1693,7 @@ MixPluginLevels_internal\1
 		addq.l	#4,d1
 		dbra	d2,.lp_14
 
-		moveq	#0,d2
-
-.lp_remainder_14
+.remainder_14
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1755,9 +1706,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_14
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_14
@@ -1790,9 +1740,7 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_15
 
-		moveq	#0,d2
-
-.lp_remainder_15
+.remainder_15
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1805,9 +1753,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_15
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_15
@@ -1840,9 +1787,7 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_16
 
-		moveq	#0,d2
-
-.lp_remainder_16
+.remainder_16
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1855,9 +1800,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_16
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_16
@@ -1890,9 +1834,7 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_17
 
-		moveq	#0,d2
-
-.lp_remainder_17
+.remainder_17
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1905,9 +1847,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_17
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_17
@@ -1940,9 +1881,7 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_18
 
-		moveq	#0,d2
-
-.lp_remainder_18
+.remainder_18
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -1955,9 +1894,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_18
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_18
@@ -1990,9 +1928,7 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_19
 
-		moveq	#0,d2
-
-.lp_remainder_19
+.remainder_19
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2005,9 +1941,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_19
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_19
@@ -2040,9 +1975,7 @@ MixPluginLevels_internal\1
 		addq.l	#6,d1
 		dbra	d2,.lp_20
 
-		moveq	#0,d2
-
-.lp_remainder_20
+.remainder_20
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2055,9 +1988,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_20
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_20
@@ -2082,16 +2014,13 @@ MixPluginLevels_internal\1
 		addq.l	#3,d1
 		dbra	d2,.lp_21
 
-		moveq	#-1,d2
-
-.lp_remainder_21
+.remainder_21
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_21
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_21
@@ -2124,9 +2053,7 @@ MixPluginLevels_internal\1
 		addq.l	#6,d1
 		dbra	d2,.lp_22
 
-		moveq	#0,d2
-
-.lp_remainder_22
+.remainder_22
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2139,9 +2066,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_22
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_22
@@ -2166,16 +2092,13 @@ MixPluginLevels_internal\1
 		addq.l	#3,d1
 		dbra	d2,.lp_23
 
-		moveq	#-1,d2
-
-.lp_remainder_23
+.remainder_23
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_23
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_23
@@ -2208,9 +2131,7 @@ MixPluginLevels_internal\1
 		addq.l	#7,d1
 		dbra	d2,.lp_24
 
-		moveq	#0,d2
-
-.lp_remainder_24
+.remainder_24
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2223,9 +2144,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_24
+		addq.w	#5,a2
+		addq.l	#5,d1
 		rts
 
 .lp_done_24
@@ -2258,9 +2178,7 @@ MixPluginLevels_internal\1
 		addq.l	#7,d1
 		dbra	d2,.lp_25
 
-		moveq	#0,d2
-
-.lp_remainder_25
+.remainder_25
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2273,9 +2191,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_25
+		addq.w	#5,a2
+		addq.l	#5,d1
 		rts
 
 .lp_done_25
@@ -2308,9 +2225,7 @@ MixPluginLevels_internal\1
 		addq.l	#7,d1
 		dbra	d2,.lp_26
 
-		moveq	#0,d2
-
-.lp_remainder_26
+.remainder_26
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2323,9 +2238,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_26
+		addq.w	#5,a2
+		addq.l	#5,d1
 		rts
 
 .lp_done_26
@@ -2358,9 +2272,7 @@ MixPluginLevels_internal\1
 		addq.l	#7,d1
 		dbra	d2,.lp_27
 
-		moveq	#0,d2
-
-.lp_remainder_27
+.remainder_27
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
@@ -2373,9 +2285,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_27
+		addq.w	#5,a2
+		addq.l	#5,d1
 		rts
 
 .lp_done_27
@@ -2395,7 +2306,6 @@ MixPluginLevels_internal\1
 		addq.w	#2,a2
 		addq.l	#2,d1
 		dbra	d2,.lp_28
-
 		rts
 
 .lp_done_28
@@ -2428,9 +2338,7 @@ MixPluginLevels_internal\1
 		addq.l	#8,d1
 		dbra	d2,.lp_29
 
-		moveq	#0,d2
-
-.lp_remainder_29
+.remainder_29
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2443,9 +2351,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_29
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_29
@@ -2478,9 +2385,7 @@ MixPluginLevels_internal\1
 		addq.l	#8,d1
 		dbra	d2,.lp_30
 
-		moveq	#0,d2
-
-.lp_remainder_30
+.remainder_30
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2493,9 +2398,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_30
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_30
@@ -2528,9 +2432,7 @@ MixPluginLevels_internal\1
 		addq.l	#8,d1
 		dbra	d2,.lp_31
 
-		moveq	#0,d2
-
-.lp_remainder_31
+.remainder_31
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2543,9 +2445,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_31
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_31
@@ -2578,9 +2479,7 @@ MixPluginLevels_internal\1
 		addq.l	#8,d1
 		dbra	d2,.lp_32
 
-		moveq	#0,d2
-
-.lp_remainder_32
+.remainder_32
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2593,9 +2492,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_32
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_32
@@ -2620,16 +2518,13 @@ MixPluginLevels_internal\1
 		addq.l	#4,d1
 		dbra	d2,.lp_33
 
-		moveq	#-1,d2
-
-.lp_remainder_33
+.remainder_33
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_33
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_33
@@ -2662,9 +2557,7 @@ MixPluginLevels_internal\1
 		add.l	#9,d1
 		dbra	d2,.lp_34
 
-		moveq	#0,d2
-
-.lp_remainder_34
+.remainder_34
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2677,9 +2570,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_34
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_34
@@ -2704,16 +2596,13 @@ MixPluginLevels_internal\1
 		addq.l	#4,d1
 		dbra	d2,.lp_35
 
-		moveq	#-1,d2
-
-.lp_remainder_35
+.remainder_35
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_35
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_35
@@ -2746,9 +2635,7 @@ MixPluginLevels_internal\1
 		add.l	#9,d1
 		dbra	d2,.lp_36
 
-		moveq	#0,d2
-
-.lp_remainder_36
+.remainder_36
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2761,9 +2648,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_36
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_36
@@ -2796,9 +2682,7 @@ MixPluginLevels_internal\1
 		add.l	#10,d1
 		dbra	d2,.lp_37
 
-		moveq	#0,d2
-
-.lp_remainder_37
+.remainder_37
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2811,9 +2695,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_37
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_37
@@ -2846,9 +2729,7 @@ MixPluginLevels_internal\1
 		add.l	#10,d1
 		dbra	d2,.lp_38
 
-		moveq	#0,d2
-
-.lp_remainder_38
+.remainder_38
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2861,9 +2742,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_38
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_38
@@ -2896,9 +2776,7 @@ MixPluginLevels_internal\1
 		add.l	#10,d1
 		dbra	d2,.lp_39
 
-		moveq	#0,d2
-
-.lp_remainder_39
+.remainder_39
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2911,9 +2789,8 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_39
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_39
@@ -2946,9 +2823,7 @@ MixPluginLevels_internal\1
 		add.l	#10,d1
 		dbra	d2,.lp_40
 
-		moveq	#0,d2
-
-.lp_remainder_40
+.remainder_40
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -2961,9 +2836,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_40
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_40
@@ -2996,9 +2870,7 @@ MixPluginLevels_internal\1
 		add.l	#10,d1
 		dbra	d2,.lp_41
 
-		moveq	#0,d2
-
-.lp_remainder_41
+.remainder_41
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3011,9 +2883,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_41
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_41
@@ -3046,9 +2917,7 @@ MixPluginLevels_internal\1
 		add.l	#11,d1
 		dbra	d2,.lp_42
 
-		moveq	#0,d2
-
-.lp_remainder_42
+.remainder_42
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3061,9 +2930,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_42
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_42
@@ -3088,16 +2956,13 @@ MixPluginLevels_internal\1
 		addq.l	#5,d1
 		dbra	d2,.lp_43
 
-		moveq	#-1,d2
-
-.lp_remainder_43
+.remainder_43
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_43
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_43
@@ -3130,9 +2995,7 @@ MixPluginLevels_internal\1
 		add.l	#11,d1
 		dbra	d2,.lp_44
 
-		moveq	#0,d2
-
-.lp_remainder_44
+.remainder_44
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3145,9 +3008,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_44
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_44
@@ -3180,9 +3042,7 @@ MixPluginLevels_internal\1
 		add.l	#11,d1
 		dbra	d2,.lp_45
 
-		moveq	#0,d2
-
-.lp_remainder_45
+.remainder_45
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3195,9 +3055,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_45
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_45
@@ -3230,9 +3089,7 @@ MixPluginLevels_internal\1
 		add.l	#12,d1
 		dbra	d2,.lp_46
 
-		moveq	#0,d2
-
-.lp_remainder_46
+.remainder_46
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3245,9 +3102,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_46
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_46
@@ -3280,9 +3136,7 @@ MixPluginLevels_internal\1
 		add.l	#12,d1
 		dbra	d2,.lp_47
 
-		moveq	#0,d2
-
-.lp_remainder_47
+.remainder_47
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3295,9 +3149,8 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_47
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_47
@@ -3330,9 +3183,7 @@ MixPluginLevels_internal\1
 		add.l	#12,d1
 		dbra	d2,.lp_48
 
-		moveq	#0,d2
-
-.lp_remainder_48
+.remainder_48
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3345,9 +3196,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_48
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_48
@@ -3372,16 +3222,13 @@ MixPluginLevels_internal\1
 		addq.l	#6,d1
 		dbra	d2,.lp_49
 
-		moveq	#-1,d2
-
-.lp_remainder_49
+.remainder_49
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_49
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_49
@@ -3414,9 +3261,7 @@ MixPluginLevels_internal\1
 		add.l	#13,d1
 		dbra	d2,.lp_50
 
-		moveq	#0,d2
-
-.lp_remainder_50
+.remainder_50
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3429,9 +3274,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_50
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_50
@@ -3464,9 +3308,7 @@ MixPluginLevels_internal\1
 		add.l	#13,d1
 		dbra	d2,.lp_51
 
-		moveq	#0,d2
-
-.lp_remainder_51
+.remainder_51
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3479,9 +3321,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_51
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_51
@@ -3514,9 +3355,7 @@ MixPluginLevels_internal\1
 		add.l	#13,d1
 		dbra	d2,.lp_52
 
-		moveq	#0,d2
-
-.lp_remainder_52
+.remainder_52
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3529,9 +3368,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_52
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_52
@@ -3556,16 +3394,13 @@ MixPluginLevels_internal\1
 		addq.l	#6,d1
 		dbra	d2,.lp_53
 
-		moveq	#-1,d2
-
-.lp_remainder_53
+.remainder_53
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
-		dbra	d2,.lp_remainder_53
+		addq.w	#3,a2
+		addq.l	#3,d1
 		rts
 
 .lp_done_53
@@ -3598,9 +3433,7 @@ MixPluginLevels_internal\1
 		add.l	#13,d1
 		dbra	d2,.lp_54
 
-		moveq	#0,d2
-
-.lp_remainder_54
+.remainder_54
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3613,9 +3446,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_54
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_54
@@ -3648,9 +3480,7 @@ MixPluginLevels_internal\1
 		add.l	#14,d1
 		dbra	d2,.lp_55
 
-		moveq	#0,d2
-
-.lp_remainder_55
+.remainder_55
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3663,9 +3493,8 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_55
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_55
@@ -3698,9 +3527,7 @@ MixPluginLevels_internal\1
 		add.l	#14,d1
 		dbra	d2,.lp_56
 
-		moveq	#0,d2
-
-.lp_remainder_56
+.remainder_56
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3713,9 +3540,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_56
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_56
@@ -3748,9 +3574,7 @@ MixPluginLevels_internal\1
 		add.l	#14,d1
 		dbra	d2,.lp_57
 
-		moveq	#0,d2
-
-.lp_remainder_57
+.remainder_57
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3763,9 +3587,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_57
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_57
@@ -3798,9 +3621,7 @@ MixPluginLevels_internal\1
 		add.l	#14,d1
 		dbra	d2,.lp_58
 
-		moveq	#0,d2
-
-.lp_remainder_58
+.remainder_58
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3813,9 +3634,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_58
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_58
@@ -3848,9 +3668,7 @@ MixPluginLevels_internal\1
 		add.l	#15,d1
 		dbra	d2,.lp_59
 
-		moveq	#0,d2
-
-.lp_remainder_59
+.remainder_59
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3863,9 +3681,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_59
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_59
@@ -3898,9 +3715,7 @@ MixPluginLevels_internal\1
 		add.l	#15,d1
 		dbra	d2,.lp_60
 
-		moveq	#0,d2
-
-.lp_remainder_60
+.remainder_60
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3913,9 +3728,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_60
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_60
@@ -3948,9 +3762,7 @@ MixPluginLevels_internal\1
 		add.l	#15,d1
 		dbra	d2,.lp_61
 
-		moveq	#0,d2
-
-.lp_remainder_61
+.remainder_61
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3963,9 +3775,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_61
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_61
@@ -3999,9 +3810,7 @@ MixPluginLevels_internal\1
 		add.l	#15,d1
 		dbra	d2,.lp_62
 
-		moveq	#0,d2
-
-.lp_remainder_62
+.remainder_62
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -4014,9 +3823,8 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_remainder_62
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_62
@@ -4036,7 +3844,6 @@ MixPluginLevels_internal\1
 		addq.w	#4,a2
 		addq.l	#4,d1
 		dbra	d2,.lp_63
-
 		rts
 
 .lp_done_63
