@@ -13,14 +13,47 @@
 import math
 from fractions import Fraction
 from math import floor
+from dataclasses import dataclass
+
+
+# Type definitions
+@dataclass
+class PitchParams:
+    loop_label: str
+    level_num: int
+    input_bytes: int
+    output_bytes: int
+    pitch_factor: float
 
 
 # Functions
-
-
 def find_best_rational(num, max_denominator=64):
     # Find the best rational approximation with denominator <= max_denominator
     return Fraction(num).limit_denominator(max_denominator)
+
+
+def generate_pitch_loop(params: PitchParams):
+    output_code = [f".{params.loop_label}_{params.level_num}"]
+
+    # Generate move.b instructions
+    for i in range(params.output_bytes):
+        input_pos = math.floor(i * params.pitch_factor)
+        if input_pos == 0:
+            output_code.append("\t\tmove.b\t(a2),(a0)+")
+        else:
+            output_code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+
+    # Add the pointer increment
+    if params.input_bytes <= 8:
+        output_code.append(f"\t\taddq.w\t#{params.input_bytes},a2")
+        output_code.append(f"\t\taddq.l\t#{params.input_bytes},d1")
+    else:
+        output_code.append(f"\t\tadd.w\t#{params.input_bytes},a2")
+        output_code.append(f"\t\tadd.l\t#{params.input_bytes},d1")
+
+    output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
+
+    return output_code
 
 
 def generate_pitch_routine_68000(pitch_factor, level_num):
@@ -59,118 +92,32 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append(f"\t\tbmi.s\t.lp_done_{level_num}")
     code.append("")
 
-    code.append(f".lp_{level_num}")
-
-    # Generate move.b instructions
-    for i in range(output_bytes):
-        input_pos = math.floor(i * pitch_factor)
-        if input_pos == 0:
-            code.append("\t\tmove.b\t(a2),(a0)+")
-        else:
-            code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
-
-    # Add the pointer increment
-    if input_bytes <= 8:
-        code.append(f"\t\taddq.w\t#{input_bytes},a2")
-        code.append(f"\t\taddq.l\t#{input_bytes},d1")
-    else:
-        code.append(f"\t\tadd.w\t#{input_bytes},a2")
-        code.append(f"\t\tadd.l\t#{input_bytes},d1")
-
-    code.append(f"\t\tdbra\td2,.lp_{level_num}")
-    code.append("\t\trts")
-    code.append("")
-    code.append(f".lp_done_{level_num}")
-    code.append("\t\tmoveq\t#0,d0")
-    code.append("\t\trts")
+    # Call generate_pitch_loop
+    params = PitchParams(
+        loop_label="lp",
+        level_num=level_num,
+        input_bytes=input_bytes,
+        output_bytes=output_bytes,
+        pitch_factor=pitch_factor
+    )
+    code.extend(generate_pitch_loop(params))
     code.append("")
 
-    return "\n".join(code)
+    # Continue here to reach 4 bytes-output offset
+    if output_bytes > 4:
+        bytes_remaining = output_bytes-4
+        code.append(f"\t\tmoveq\t#{bytes_remaining-1},d2\n")
 
+        # Call generate_pitch_loop
+        params = PitchParams(
+            loop_label="lp_remainder",
+            level_num=level_num,
+            input_bytes=bytes_remaining,
+            output_bytes=bytes_remaining,
+            pitch_factor=pitch_factor
+        )
+        code.extend(generate_pitch_loop(params))
 
-def generate_pitch_routine_68020(pitch_factor, level_num):
-    # Generate assembly code for a specific pitch factor (68020 optimised).
-    # pitch_factor: float representing the speed multiplier (e.g., 2.0 for double speed)
-    # level_num: integer for the routine number
-
-    # Find rational approximation
-    rational = find_best_rational(pitch_factor)
-    warning = ''
-
-    if abs(float(rational) - pitch_factor) > 0.001:
-        warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} ({float(rational)})"
-        pitch_factor = float(rational)
-
-    # Calculate minimum pattern length needed
-    pattern_length = 4
-    if rational.denominator > 2:
-        # Increase pattern length based on denominator
-        if rational.denominator > 2:
-            pattern_length = 8
-        if rational.denominator > 8:
-            pattern_length = 16
-
-    output_bytes = pattern_length
-    input_bytes = math.floor(output_bytes * pitch_factor)
-    shift_amount = int(math.log2(output_bytes))
-
-    code = []
-    if warning:
-        code = [warning]
-
-    code.append(f".pitch_level_{level_num}:")
-    code.append(f"\t\tasr.w\t#{shift_amount},d2")
-    code.append(f"\t\tsubq.w\t#1,d2")
-    code.append(f"\t\tbmi.s\t.lp_done_{level_num}")
-    code.append("")
-
-    code.append(f".lp_{level_num}")
-
-    # Generate move.b/.w/.l instructions
-    i = 0
-    while i < output_bytes:
-        input_pos = math.floor(i * pitch_factor)
-
-        # Determine how many bytes are sequential
-        cur_bytes_offset = math.floor(i * pitch_factor)
-        bytes_count = 1
-        byte_counter = 1
-        while byte_counter < 4:
-            if i+byte_counter >= output_bytes:
-                break  # Exceeded maximum length
-            if math.floor((i+byte_counter) * pitch_factor) != cur_bytes_offset + 1:
-                break  # Can't be combined
-            # Add one to current number of consecutive bytes
-            bytes_count = bytes_count + 1
-            cur_bytes_offset = cur_bytes_offset + 1
-            byte_counter = byte_counter + 1
-
-        # Check if cur_bytes_count is 1, 2 or 4 and adjust accordingly
-        increment = 1
-        postfix = "b"
-        if bytes_count == 2:
-            increment = 2
-            postfix = "w"
-        if bytes_count == 4:
-            increment = 4
-            postfix = "l"
-
-        if input_pos == 0:
-            code.append(f"\t\tmove.{postfix}\t(a2),(a0)+")
-        else:
-            code.append(f"\t\tmove.{postfix}\t{input_pos}(a2),(a0)+")
-
-        i = i + increment
-
-    # Add the pointer increment
-    if input_bytes <= 8:
-        code.append(f"\t\taddq.w\t#{input_bytes},a2")
-        code.append(f"\t\taddq.l\t#{input_bytes},d1")
-    else:
-        code.append(f"\t\tadd.w\t#{input_bytes},a2")
-        code.append(f"\t\tadd.l\t#{input_bytes},d1")
-
-    code.append(f"\t\tdbra\td2,.lp_{level_num}")
     code.append("\t\trts")
     code.append("")
     code.append(f".lp_done_{level_num}")
@@ -188,19 +135,19 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
     # num_steps: number of pitch levels to generate
 
     pitch_step = (max_pitch - min_pitch) / (num_steps - 1)
-    all_code = ["\t\tIF .m68020_indicator=2"]
+    all_code = []  #["\t\tIF .m68020_indicator=2"]
 
-    for i in range(num_steps):
-        pitch = min_pitch + (i * pitch_step)
-        all_code.append(generate_pitch_routine_68020(pitch, i))
-
-    all_code.append("\t\tELSE\n")
+    #for i in range(num_steps):
+    #    pitch = min_pitch + (i * pitch_step)
+    #    all_code.append(generate_pitch_routine_68020(pitch, i))
+    #
+    #all_code.append("\t\tELSE\n")
 
     for i in range(num_steps):
         pitch = min_pitch + (i * pitch_step)
         all_code.append(generate_pitch_routine_68000(pitch, i))
 
-    all_code.append("\t\tENDIF\n\tENDIF")
+    all_code.append("\t\tENDIF")  #all_code.append("\t\tENDIF\n\tENDIF")
 
     return "\n".join(all_code)
 
