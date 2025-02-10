@@ -89,7 +89,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append(f".pitch_level_{level_num}:")
     code.append(f"\t\tasr.w\t#{shift_amount},d2")
     code.append(f"\t\tsubq.w\t#1,d2")
-    code.append(f"\t\tbmi.s\t.lp_done_{level_num}")
+    code.append(f"\t\tbmi\t\t.lp_done_{level_num}")
     code.append("")
 
     # Call generate_pitch_loop
@@ -106,7 +106,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     # Continue here to reach 4 bytes-output offset
     if output_bytes > 4:
         bytes_remaining = output_bytes-4
-        code.append(f"\t\tmoveq\t#{bytes_remaining-1},d2\n")
+        code.append(f"\t\tmoveq\t#{(bytes_remaining>>3)-1},d2\n")
 
         # Call generate_pitch_loop
         params = PitchParams(
@@ -155,7 +155,7 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
 def generate_jump_table(routine_name, num_steps):
     # Generates the jump table to be used by the pitch levels routine
 
-    code = ["\t\t; Internal pitch shifting subroutines\n\t\t; 68020 version uses non-aligned reads"]
+    code = ["\t\t; Internal pitch shifting subroutines"]
     code.append(routine_name)
     code.append("\tIF MXPLUGIN_PITCH=1")
     code.append(".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY")

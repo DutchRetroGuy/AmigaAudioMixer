@@ -873,7 +873,7 @@ SetupPluginStructs
 		move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a4)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
 		;move.w	#$180,mpid_pit_ratio_fp8(a4)
-		move.w	#32,mpid_pit_ratio_fp8(a4)
+		move.w	#62,mpid_pit_ratio_fp8(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_volume_data
