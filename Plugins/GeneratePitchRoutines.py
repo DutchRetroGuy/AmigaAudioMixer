@@ -7,7 +7,7 @@
 #
 # Author: Jeroen Knoester
 # Version: 1.0
-# Revision: 20250205
+# Revision: 20250211
 
 # Imports
 import math
@@ -35,22 +35,30 @@ def find_best_rational(num, max_denominator=64):
 def generate_pitch_loop(params: PitchParams):
     output_code = [f".{params.loop_label}_{params.level_num}"]
 
-    # Generate move.b instructions
+    # Calculate exact positions for the bytes based on the ratio
+    positions = []
     for i in range(params.output_bytes):
         input_pos = math.floor(i * params.pitch_factor)
+        positions.append(input_pos)
+
+    # Generate move.b instructions using these exact positions
+    for input_pos in positions:
         if input_pos == 0:
             output_code.append("\t\tmove.b\t(a2),(a0)+")
         else:
             output_code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
 
+    # Calculate exact input bytes needed for this pattern
+    max_pos = max(positions) #+ 1
+
     # Add the pointer increment
-    if params.input_bytes > 0:
-        if params.input_bytes <= 8:
-            output_code.append(f"\t\taddq.w\t#{params.input_bytes},a2")
-            output_code.append(f"\t\taddq.l\t#{params.input_bytes},d1")
+    if max_pos > 0:
+        if max_pos <= 8:
+            output_code.append(f"\t\taddq.w\t#{max_pos},a2")
+            output_code.append(f"\t\taddq.l\t#{max_pos},d1")
         else:
-            output_code.append(f"\t\tadd.w\t#{params.input_bytes},a2")
-            output_code.append(f"\t\tadd.l\t#{params.input_bytes},d1")
+            output_code.append(f"\t\tadd.w\t#{max_pos},a2")
+            output_code.append(f"\t\tadd.l\t#{max_pos},d1")
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
 
@@ -70,14 +78,25 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} ({float(rational)})"
         pitch_factor = float(rational)
 
+    # Note: maximum pattern length directly determines maximum number of pitch steps available
+    #       length =  8 -> 8 steps
+    #       length = 16 -> 16 steps
+    # Extra steps over these numbers will cause steps that don't make any audible difference with the step immediately
+    # preceding them to be created, even if the actual code looks slightly different.
+
     # Calculate minimum pattern length needed
-    pattern_length = 4
-    if rational.denominator > 2:
-        # Increase pattern length based on denominator
-        if rational.denominator > 2:
-            pattern_length = 8
-        if rational.denominator > 8:
-            pattern_length = 16
+    # pattern_length = 4
+    # if rational.denominator > 2:
+    #     # Increase pattern length based on denominator
+    #     if rational.denominator > 4:
+    #         pattern_length = 8
+    #     if rational.denominator > 8:
+    #         pattern_length = 16
+    #     if rational.denominator > 16:
+    #         pattern_length = 24
+    #     if rational.denominator > 24:
+    #         pattern_length = 32
+    pattern_length = 32  # Static pattern length to keep pitch shift tonal quality consistent
 
     output_bytes = pattern_length
     input_bytes = math.floor(output_bytes * pitch_factor)
@@ -107,7 +126,6 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     if output_bytes > 4:
         bytes_remaining = output_bytes-4
         bytes_input = math.floor(bytes_remaining * pitch_factor)
-        #code.append(f"\t\tmoveq\t#{(bytes_remaining>>3)-1},d2\n")
 
         # Add empty line between loop and remainder
         code.append("")
@@ -142,11 +160,11 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
     pitch_step = (max_pitch - min_pitch) / (num_steps - 1)
     all_code = []
 
-    for i in range(num_steps):
+    for i in range(0, num_steps, 2):
         pitch = min_pitch + (i * pitch_step)
         all_code.append(generate_pitch_routine_68000(pitch, i))
 
-    all_code.append("\t\tENDIF")  #all_code.append("\t\tENDIF\n\tENDIF")
+    all_code.append("\t\tENDIF")
 
     return "\n".join(all_code)
 
@@ -214,10 +232,3 @@ print(output)
 print("\n\n; Pitch ratios in fp8.8 format")
 output = generate_fp88_pitch_ratios(label, min_pitch, max_pitch, num_steps)
 print(output)
-
-
-#test_pitch = 0.5
-#output = generate_pitch_routine_68020(test_pitch, 0)
-#print(output)
-#output = generate_pitch_routine_68000(test_pitch, 0)
-#print(output)
