@@ -49,7 +49,7 @@ def generate_pitch_loop(params: PitchParams):
             output_code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
 
     # Calculate exact input bytes needed for this pattern
-    max_pos = max(positions) #+ 1
+    max_pos = max(positions) + 1
 
     # Add the pointer increment
     if max_pos > 0:
@@ -75,7 +75,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     warning = ''
 
     if abs(float(rational) - pitch_factor) > 0.001:
-        warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} ({float(rational)})"
+        # warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} ({float(rational)})"
         pitch_factor = float(rational)
 
     # Note: maximum pattern length directly determines maximum number of pitch steps available
@@ -84,18 +84,6 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     # Extra steps over these numbers will cause steps that don't make any audible difference with the step immediately
     # preceding them to be created, even if the actual code looks slightly different.
 
-    # Calculate minimum pattern length needed
-    # pattern_length = 4
-    # if rational.denominator > 2:
-    #     # Increase pattern length based on denominator
-    #     if rational.denominator > 4:
-    #         pattern_length = 8
-    #     if rational.denominator > 8:
-    #         pattern_length = 16
-    #     if rational.denominator > 16:
-    #         pattern_length = 24
-    #     if rational.denominator > 24:
-    #         pattern_length = 32
     pattern_length = 32  # Static pattern length to keep pitch shift tonal quality consistent
 
     output_bytes = pattern_length
@@ -144,7 +132,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append("\t\trts")
     code.append("")
     code.append(f".lp_done_{level_num}")
-    code.append("\t\tmoveq\t#0,d0")
+    code.append("\t\ttst.w\td0")
     code.append("\t\trts")
     code.append("")
 
@@ -160,7 +148,7 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
     pitch_step = (max_pitch - min_pitch) / (num_steps - 1)
     all_code = []
 
-    for i in range(0, num_steps, 2):
+    for i in range(num_steps):
         pitch = min_pitch + (i * pitch_step)
         all_code.append(generate_pitch_routine_68000(pitch, i))
 
@@ -172,15 +160,19 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
 def generate_jump_table(routine_name, num_steps):
     # Generates the jump table to be used by the pitch levels routine
 
-    code = ["\t\t; Internal pitch shifting subroutines"]
-    code.append(routine_name)
-    code.append("\tIF MXPLUGIN_PITCH=1")
-    code.append(".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY")
-    code.append("\t\tIF .m68020_indicator=2")
-    code.append("\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d4.w*4)\n\t\t\tmc68000")
-    code.append("\t\tELSE")
-    code.append("\t\t\tadd.w\td4,d4\n\t\t\tadd.w\td4,d4\n\t\t\tjmp .jt_table(pc,d4.w)")
-    code.append("\t\tENDIF\n\n.jt_table")
+    code = [
+        "\t\t; Internal pitch shifting subroutines",
+        "\t\t; Note: all pitch ratios are rounded to nearest rational",
+        routine_name,
+        "\tIF MXPLUGIN_PITCH=1",
+        ".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY",
+        "\t\tIF .m68020_indicator=2",
+        "\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d4.w*4)\n\t\t\tmc68000",
+        "\t\tELSE",
+        "\t\t\tadd.w\td4,d4\n\t\t\tadd.w\td4,d4\n\t\t\tjmp .jt_table(pc,d4.w)",
+        "\t\tENDIF\n\n.jt_table"
+            ]
+
     for i in range(num_steps):
         code.append(f"\t\tbra.w\t.pitch_level_{i}")
 
@@ -219,9 +211,9 @@ routine = f"{prefix}_internal\\1"
 label = f"{prefix}_pitch_table\\1"
 
 # Pitch range to use
-min_pitch = 0.1
+min_pitch = 1/32
 max_pitch = 1.00
-num_steps = 64
+num_steps = 32
 
 # Generate and display result
 output = generate_jump_table(routine, num_steps)

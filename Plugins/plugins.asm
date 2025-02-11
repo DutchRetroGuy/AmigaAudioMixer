@@ -1028,38 +1028,6 @@ MixPluginLevels_internal\1
 		bra.w	.pitch_level_29
 		bra.w	.pitch_level_30
 		bra.w	.pitch_level_31
-		bra.w	.pitch_level_32
-		bra.w	.pitch_level_33
-		bra.w	.pitch_level_34
-		bra.w	.pitch_level_35
-		bra.w	.pitch_level_36
-		bra.w	.pitch_level_37
-		bra.w	.pitch_level_38
-		bra.w	.pitch_level_39
-		bra.w	.pitch_level_40
-		bra.w	.pitch_level_41
-		bra.w	.pitch_level_42
-		bra.w	.pitch_level_43
-		bra.w	.pitch_level_44
-		bra.w	.pitch_level_45
-		bra.w	.pitch_level_46
-		bra.w	.pitch_level_47
-		bra.w	.pitch_level_48
-		bra.w	.pitch_level_49
-		bra.w	.pitch_level_50
-		bra.w	.pitch_level_51
-		bra.w	.pitch_level_52
-		bra.w	.pitch_level_53
-		bra.w	.pitch_level_54
-		bra.w	.pitch_level_55
-		bra.w	.pitch_level_56
-		bra.w	.pitch_level_57
-		bra.w	.pitch_level_58
-		bra.w	.pitch_level_59
-		bra.w	.pitch_level_60
-		bra.w	.pitch_level_61
-		bra.w	.pitch_level_62
-		bra.w	.pitch_level_63
 
 .pitch_level_0:
 		asr.w	#5,d2
@@ -1077,30 +1045,30 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		addq.w	#3,a2
-		addq.l	#3,d1
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		addq.w	#1,a2
+		addq.l	#1,d1
 		dbra	d2,.lp_0
 
 .remainder_0
@@ -1114,30 +1082,30 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		addq.w	#2,a2
-		addq.l	#2,d1
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		addq.w	#1,a2
+		addq.l	#1,d1
 		rts
 
 .lp_done_0
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_1:
@@ -1155,6 +1123,13 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1164,22 +1139,15 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		addq.w	#3,a2
-		addq.l	#3,d1
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		addq.w	#2,a2
+		addq.l	#2,d1
 		dbra	d2,.lp_1
 
 .remainder_1
@@ -1192,6 +1160,13 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1201,22 +1176,15 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		addq.w	#3,a2
-		addq.l	#3,d1
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		addq.w	#2,a2
+		addq.l	#2,d1
 		rts
 
 .lp_done_1
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_2:
@@ -1233,6 +1201,12 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1249,14 +1223,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
 		addq.w	#3,a2
 		addq.l	#3,d1
 		dbra	d2,.lp_2
@@ -1270,6 +1238,12 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1284,18 +1258,12 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		addq.w	#3,a2
 		addq.l	#3,d1
 		rts
 
 .lp_done_2
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_3:
@@ -1311,6 +1279,8 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1325,6 +1295,7 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1332,10 +1303,7 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
+		move.b	3(a2),(a0)+
 		addq.w	#4,a2
 		addq.l	#4,d1
 		dbra	d2,.lp_3
@@ -1348,6 +1316,8 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1362,19 +1332,17 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		addq.w	#3,a2
-		addq.l	#3,d1
+		addq.w	#4,a2
+		addq.l	#4,d1
 		rts
 
 .lp_done_3
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_4:
@@ -1415,8 +1383,8 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
+		addq.w	#5,a2
+		addq.l	#5,d1
 		dbra	d2,.lp_4
 
 .remainder_4
@@ -1448,12 +1416,12 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
+		addq.w	#5,a2
+		addq.l	#5,d1
 		rts
 
 .lp_done_4
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_5:
@@ -1473,8 +1441,6 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1486,7 +1452,6 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
@@ -1494,8 +1459,11 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		addq.w	#5,a2
-		addq.l	#5,d1
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		addq.w	#6,a2
+		addq.l	#6,d1
 		dbra	d2,.lp_5
 
 .remainder_5
@@ -1510,8 +1478,6 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1527,12 +1493,14 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		addq.w	#4,a2
-		addq.l	#4,d1
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_5
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_6:
@@ -1546,14 +1514,11 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1567,14 +1532,17 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		addq.w	#5,a2
-		addq.l	#5,d1
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		addq.w	#7,a2
+		addq.l	#7,d1
 		dbra	d2,.lp_6
 
 .remainder_6
@@ -1583,7 +1551,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1593,25 +1560,26 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		addq.w	#5,a2
-		addq.l	#5,d1
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		addq.w	#6,a2
+		addq.l	#6,d1
 		rts
 
 .lp_done_6
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_7:
@@ -1624,8 +1592,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1634,8 +1600,6 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1644,16 +1608,20 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		addq.w	#6,a2
-		addq.l	#6,d1
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		addq.w	#8,a2
+		addq.l	#8,d1
 		dbra	d2,.lp_7
 
 .remainder_7
@@ -1661,8 +1629,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1671,13 +1637,10 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
@@ -1685,12 +1648,17 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		addq.w	#5,a2
-		addq.l	#5,d1
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		addq.w	#7,a2
+		addq.l	#7,d1
 		rts
 
 .lp_done_7
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_8:
@@ -1703,8 +1671,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1712,14 +1678,10 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
@@ -1730,9 +1692,15 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		addq.w	#6,a2
-		addq.l	#6,d1
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		add.w	#9,a2
+		add.l	#9,d1
 		dbra	d2,.lp_8
 
 .remainder_8
@@ -1740,8 +1708,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1749,14 +1715,10 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
@@ -1764,12 +1726,18 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		addq.w	#5,a2
-		addq.l	#5,d1
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		addq.w	#8,a2
+		addq.l	#8,d1
 		rts
 
 .lp_done_8
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_9:
@@ -1782,36 +1750,36 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		addq.w	#7,a2
-		addq.l	#7,d1
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		add.w	#10,a2
+		add.l	#10,d1
 		dbra	d2,.lp_9
 
 .remainder_9
@@ -1819,36 +1787,36 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
-		addq.w	#6,a2
-		addq.l	#6,d1
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		add.w	#9,a2
+		add.l	#9,d1
 		rts
 
 .lp_done_9
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_10:
@@ -1860,74 +1828,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		addq.w	#7,a2
-		addq.l	#7,d1
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		add.w	#11,a2
+		add.l	#11,d1
 		dbra	d2,.lp_10
 
 .remainder_10
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		addq.w	#6,a2
-		addq.l	#6,d1
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		add.w	#10,a2
+		add.l	#10,d1
 		rts
 
 .lp_done_10
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_11:
@@ -1939,74 +1907,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		addq.w	#7,a2
-		addq.l	#7,d1
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		add.w	#12,a2
+		add.l	#12,d1
 		dbra	d2,.lp_11
 
 .remainder_11
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		addq.w	#6,a2
-		addq.l	#6,d1
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_11
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_12:
@@ -2018,61 +1986,53 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
-		addq.w	#8,a2
-		addq.l	#8,d1
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		add.w	#13,a2
+		add.l	#13,d1
 		dbra	d2,.lp_12
 
 .remainder_12
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	6(a2),(a0)+
@@ -2080,12 +2040,20 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		addq.w	#7,a2
-		addq.l	#7,d1
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		add.w	#11,a2
+		add.l	#11,d1
 		rts
 
 .lp_done_12
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_13:
@@ -2097,12 +2065,8 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2110,13 +2074,8 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
@@ -2124,22 +2083,27 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		addq.w	#8,a2
-		addq.l	#8,d1
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		add.w	#14,a2
+		add.l	#14,d1
 		dbra	d2,.lp_13
 
 .remainder_13
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -2147,24 +2111,28 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		addq.w	#7,a2
-		addq.l	#7,d1
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		add.w	#12,a2
+		add.l	#12,d1
 		rts
 
 .lp_done_13
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_14:
@@ -2176,74 +2144,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
-		add.w	#9,a2
-		add.l	#9,d1
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		add.w	#15,a2
+		add.l	#15,d1
 		dbra	d2,.lp_14
 
 .remainder_14
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	8(a2),(a0)+
-		addq.w	#8,a2
-		addq.l	#8,d1
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		add.w	#13,a2
+		add.l	#13,d1
 		rts
 
 .lp_done_14
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_15:
@@ -2252,955 +2220,6 @@ MixPluginLevels_internal\1
 		bmi		.lp_done_15
 
 .lp_15
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		add.w	#9,a2
-		add.l	#9,d1
-		dbra	d2,.lp_15
-
-.remainder_15
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		addq.w	#8,a2
-		addq.l	#8,d1
-		rts
-
-.lp_done_15
-		moveq	#0,d0
-		rts
-
-.pitch_level_16:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_16
-
-.lp_16
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#10,a2
-		add.l	#10,d1
-		dbra	d2,.lp_16
-
-.remainder_16
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		addq.w	#8,a2
-		addq.l	#8,d1
-		rts
-
-.lp_done_16
-		moveq	#0,d0
-		rts
-
-.pitch_level_17:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_17
-
-.lp_17
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#10,a2
-		add.l	#10,d1
-		dbra	d2,.lp_17
-
-.remainder_17
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		add.w	#9,a2
-		add.l	#9,d1
-		rts
-
-.lp_done_17
-		moveq	#0,d0
-		rts
-
-.pitch_level_18:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_18
-
-.lp_18
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		dbra	d2,.lp_18
-
-.remainder_18
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		add.w	#9,a2
-		add.l	#9,d1
-		rts
-
-.lp_done_18
-		moveq	#0,d0
-		rts
-
-.pitch_level_19:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_19
-
-.lp_19
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		dbra	d2,.lp_19
-
-.remainder_19
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#10,a2
-		add.l	#10,d1
-		rts
-
-.lp_done_19
-		moveq	#0,d0
-		rts
-
-.pitch_level_20:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_20
-
-.lp_20
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		dbra	d2,.lp_20
-
-.remainder_20
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#10,a2
-		add.l	#10,d1
-		rts
-
-.lp_done_20
-		moveq	#0,d0
-		rts
-
-.pitch_level_21:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_21
-
-.lp_21
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_21
-
-.remainder_21
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#10,a2
-		add.l	#10,d1
-		rts
-
-.lp_done_21
-		moveq	#0,d0
-		rts
-
-.pitch_level_22:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_22
-
-.lp_22
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		dbra	d2,.lp_22
-
-.remainder_22
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		rts
-
-.lp_done_22
-		moveq	#0,d0
-		rts
-
-.pitch_level_23:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_23
-
-.lp_23
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		add.w	#13,a2
-		add.l	#13,d1
-		dbra	d2,.lp_23
-
-.remainder_23
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		rts
-
-.lp_done_23
-		moveq	#0,d0
-		rts
-
-.pitch_level_24:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_24
-
-.lp_24
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		add.w	#13,a2
-		add.l	#13,d1
-		dbra	d2,.lp_24
-
-.remainder_24
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#11,a2
-		add.l	#11,d1
-		rts
-
-.lp_done_24
-		moveq	#0,d0
-		rts
-
-.pitch_level_25:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_25
-
-.lp_25
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		add.w	#14,a2
-		add.l	#14,d1
-		dbra	d2,.lp_25
-
-.remainder_25
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		rts
-
-.lp_done_25
-		moveq	#0,d0
-		rts
-
-.pitch_level_26:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_26
-
-.lp_26
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		add.w	#14,a2
-		add.l	#14,d1
-		dbra	d2,.lp_26
-
-.remainder_26
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		add.w	#12,a2
-		add.l	#12,d1
-		rts
-
-.lp_done_26
-		moveq	#0,d0
-		rts
-
-.pitch_level_27:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_27
-
-.lp_27
-		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3232,12 +2251,12 @@ MixPluginLevels_internal\1
 		move.b	14(a2),(a0)+
 		move.b	14(a2),(a0)+
 		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
-		dbra	d2,.lp_27
+		move.b	15(a2),(a0)+
+		add.w	#16,a2
+		add.l	#16,d1
+		dbra	d2,.lp_15
 
-.remainder_27
-		move.b	(a2),(a0)+
+.remainder_15
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -3265,12 +2284,961 @@ MixPluginLevels_internal\1
 		move.b	12(a2),(a0)+
 		move.b	12(a2),(a0)+
 		move.b	13(a2),(a0)+
-		add.w	#13,a2
-		add.l	#13,d1
+		move.b	13(a2),(a0)+
+		add.w	#14,a2
+		add.l	#14,d1
+		rts
+
+.lp_done_15
+		tst.w	d0
+		rts
+
+.pitch_level_16:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_16
+
+.lp_16
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		add.w	#17,a2
+		add.l	#17,d1
+		dbra	d2,.lp_16
+
+.remainder_16
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		add.w	#15,a2
+		add.l	#15,d1
+		rts
+
+.lp_done_16
+		tst.w	d0
+		rts
+
+.pitch_level_17:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_17
+
+.lp_17
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		add.w	#18,a2
+		add.l	#18,d1
+		dbra	d2,.lp_17
+
+.remainder_17
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		add.w	#16,a2
+		add.l	#16,d1
+		rts
+
+.lp_done_17
+		tst.w	d0
+		rts
+
+.pitch_level_18:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_18
+
+.lp_18
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		add.w	#19,a2
+		add.l	#19,d1
+		dbra	d2,.lp_18
+
+.remainder_18
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		add.w	#17,a2
+		add.l	#17,d1
+		rts
+
+.lp_done_18
+		tst.w	d0
+		rts
+
+.pitch_level_19:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_19
+
+.lp_19
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		add.w	#20,a2
+		add.l	#20,d1
+		dbra	d2,.lp_19
+
+.remainder_19
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		add.w	#17,a2
+		add.l	#17,d1
+		rts
+
+.lp_done_19
+		tst.w	d0
+		rts
+
+.pitch_level_20:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_20
+
+.lp_20
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		add.w	#21,a2
+		add.l	#21,d1
+		dbra	d2,.lp_20
+
+.remainder_20
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		add.w	#18,a2
+		add.l	#18,d1
+		rts
+
+.lp_done_20
+		tst.w	d0
+		rts
+
+.pitch_level_21:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_21
+
+.lp_21
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		add.w	#22,a2
+		add.l	#22,d1
+		dbra	d2,.lp_21
+
+.remainder_21
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		add.w	#19,a2
+		add.l	#19,d1
+		rts
+
+.lp_done_21
+		tst.w	d0
+		rts
+
+.pitch_level_22:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_22
+
+.lp_22
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		add.w	#23,a2
+		add.l	#23,d1
+		dbra	d2,.lp_22
+
+.remainder_22
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		add.w	#20,a2
+		add.l	#20,d1
+		rts
+
+.lp_done_22
+		tst.w	d0
+		rts
+
+.pitch_level_23:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_23
+
+.lp_23
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		add.w	#24,a2
+		add.l	#24,d1
+		dbra	d2,.lp_23
+
+.remainder_23
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		add.w	#21,a2
+		add.l	#21,d1
+		rts
+
+.lp_done_23
+		tst.w	d0
+		rts
+
+.pitch_level_24:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_24
+
+.lp_24
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		add.w	#25,a2
+		add.l	#25,d1
+		dbra	d2,.lp_24
+
+.remainder_24
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		add.w	#22,a2
+		add.l	#22,d1
+		rts
+
+.lp_done_24
+		tst.w	d0
+		rts
+
+.pitch_level_25:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_25
+
+.lp_25
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		add.w	#26,a2
+		add.l	#26,d1
+		dbra	d2,.lp_25
+
+.remainder_25
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		add.w	#22,a2
+		add.l	#22,d1
+		rts
+
+.lp_done_25
+		tst.w	d0
+		rts
+
+.pitch_level_26:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_26
+
+.lp_26
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		add.w	#27,a2
+		add.l	#27,d1
+		dbra	d2,.lp_26
+
+.remainder_26
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		add.w	#23,a2
+		add.l	#23,d1
+		rts
+
+.lp_done_26
+		tst.w	d0
+		rts
+
+.pitch_level_27:
+		asr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.lp_done_27
+
+.lp_27
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		add.w	#28,a2
+		add.l	#28,d1
+		dbra	d2,.lp_27
+
+.remainder_27
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		add.w	#24,a2
+		add.l	#24,d1
 		rts
 
 .lp_done_27
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_28:
@@ -3282,74 +3250,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
 		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		add.w	#29,a2
+		add.l	#29,d1
 		dbra	d2,.lp_28
 
 .remainder_28
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
 		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		add.w	#13,a2
-		add.l	#13,d1
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		add.w	#25,a2
+		add.l	#25,d1
 		rts
 
 .lp_done_28
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_29:
@@ -3361,74 +3329,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
 		move.b	12(a2),(a0)+
 		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
 		move.b	14(a2),(a0)+
 		move.b	15(a2),(a0)+
 		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	29(a2),(a0)+
+		add.w	#30,a2
+		add.l	#30,d1
 		dbra	d2,.lp_29
 
 .remainder_29
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
 		move.b	12(a2),(a0)+
 		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		add.w	#13,a2
-		add.l	#13,d1
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		add.w	#26,a2
+		add.l	#26,d1
 		rts
 
 .lp_done_29
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_30:
@@ -3440,74 +3408,74 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
 		move.b	15(a2),(a0)+
 		move.b	16(a2),(a0)+
-		add.w	#16,a2
-		add.l	#16,d1
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	29(a2),(a0)+
+		move.b	30(a2),(a0)+
+		add.w	#31,a2
+		add.l	#31,d1
 		dbra	d2,.lp_30
 
 .remainder_30
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	14(a2),(a0)+
-		add.w	#14,a2
-		add.l	#14,d1
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		add.w	#27,a2
+		add.l	#27,d1
 		rts
 
 .lp_done_30
-		moveq	#0,d0
+		tst.w	d0
 		rts
 
 .pitch_level_31:
@@ -3516,2535 +3484,6 @@ MixPluginLevels_internal\1
 		bmi		.lp_done_31
 
 .lp_31
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		add.w	#16,a2
-		add.l	#16,d1
-		dbra	d2,.lp_31
-
-.remainder_31
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		add.w	#14,a2
-		add.l	#14,d1
-		rts
-
-.lp_done_31
-		moveq	#0,d0
-		rts
-
-.pitch_level_32:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_32
-
-.lp_32
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		add.w	#17,a2
-		add.l	#17,d1
-		dbra	d2,.lp_32
-
-.remainder_32
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
-		rts
-
-.lp_done_32
-		moveq	#0,d0
-		rts
-
-.pitch_level_33:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_33
-
-.lp_33
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		add.w	#17,a2
-		add.l	#17,d1
-		dbra	d2,.lp_33
-
-.remainder_33
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
-		rts
-
-.lp_done_33
-		moveq	#0,d0
-		rts
-
-.pitch_level_34:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_34
-
-.lp_34
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#18,a2
-		add.l	#18,d1
-		dbra	d2,.lp_34
-
-.remainder_34
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		add.w	#15,a2
-		add.l	#15,d1
-		rts
-
-.lp_done_34
-		moveq	#0,d0
-		rts
-
-.pitch_level_35:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_35
-
-.lp_35
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#18,a2
-		add.l	#18,d1
-		dbra	d2,.lp_35
-
-.remainder_35
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		add.w	#16,a2
-		add.l	#16,d1
-		rts
-
-.lp_done_35
-		moveq	#0,d0
-		rts
-
-.pitch_level_36:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_36
-
-.lp_36
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#19,a2
-		add.l	#19,d1
-		dbra	d2,.lp_36
-
-.remainder_36
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		add.w	#16,a2
-		add.l	#16,d1
-		rts
-
-.lp_done_36
-		moveq	#0,d0
-		rts
-
-.pitch_level_37:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_37
-
-.lp_37
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#19,a2
-		add.l	#19,d1
-		dbra	d2,.lp_37
-
-.remainder_37
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		add.w	#16,a2
-		add.l	#16,d1
-		rts
-
-.lp_done_37
-		moveq	#0,d0
-		rts
-
-.pitch_level_38:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_38
-
-.lp_38
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#19,a2
-		add.l	#19,d1
-		dbra	d2,.lp_38
-
-.remainder_38
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		add.w	#17,a2
-		add.l	#17,d1
-		rts
-
-.lp_done_38
-		moveq	#0,d0
-		rts
-
-.pitch_level_39:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_39
-
-.lp_39
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#20,a2
-		add.l	#20,d1
-		dbra	d2,.lp_39
-
-.remainder_39
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		add.w	#17,a2
-		add.l	#17,d1
-		rts
-
-.lp_done_39
-		moveq	#0,d0
-		rts
-
-.pitch_level_40:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_40
-
-.lp_40
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#20,a2
-		add.l	#20,d1
-		dbra	d2,.lp_40
-
-.remainder_40
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#18,a2
-		add.l	#18,d1
-		rts
-
-.lp_done_40
-		moveq	#0,d0
-		rts
-
-.pitch_level_41:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_41
-
-.lp_41
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#21,a2
-		add.l	#21,d1
-		dbra	d2,.lp_41
-
-.remainder_41
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#18,a2
-		add.l	#18,d1
-		rts
-
-.lp_done_41
-		moveq	#0,d0
-		rts
-
-.pitch_level_42:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_42
-
-.lp_42
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#21,a2
-		add.l	#21,d1
-		dbra	d2,.lp_42
-
-.remainder_42
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#18,a2
-		add.l	#18,d1
-		rts
-
-.lp_done_42
-		moveq	#0,d0
-		rts
-
-.pitch_level_43:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_43
-
-.lp_43
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		add.w	#22,a2
-		add.l	#22,d1
-		dbra	d2,.lp_43
-
-.remainder_43
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#19,a2
-		add.l	#19,d1
-		rts
-
-.lp_done_43
-		moveq	#0,d0
-		rts
-
-.pitch_level_44:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_44
-
-.lp_44
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		add.w	#22,a2
-		add.l	#22,d1
-		dbra	d2,.lp_44
-
-.remainder_44
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#19,a2
-		add.l	#19,d1
-		rts
-
-.lp_done_44
-		moveq	#0,d0
-		rts
-
-.pitch_level_45:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_45
-
-.lp_45
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		dbra	d2,.lp_45
-
-.remainder_45
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#20,a2
-		add.l	#20,d1
-		rts
-
-.lp_done_45
-		moveq	#0,d0
-		rts
-
-.pitch_level_46:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_46
-
-.lp_46
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		dbra	d2,.lp_46
-
-.remainder_46
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#20,a2
-		add.l	#20,d1
-		rts
-
-.lp_done_46
-		moveq	#0,d0
-		rts
-
-.pitch_level_47:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_47
-
-.lp_47
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		dbra	d2,.lp_47
-
-.remainder_47
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#20,a2
-		add.l	#20,d1
-		rts
-
-.lp_done_47
-		moveq	#0,d0
-		rts
-
-.pitch_level_48:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_48
-
-.lp_48
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		add.w	#24,a2
-		add.l	#24,d1
-		dbra	d2,.lp_48
-
-.remainder_48
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#21,a2
-		add.l	#21,d1
-		rts
-
-.lp_done_48
-		moveq	#0,d0
-		rts
-
-.pitch_level_49:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_49
-
-.lp_49
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		add.w	#24,a2
-		add.l	#24,d1
-		dbra	d2,.lp_49
-
-.remainder_49
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#21,a2
-		add.l	#21,d1
-		rts
-
-.lp_done_49
-		moveq	#0,d0
-		rts
-
-.pitch_level_50:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_50
-
-.lp_50
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#25,a2
-		add.l	#25,d1
-		dbra	d2,.lp_50
-
-.remainder_50
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#21,a2
-		add.l	#21,d1
-		rts
-
-.lp_done_50
-		moveq	#0,d0
-		rts
-
-.pitch_level_51:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_51
-
-.lp_51
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#25,a2
-		add.l	#25,d1
-		dbra	d2,.lp_51
-
-.remainder_51
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		add.w	#22,a2
-		add.l	#22,d1
-		rts
-
-.lp_done_51
-		moveq	#0,d0
-		rts
-
-.pitch_level_52:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_52
-
-.lp_52
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		add.w	#26,a2
-		add.l	#26,d1
-		dbra	d2,.lp_52
-
-.remainder_52
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		add.w	#22,a2
-		add.l	#22,d1
-		rts
-
-.lp_done_52
-		moveq	#0,d0
-		rts
-
-.pitch_level_53:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_53
-
-.lp_53
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		add.w	#26,a2
-		add.l	#26,d1
-		dbra	d2,.lp_53
-
-.remainder_53
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		rts
-
-.lp_done_53
-		moveq	#0,d0
-		rts
-
-.pitch_level_54:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_54
-
-.lp_54
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		add.w	#27,a2
-		add.l	#27,d1
-		dbra	d2,.lp_54
-
-.remainder_54
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		rts
-
-.lp_done_54
-		moveq	#0,d0
-		rts
-
-.pitch_level_55:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_55
-
-.lp_55
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		add.w	#27,a2
-		add.l	#27,d1
-		dbra	d2,.lp_55
-
-.remainder_55
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#23,a2
-		add.l	#23,d1
-		rts
-
-.lp_done_55
-		moveq	#0,d0
-		rts
-
-.pitch_level_56:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_56
-
-.lp_56
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		add.w	#27,a2
-		add.l	#27,d1
-		dbra	d2,.lp_56
-
-.remainder_56
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		add.w	#24,a2
-		add.l	#24,d1
-		rts
-
-.lp_done_56
-		moveq	#0,d0
-		rts
-
-.pitch_level_57:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_57
-
-.lp_57
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		add.w	#28,a2
-		add.l	#28,d1
-		dbra	d2,.lp_57
-
-.remainder_57
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		add.w	#24,a2
-		add.l	#24,d1
-		rts
-
-.lp_done_57
-		moveq	#0,d0
-		rts
-
-.pitch_level_58:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_58
-
-.lp_58
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		add.w	#28,a2
-		add.l	#28,d1
-		dbra	d2,.lp_58
-
-.remainder_58
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#25,a2
-		add.l	#25,d1
-		rts
-
-.lp_done_58
-		moveq	#0,d0
-		rts
-
-.pitch_level_59:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_59
-
-.lp_59
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		add.w	#29,a2
-		add.l	#29,d1
-		dbra	d2,.lp_59
-
-.remainder_59
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#25,a2
-		add.l	#25,d1
-		rts
-
-.lp_done_59
-		moveq	#0,d0
-		rts
-
-.pitch_level_60:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_60
-
-.lp_60
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		add.w	#29,a2
-		add.l	#29,d1
-		dbra	d2,.lp_60
-
-.remainder_60
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#25,a2
-		add.l	#25,d1
-		rts
-
-.lp_done_60
-		moveq	#0,d0
-		rts
-
-.pitch_level_61:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_61
-
-.lp_61
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		move.b	30(a2),(a0)+
-		add.w	#30,a2
-		add.l	#30,d1
-		dbra	d2,.lp_61
-
-.remainder_61
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		add.w	#26,a2
-		add.l	#26,d1
-		rts
-
-.lp_done_61
-		moveq	#0,d0
-		rts
-
-; Rounded 0.9857142857142857 to nearest rational of 63/64 (0.984375)
-.pitch_level_62:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_62
-
-.lp_62
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		move.b	30(a2),(a0)+
-		add.w	#30,a2
-		add.l	#30,d1
-		dbra	d2,.lp_62
-
-.remainder_62
-		move.b	(a2),(a0)+
-		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		add.w	#26,a2
-		add.l	#26,d1
-		rts
-
-.lp_done_62
-		moveq	#0,d0
-		rts
-
-.pitch_level_63:
-		asr.w	#5,d2
-		subq.w	#1,d2
-		bmi		.lp_done_63
-
-.lp_63
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -6077,11 +3516,11 @@ MixPluginLevels_internal\1
 		move.b	29(a2),(a0)+
 		move.b	30(a2),(a0)+
 		move.b	31(a2),(a0)+
-		add.w	#31,a2
-		add.l	#31,d1
-		dbra	d2,.lp_63
+		add.w	#32,a2
+		add.l	#32,d1
+		dbra	d2,.lp_31
 
-.remainder_63
+.remainder_31
 		move.b	(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -6110,12 +3549,12 @@ MixPluginLevels_internal\1
 		move.b	25(a2),(a0)+
 		move.b	26(a2),(a0)+
 		move.b	27(a2),(a0)+
-		add.w	#27,a2
-		add.l	#27,d1
+		add.w	#28,a2
+		add.l	#28,d1
 		rts
 
-.lp_done_63
-		moveq	#0,d0
+.lp_done_31
+		tst.w	d0
 		rts
 
 		ENDIF
@@ -6853,14 +4292,10 @@ plugin_fx_struct\1		blk.b	mfx_SIZEOF
 
 ; Pitch ratios in fp8.8 format
 MixPluginLevels_pitch_table\1
-		dc.w	26,29,33,37,40,44,48,51
-		dc.w	55,59,62,66,69,73,77,80
-		dc.w	84,88,91,95,99,102,106,110
-		dc.w	113,117,121,124,128,132,135,139
-		dc.w	143,146,150,154,157,161,165,168
-		dc.w	172,176,179,183,187,190,194,197
-		dc.w	201,205,208,212,216,219,223,227
-		dc.w	230,234,238,241,245,249,252,256
+		dc.w	8,16,24,32,40,48,56,64
+		dc.w	72,80,88,96,104,112,120,128
+		dc.w	136,144,152,160,168,176,184,192
+		dc.w	200,208,216,224,232,240,248,256
 
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
