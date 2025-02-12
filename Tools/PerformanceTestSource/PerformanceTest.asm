@@ -721,7 +721,7 @@ RunSingleTestPlg
 		move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a3)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a3)
 		;move.w	#$0c0,mpid_pit_ratio_fp8(a3)
-		move.w	#$4,mpid_pit_ratio_fp8(a3)
+		move.w	#$16,mpid_pit_ratio_fp8(a3)
 		
 		lea.l	mxplg_max_idata_size(a3),a3
 		dbra	d7,.setup_pitchlq_lp

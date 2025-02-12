@@ -81,7 +81,7 @@ mixer_output_channels	EQU	DMAF_AUD2
 									;       * DMAF_AUD2|DMAF_AUD3|DMAF_AUD1
 									;		* all 4 channels
 									
-mixer_sw_channels		EQU	4		; Maximum number of software mixed 
+mixer_sw_channels		EQU	3		; Maximum number of software mixed 
 									; channels on a single hardware channel.
 									; Valid values are 1,2,3 and 4
 mixer_period			EQU	322 	; Valid values: 124 and up

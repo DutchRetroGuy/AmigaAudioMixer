@@ -55,12 +55,12 @@ def generate_pitch_loop(params: PitchParams):
     if params.reverse:
         instructions.reverse()
         output_code.append("\t\ttst.w\td6")
-        output_code.append(f"\t\tbmi.s\t.lp_done_{params.level_num}")
+        output_code.append(f"\t\tbeq\t\t.lp_done_{params.level_num}")
         output_code.append("")
-        output_code.append("\t\tmoveq\t#64,d2")
-        output_code.append("\t\tsub.w\td6,d2")
-        output_code.append("\t\tlsr.w\t#1,d6")
-        output_code.append(f"\t\tjmp\t.jt_table_{params.level_num}(pc,d2.w)")
+        output_code.append("\t\tmove.w\t#128,d7")
+        output_code.append("\t\tsub.w\td6,d7")
+        output_code.append("\t\tlsr.w\t#2,d6")
+        output_code.append(f"\t\tjmp\t\t.jt_table_{params.level_num}(pc,d7.w)")
         output_code.append("")
         output_code.append(f".jt_table_{params.level_num}")
 
@@ -121,10 +121,11 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append(f".pitch_level_{level_num}:")
     code.append("\t\tmove.w\td2,d6")
     code.append("\t\tand.w\t#$1f,d6")
-    code.append("\t\tlsr.w\t#1,d6")
+    code.append("\t\tadd.w\td6,d6")
+    code.append("\t\tadd.w\td6,d6")
     code.append(f"\t\tlsr.w\t#{shift_amount},d2")
     code.append(f"\t\tsubq.w\t#1,d2")
-    code.append(f"\t\tbmi\t.remainder_{level_num}")
+    code.append(f"\t\tbmi\t\t.remainder_{level_num}")
     code.append("")
 
     # Call generate_pitch_loop
@@ -139,29 +140,27 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.extend(generate_pitch_loop(params))
 
     # Continue here to reach 4 bytes-output offset
-    if output_bytes > 4:
-        bytes_remaining = output_bytes-4
-        bytes_input = math.floor(bytes_remaining * pitch_factor)
+    #if output_bytes > 4:
+    #    bytes_remaining = output_bytes-4
+    #    bytes_input = math.floor(bytes_remaining * pitch_factor)
 
-        # Add empty line between loop and remainder
-        code.append("")
+    # Add empty line between loop and remainder
+    code.append("")
 
-        # Call generate_pitch_loop
-        params = PitchParams(
-            loop_label="remainder",
-            level_num=level_num,
-            input_bytes=bytes_input,
-            output_bytes=bytes_remaining,
-            pitch_factor=pitch_factor,
-            reverse=True
-        )
-        code.extend(generate_pitch_loop(params))
-        code.pop()
+    # Call generate_pitch_loop
+    params = PitchParams(
+        loop_label="remainder",
+        level_num=level_num,
+        input_bytes=input_bytes,
+        output_bytes=output_bytes,
+        pitch_factor=pitch_factor,
+        reverse=True
+    )
+    code.extend(generate_pitch_loop(params))
+    code.pop()
 
-    #code.append("\t\trts")
     code.append("")
     code.append(f".lp_done_{level_num}")
-    code.append("\t\ttst.w\td0")
     code.append("\t\trts")
     code.append("")
 

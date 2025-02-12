@@ -848,7 +848,7 @@ SetupPluginStructs
 
 		; Update current plugin data entry
 		addq.w	#1,d4
-		cmp.w	#4,d4
+		cmp.w	#mixer_total_channels,d4
 		bne.s	.write_plugin_data_current
 		
 		; Reset entry

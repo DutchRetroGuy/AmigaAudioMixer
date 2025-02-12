@@ -691,7 +691,6 @@ MixPluginPitchStandard\1
 		; Determine amount of bytes to process
 .determine_length
 		moveq	#0,d2
-		moveq	#0,d6
 		move.l	d7,d6
 		sub.l	d1,d6
 		move.w	d0,d2
@@ -824,7 +823,6 @@ MixPluginPitchLowQuality\1
 		; Determine amount of bytes to process
 .determine_length
 		moveq	#0,d2
-		moveq	#0,d6
 		move.l	d7,d6
 		sub.l	d1,d6
 		move.w	d0,d2
@@ -904,23 +902,14 @@ MixPluginPitchLevels\1
 .no_loop
 
 		; Set up for loop
-		moveq	#0,d3
 		move.w	mpd_pit_ratio_fp8(a1),d4
-		;move.w	mpd_pit_current_fp8(a1),d5
 		move.l	mpd_pit_sample_offset(a1),d1
 		move.l	mpd_pit_length(a1),d7
 		move.l	mpd_pit_sample_ptr(a1),a2
 
-		; Split FP 8.8 values into two bytes
-		;move.w	d4,d3
-		;lsr.w	#6,d3						; High-byte delta << 2
-		;and.w	#$fffc,d3					; Round to nearest 4 bytes
-		;and.w	#$00ff,d4					; Low-byte delta
-
 		; Determine amount of bytes to process
 .determine_length
 		moveq	#0,d2
-		moveq	#0,d6
 		move.l	d7,d6
 		sub.l	d1,d6
 		move.w	d0,d2
@@ -964,7 +953,8 @@ MixPluginPitchLevels\1
 		lsr.w	#2,d0						; Convert to longwords
 		subq.w	#1,d0
 		bmi.s	.done
-
+		
+		moveq	#0,d6						; Clear d6
 .si_lp	move.l	d6,(a0)+
 		dbra	d0,.si_lp
 
@@ -1027,10 +1017,11 @@ MixPluginLevels_internal\1
 .pitch_level_0:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_0
+		bmi		.remainder_0
 
 .lp_0
 		move.b	(a2),(a0)+
@@ -1071,14 +1062,18 @@ MixPluginLevels_internal\1
 
 .remainder_0
 		tst.w	d6
-		bmi.s	.lp_done_0
+		beq		.lp_done_0
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_0(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_0(pc,d7.w)
 
 .jt_table_0
+		move.b	0(a2),(a0)+
+		move.b	0(a2),(a0)+
+		move.b	0(a2),(a0)+
+		move.b	0(a2),(a0)+
 		move.b	0(a2),(a0)+
 		move.b	0(a2),(a0)+
 		move.b	0(a2),(a0)+
@@ -1111,16 +1106,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_0
-		tst.w	d0
 		rts
 
 .pitch_level_1:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_1
+		bmi		.remainder_1
 
 .lp_1
 		move.b	(a2),(a0)+
@@ -1161,14 +1156,18 @@ MixPluginLevels_internal\1
 
 .remainder_1
 		tst.w	d6
-		bmi.s	.lp_done_1
+		beq		.lp_done_1
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_1(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_1(pc,d7.w)
 
 .jt_table_1
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
@@ -1201,16 +1200,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_1
-		tst.w	d0
 		rts
 
 .pitch_level_2:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_2
+		bmi		.remainder_2
 
 .lp_2
 		move.b	(a2),(a0)+
@@ -1251,14 +1250,18 @@ MixPluginLevels_internal\1
 
 .remainder_2
 		tst.w	d6
-		bmi.s	.lp_done_2
+		beq		.lp_done_2
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_2(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_2(pc,d7.w)
 
 .jt_table_2
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
@@ -1291,16 +1294,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_2
-		tst.w	d0
 		rts
 
 .pitch_level_3:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_3
+		bmi		.remainder_3
 
 .lp_3
 		move.b	(a2),(a0)+
@@ -1341,14 +1344,18 @@ MixPluginLevels_internal\1
 
 .remainder_3
 		tst.w	d6
-		bmi.s	.lp_done_3
+		beq		.lp_done_3
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_3(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_3(pc,d7.w)
 
 .jt_table_3
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1381,16 +1388,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_3
-		tst.w	d0
 		rts
 
 .pitch_level_4:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_4
+		bmi		.remainder_4
 
 .lp_4
 		move.b	(a2),(a0)+
@@ -1431,14 +1438,18 @@ MixPluginLevels_internal\1
 
 .remainder_4
 		tst.w	d6
-		bmi.s	.lp_done_4
+		beq		.lp_done_4
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_4(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_4(pc,d7.w)
 
 .jt_table_4
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	3(a2),(a0)+
@@ -1471,16 +1482,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_4
-		tst.w	d0
 		rts
 
 .pitch_level_5:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_5
+		bmi		.remainder_5
 
 .lp_5
 		move.b	(a2),(a0)+
@@ -1521,14 +1532,18 @@ MixPluginLevels_internal\1
 
 .remainder_5
 		tst.w	d6
-		bmi.s	.lp_done_5
+		beq		.lp_done_5
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_5(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_5(pc,d7.w)
 
 .jt_table_5
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
@@ -1561,16 +1576,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_5
-		tst.w	d0
 		rts
 
 .pitch_level_6:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_6
+		bmi		.remainder_6
 
 .lp_6
 		move.b	(a2),(a0)+
@@ -1611,14 +1626,18 @@ MixPluginLevels_internal\1
 
 .remainder_6
 		tst.w	d6
-		bmi.s	.lp_done_6
+		beq		.lp_done_6
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_6(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_6(pc,d7.w)
 
 .jt_table_6
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
@@ -1651,16 +1670,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_6
-		tst.w	d0
 		rts
 
 .pitch_level_7:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_7
+		bmi		.remainder_7
 
 .lp_7
 		move.b	(a2),(a0)+
@@ -1701,14 +1720,18 @@ MixPluginLevels_internal\1
 
 .remainder_7
 		tst.w	d6
-		bmi.s	.lp_done_7
+		beq		.lp_done_7
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_7(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_7(pc,d7.w)
 
 .jt_table_7
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
@@ -1741,16 +1764,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_7
-		tst.w	d0
 		rts
 
 .pitch_level_8:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_8
+		bmi		.remainder_8
 
 .lp_8
 		move.b	(a2),(a0)+
@@ -1791,14 +1814,18 @@ MixPluginLevels_internal\1
 
 .remainder_8
 		tst.w	d6
-		bmi.s	.lp_done_8
+		beq		.lp_done_8
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_8(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_8(pc,d7.w)
 
 .jt_table_8
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
@@ -1831,16 +1858,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_8
-		tst.w	d0
 		rts
 
 .pitch_level_9:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_9
+		bmi		.remainder_9
 
 .lp_9
 		move.b	(a2),(a0)+
@@ -1881,14 +1908,18 @@ MixPluginLevels_internal\1
 
 .remainder_9
 		tst.w	d6
-		bmi.s	.lp_done_9
+		beq		.lp_done_9
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_9(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_9(pc,d7.w)
 
 .jt_table_9
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	7(a2),(a0)+
@@ -1921,16 +1952,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_9
-		tst.w	d0
 		rts
 
 .pitch_level_10:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_10
+		bmi		.remainder_10
 
 .lp_10
 		move.b	(a2),(a0)+
@@ -1971,14 +2002,18 @@ MixPluginLevels_internal\1
 
 .remainder_10
 		tst.w	d6
-		bmi.s	.lp_done_10
+		beq		.lp_done_10
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_10(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_10(pc,d7.w)
 
 .jt_table_10
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
@@ -2011,16 +2046,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_10
-		tst.w	d0
 		rts
 
 .pitch_level_11:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_11
+		bmi		.remainder_11
 
 .lp_11
 		move.b	(a2),(a0)+
@@ -2061,14 +2096,18 @@ MixPluginLevels_internal\1
 
 .remainder_11
 		tst.w	d6
-		bmi.s	.lp_done_11
+		beq		.lp_done_11
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_11(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_11(pc,d7.w)
 
 .jt_table_11
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
@@ -2101,16 +2140,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_11
-		tst.w	d0
 		rts
 
 .pitch_level_12:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_12
+		bmi		.remainder_12
 
 .lp_12
 		move.b	(a2),(a0)+
@@ -2151,14 +2190,18 @@ MixPluginLevels_internal\1
 
 .remainder_12
 		tst.w	d6
-		bmi.s	.lp_done_12
+		beq		.lp_done_12
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_12(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_12(pc,d7.w)
 
 .jt_table_12
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
 		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
@@ -2191,16 +2234,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_12
-		tst.w	d0
 		rts
 
 .pitch_level_13:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_13
+		bmi		.remainder_13
 
 .lp_13
 		move.b	(a2),(a0)+
@@ -2241,14 +2284,18 @@ MixPluginLevels_internal\1
 
 .remainder_13
 		tst.w	d6
-		bmi.s	.lp_done_13
+		beq		.lp_done_13
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_13(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_13(pc,d7.w)
 
 .jt_table_13
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		move.b	10(a2),(a0)+
@@ -2281,16 +2328,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_13
-		tst.w	d0
 		rts
 
 .pitch_level_14:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_14
+		bmi		.remainder_14
 
 .lp_14
 		move.b	(a2),(a0)+
@@ -2331,14 +2378,18 @@ MixPluginLevels_internal\1
 
 .remainder_14
 		tst.w	d6
-		bmi.s	.lp_done_14
+		beq		.lp_done_14
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_14(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_14(pc,d7.w)
 
 .jt_table_14
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
 		move.b	12(a2),(a0)+
 		move.b	12(a2),(a0)+
 		move.b	11(a2),(a0)+
@@ -2371,16 +2422,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_14
-		tst.w	d0
 		rts
 
 .pitch_level_15:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_15
+		bmi		.remainder_15
 
 .lp_15
 		move.b	(a2),(a0)+
@@ -2421,14 +2472,18 @@ MixPluginLevels_internal\1
 
 .remainder_15
 		tst.w	d6
-		bmi.s	.lp_done_15
+		beq		.lp_done_15
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_15(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_15(pc,d7.w)
 
 .jt_table_15
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	12(a2),(a0)+
@@ -2461,16 +2516,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_15
-		tst.w	d0
 		rts
 
 .pitch_level_16:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_16
+		bmi		.remainder_16
 
 .lp_16
 		move.b	(a2),(a0)+
@@ -2511,14 +2566,18 @@ MixPluginLevels_internal\1
 
 .remainder_16
 		tst.w	d6
-		bmi.s	.lp_done_16
+		beq		.lp_done_16
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_16(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_16(pc,d7.w)
 
 .jt_table_16
+		move.b	16(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	14(a2),(a0)+
 		move.b	14(a2),(a0)+
 		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
@@ -2551,16 +2610,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_16
-		tst.w	d0
 		rts
 
 .pitch_level_17:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_17
+		bmi		.remainder_17
 
 .lp_17
 		move.b	(a2),(a0)+
@@ -2601,14 +2660,18 @@ MixPluginLevels_internal\1
 
 .remainder_17
 		tst.w	d6
-		bmi.s	.lp_done_17
+		beq		.lp_done_17
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_17(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_17(pc,d7.w)
 
 .jt_table_17
+		move.b	17(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	15(a2),(a0)+
 		move.b	15(a2),(a0)+
 		move.b	14(a2),(a0)+
 		move.b	14(a2),(a0)+
@@ -2641,16 +2704,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_17
-		tst.w	d0
 		rts
 
 .pitch_level_18:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_18
+		bmi		.remainder_18
 
 .lp_18
 		move.b	(a2),(a0)+
@@ -2691,14 +2754,18 @@ MixPluginLevels_internal\1
 
 .remainder_18
 		tst.w	d6
-		bmi.s	.lp_done_18
+		beq		.lp_done_18
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_18(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_18(pc,d7.w)
 
 .jt_table_18
+		move.b	18(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	16(a2),(a0)+
 		move.b	16(a2),(a0)+
 		move.b	15(a2),(a0)+
 		move.b	14(a2),(a0)+
@@ -2731,16 +2798,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_18
-		tst.w	d0
 		rts
 
 .pitch_level_19:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_19
+		bmi		.remainder_19
 
 .lp_19
 		move.b	(a2),(a0)+
@@ -2781,14 +2848,18 @@ MixPluginLevels_internal\1
 
 .remainder_19
 		tst.w	d6
-		bmi.s	.lp_done_19
+		beq		.lp_done_19
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_19(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_19(pc,d7.w)
 
 .jt_table_19
+		move.b	19(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	17(a2),(a0)+
 		move.b	16(a2),(a0)+
 		move.b	16(a2),(a0)+
 		move.b	15(a2),(a0)+
@@ -2821,16 +2892,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_19
-		tst.w	d0
 		rts
 
 .pitch_level_20:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_20
+		bmi		.remainder_20
 
 .lp_20
 		move.b	(a2),(a0)+
@@ -2871,14 +2942,18 @@ MixPluginLevels_internal\1
 
 .remainder_20
 		tst.w	d6
-		bmi.s	.lp_done_20
+		beq		.lp_done_20
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_20(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_20(pc,d7.w)
 
 .jt_table_20
+		move.b	20(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	18(a2),(a0)+
 		move.b	17(a2),(a0)+
 		move.b	17(a2),(a0)+
 		move.b	16(a2),(a0)+
@@ -2911,16 +2986,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_20
-		tst.w	d0
 		rts
 
 .pitch_level_21:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_21
+		bmi		.remainder_21
 
 .lp_21
 		move.b	(a2),(a0)+
@@ -2961,14 +3036,18 @@ MixPluginLevels_internal\1
 
 .remainder_21
 		tst.w	d6
-		bmi.s	.lp_done_21
+		beq		.lp_done_21
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_21(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_21(pc,d7.w)
 
 .jt_table_21
+		move.b	21(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
 		move.b	18(a2),(a0)+
 		move.b	17(a2),(a0)+
 		move.b	17(a2),(a0)+
@@ -3001,16 +3080,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_21
-		tst.w	d0
 		rts
 
 .pitch_level_22:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_22
+		bmi		.remainder_22
 
 .lp_22
 		move.b	(a2),(a0)+
@@ -3051,14 +3130,18 @@ MixPluginLevels_internal\1
 
 .remainder_22
 		tst.w	d6
-		bmi.s	.lp_done_22
+		beq		.lp_done_22
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_22(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_22(pc,d7.w)
 
 .jt_table_22
+		move.b	22(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	20(a2),(a0)+
 		move.b	19(a2),(a0)+
 		move.b	18(a2),(a0)+
 		move.b	17(a2),(a0)+
@@ -3091,16 +3174,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_22
-		tst.w	d0
 		rts
 
 .pitch_level_23:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_23
+		bmi		.remainder_23
 
 .lp_23
 		move.b	(a2),(a0)+
@@ -3141,14 +3224,18 @@ MixPluginLevels_internal\1
 
 .remainder_23
 		tst.w	d6
-		bmi.s	.lp_done_23
+		beq		.lp_done_23
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_23(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_23(pc,d7.w)
 
 .jt_table_23
+		move.b	23(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
 		move.b	20(a2),(a0)+
 		move.b	19(a2),(a0)+
 		move.b	18(a2),(a0)+
@@ -3181,16 +3268,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_23
-		tst.w	d0
 		rts
 
 .pitch_level_24:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_24
+		bmi		.remainder_24
 
 .lp_24
 		move.b	(a2),(a0)+
@@ -3231,14 +3318,18 @@ MixPluginLevels_internal\1
 
 .remainder_24
 		tst.w	d6
-		bmi.s	.lp_done_24
+		beq		.lp_done_24
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_24(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_24(pc,d7.w)
 
 .jt_table_24
+		move.b	24(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	21(a2),(a0)+
 		move.b	21(a2),(a0)+
 		move.b	20(a2),(a0)+
 		move.b	19(a2),(a0)+
@@ -3271,16 +3362,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_24
-		tst.w	d0
 		rts
 
 .pitch_level_25:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_25
+		bmi		.remainder_25
 
 .lp_25
 		move.b	(a2),(a0)+
@@ -3321,14 +3412,18 @@ MixPluginLevels_internal\1
 
 .remainder_25
 		tst.w	d6
-		bmi.s	.lp_done_25
+		beq		.lp_done_25
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_25(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_25(pc,d7.w)
 
 .jt_table_25
+		move.b	25(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	22(a2),(a0)+
 		move.b	21(a2),(a0)+
 		move.b	21(a2),(a0)+
 		move.b	20(a2),(a0)+
@@ -3361,16 +3456,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_25
-		tst.w	d0
 		rts
 
 .pitch_level_26:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_26
+		bmi		.remainder_26
 
 .lp_26
 		move.b	(a2),(a0)+
@@ -3411,14 +3506,18 @@ MixPluginLevels_internal\1
 
 .remainder_26
 		tst.w	d6
-		bmi.s	.lp_done_26
+		beq		.lp_done_26
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_26(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_26(pc,d7.w)
 
 .jt_table_26
+		move.b	26(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	23(a2),(a0)+
 		move.b	22(a2),(a0)+
 		move.b	21(a2),(a0)+
 		move.b	21(a2),(a0)+
@@ -3451,16 +3550,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_26
-		tst.w	d0
 		rts
 
 .pitch_level_27:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_27
+		bmi		.remainder_27
 
 .lp_27
 		move.b	(a2),(a0)+
@@ -3501,14 +3600,18 @@ MixPluginLevels_internal\1
 
 .remainder_27
 		tst.w	d6
-		bmi.s	.lp_done_27
+		beq		.lp_done_27
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_27(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_27(pc,d7.w)
 
 .jt_table_27
+		move.b	27(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	24(a2),(a0)+
 		move.b	23(a2),(a0)+
 		move.b	22(a2),(a0)+
 		move.b	21(a2),(a0)+
@@ -3541,16 +3644,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_27
-		tst.w	d0
 		rts
 
 .pitch_level_28:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_28
+		bmi		.remainder_28
 
 .lp_28
 		move.b	(a2),(a0)+
@@ -3591,14 +3694,18 @@ MixPluginLevels_internal\1
 
 .remainder_28
 		tst.w	d6
-		bmi.s	.lp_done_28
+		beq		.lp_done_28
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_28(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_28(pc,d7.w)
 
 .jt_table_28
+		move.b	28(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	25(a2),(a0)+
 		move.b	24(a2),(a0)+
 		move.b	23(a2),(a0)+
 		move.b	22(a2),(a0)+
@@ -3631,16 +3738,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_28
-		tst.w	d0
 		rts
 
 .pitch_level_29:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_29
+		bmi		.remainder_29
 
 .lp_29
 		move.b	(a2),(a0)+
@@ -3681,14 +3788,18 @@ MixPluginLevels_internal\1
 
 .remainder_29
 		tst.w	d6
-		bmi.s	.lp_done_29
+		beq		.lp_done_29
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_29(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_29(pc,d7.w)
 
 .jt_table_29
+		move.b	29(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	26(a2),(a0)+
 		move.b	25(a2),(a0)+
 		move.b	24(a2),(a0)+
 		move.b	23(a2),(a0)+
@@ -3721,16 +3832,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_29
-		tst.w	d0
 		rts
 
 .pitch_level_30:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_30
+		bmi		.remainder_30
 
 .lp_30
 		move.b	(a2),(a0)+
@@ -3771,14 +3882,18 @@ MixPluginLevels_internal\1
 
 .remainder_30
 		tst.w	d6
-		bmi.s	.lp_done_30
+		beq		.lp_done_30
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_30(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_30(pc,d7.w)
 
 .jt_table_30
+		move.b	30(a2),(a0)+
+		move.b	29(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	27(a2),(a0)+
 		move.b	26(a2),(a0)+
 		move.b	25(a2),(a0)+
 		move.b	24(a2),(a0)+
@@ -3811,16 +3926,16 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_30
-		tst.w	d0
 		rts
 
 .pitch_level_31:
 		move.w	d2,d6
 		and.w	#$1f,d6
-		lsr.w	#1,d6
+		add.w	d6,d6
+		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
-		bmi	.remainder_31
+		bmi		.remainder_31
 
 .lp_31
 		move.b	(a2),(a0)+
@@ -3861,14 +3976,18 @@ MixPluginLevels_internal\1
 
 .remainder_31
 		tst.w	d6
-		bmi.s	.lp_done_31
+		beq		.lp_done_31
 
-		moveq	#64,d2
-		sub.w	d6,d2
-		lsr.w	#1,d6
-		jmp	.jt_table_31(pc,d2.w)
+		move.w	#128,d7
+		sub.w	d6,d7
+		lsr.w	#2,d6
+		jmp		.jt_table_31(pc,d7.w)
 
 .jt_table_31
+		move.b	31(a2),(a0)+
+		move.b	30(a2),(a0)+
+		move.b	29(a2),(a0)+
+		move.b	28(a2),(a0)+
 		move.b	27(a2),(a0)+
 		move.b	26(a2),(a0)+
 		move.b	25(a2),(a0)+
@@ -3901,7 +4020,6 @@ MixPluginLevels_internal\1
 		add.l	d6,d1
 
 .lp_done_31
-		tst.w	d0
 		rts
 
 		ENDIF
@@ -4626,7 +4744,7 @@ MixPluginRatioPrecalc\1
 		move.l	d0,mfx_length(a0)
 		lsl.l	d2,d1
 		move.l	d1,mfx_loop_offset(a0)
-
+		
 .done
 		movem.l	(sp)+,d0-d3/d5-d7			; Stack
 		rts
