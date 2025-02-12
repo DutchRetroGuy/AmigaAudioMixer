@@ -24,6 +24,7 @@ class PitchParams:
     input_bytes: int
     output_bytes: int
     pitch_factor: float
+    reverse: bool
 
 
 # Functions
@@ -41,24 +42,46 @@ def generate_pitch_loop(params: PitchParams):
         input_pos = math.floor(i * params.pitch_factor)
         positions.append(input_pos)
 
+    instructions = []
+
     # Generate move.b instructions using these exact positions
     for input_pos in positions:
-        if input_pos == 0:
-            output_code.append("\t\tmove.b\t(a2),(a0)+")
+        if input_pos == 0 and not params.reverse:
+            instructions.append("\t\tmove.b\t(a2),(a0)+")
         else:
-            output_code.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+            instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+
+    # Reverse instruction order if needed
+    if params.reverse:
+        instructions.reverse()
+        output_code.append("\t\ttst.w\td6")
+        output_code.append(f"\t\tbmi.s\t.lp_done_{params.level_num}")
+        output_code.append("")
+        output_code.append("\t\tmoveq\t#64,d2")
+        output_code.append("\t\tsub.w\td6,d2")
+        output_code.append("\t\tlsr.w\t#1,d6")
+        output_code.append(f"\t\tjmp\t.jt_table_{params.level_num}(pc,d2.w)")
+        output_code.append("")
+        output_code.append(f".jt_table_{params.level_num}")
+
+    # Add instructions to output code
+    output_code.extend(instructions)
 
     # Calculate exact input bytes needed for this pattern
     max_pos = max(positions) + 1
 
     # Add the pointer increment
-    if max_pos > 0:
-        if max_pos <= 8:
-            output_code.append(f"\t\taddq.w\t#{max_pos},a2")
-            output_code.append(f"\t\taddq.l\t#{max_pos},d1")
-        else:
-            output_code.append(f"\t\tadd.w\t#{max_pos},a2")
-            output_code.append(f"\t\tadd.l\t#{max_pos},d1")
+    if params.reverse:
+        output_code.append("\t\tadd.w\td6,a2")
+        output_code.append("\t\tadd.l\td6,d1")
+    else:
+        if max_pos > 0:
+            if max_pos <= 8:
+                output_code.append(f"\t\taddq.w\t#{max_pos},a2")
+                output_code.append(f"\t\taddq.l\t#{max_pos},d1")
+            else:
+                output_code.append(f"\t\tadd.w\t#{max_pos},a2")
+                output_code.append(f"\t\tadd.l\t#{max_pos},d1")
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
 
@@ -75,7 +98,8 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     warning = ''
 
     if abs(float(rational) - pitch_factor) > 0.001:
-        # warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} ({float(rational)})"
+        # warning = f"; Rounded {pitch_factor} to nearest rational of {rational.numerator}/{rational.denominator} "
+        # warning = warning + f"({float(rational)})"
         pitch_factor = float(rational)
 
     # Note: maximum pattern length directly determines maximum number of pitch steps available
@@ -95,9 +119,12 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         code = [warning]
 
     code.append(f".pitch_level_{level_num}:")
-    code.append(f"\t\tasr.w\t#{shift_amount},d2")
+    code.append("\t\tmove.w\td2,d6")
+    code.append("\t\tand.w\t#$1f,d6")
+    code.append("\t\tlsr.w\t#1,d6")
+    code.append(f"\t\tlsr.w\t#{shift_amount},d2")
     code.append(f"\t\tsubq.w\t#1,d2")
-    code.append(f"\t\tbmi\t\t.lp_done_{level_num}")
+    code.append(f"\t\tbmi\t.remainder_{level_num}")
     code.append("")
 
     # Call generate_pitch_loop
@@ -106,7 +133,8 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         level_num=level_num,
         input_bytes=input_bytes,
         output_bytes=output_bytes,
-        pitch_factor=pitch_factor
+        pitch_factor=pitch_factor,
+        reverse=False
     )
     code.extend(generate_pitch_loop(params))
 
@@ -124,12 +152,13 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
             level_num=level_num,
             input_bytes=bytes_input,
             output_bytes=bytes_remaining,
-            pitch_factor=pitch_factor
+            pitch_factor=pitch_factor,
+            reverse=True
         )
         code.extend(generate_pitch_loop(params))
         code.pop()
 
-    code.append("\t\trts")
+    #code.append("\t\trts")
     code.append("")
     code.append(f".lp_done_{level_num}")
     code.append("\t\ttst.w\td0")
@@ -166,10 +195,11 @@ def generate_jump_table(routine_name, num_steps):
         routine_name,
         "\tIF MXPLUGIN_PITCH=1",
         ".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY",
+        "\t\tmoveq\t#0,d6",
         "\t\tIF .m68020_indicator=2",
         "\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d4.w*4)\n\t\t\tmc68000",
         "\t\tELSE",
-        "\t\t\tadd.w\td4,d4\n\t\t\tadd.w\td4,d4\n\t\t\tjmp .jt_table(pc,d4.w)",
+        "\t\t\tmove.w\td4,d7\n\t\t\tadd.w\td7,d7\n\t\t\tadd.w\td7,d7\n\t\t\tjmp .jt_table(pc,d7.w)",
         "\t\tENDIF\n\n.jt_table"
             ]
 
