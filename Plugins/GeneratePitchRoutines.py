@@ -49,7 +49,10 @@ def generate_pitch_loop(params: PitchParams):
         if input_pos == 0 and not params.reverse:
             instructions.append("\t\tmove.b\t(a2),(a0)+")
         else:
-            instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+            if params.reverse:
+                instructions.append(f"\t\tmove.b\t{input_pos}(a2),-(a0)")
+            else:
+                instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
 
     # Reverse instruction order if needed
     if params.reverse:
@@ -57,10 +60,11 @@ def generate_pitch_loop(params: PitchParams):
         output_code.append("\t\ttst.w\td6")
         output_code.append(f"\t\tbeq\t\t.lp_done_{params.level_num}")
         output_code.append("")
-        output_code.append("\t\tmove.w\t#128,d7")
-        output_code.append("\t\tsub.w\td6,d7")
+        output_code.append("\t\tlea.l\t1(a0,d7.w),a0")
+        output_code.append("\t\tmove.w\t#128,d5")
+        output_code.append("\t\tsub.w\td6,d5")
         output_code.append("\t\tlsr.w\t#2,d6")
-        output_code.append(f"\t\tjmp\t\t.jt_table_{params.level_num}(pc,d7.w)")
+        output_code.append(f"\t\tjmp\t\t.jt_table_{params.level_num}(pc,d5.w)")
         output_code.append("")
         output_code.append(f".jt_table_{params.level_num}")
 
@@ -74,6 +78,7 @@ def generate_pitch_loop(params: PitchParams):
     if params.reverse:
         output_code.append("\t\tadd.w\td6,a2")
         output_code.append("\t\tadd.l\td6,d1")
+        output_code.append("\t\tlea.l\t1(a0,d7.w),a0")
     else:
         if max_pos > 0:
             if max_pos <= 8:
@@ -121,6 +126,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append(f".pitch_level_{level_num}:")
     code.append("\t\tmove.w\td2,d6")
     code.append("\t\tand.w\t#$1f,d6")
+    code.append("\t\tmove.w\td6,d7")
     code.append("\t\tadd.w\td6,d6")
     code.append("\t\tadd.w\td6,d6")
     code.append(f"\t\tlsr.w\t#{shift_amount},d2")
