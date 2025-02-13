@@ -1171,40 +1171,8 @@ MixCheckChannel	MACRO
 		ELSE
 			move.l	d3,mch_remaining_length(a6)	; Write remaining length
 		ENDIF
-;		IF MIXER_ENABLE_PLUGINS=1
-;			IF MIXER_TIMING_BARS=1
-;				move.w	#MIXER_PLUGIN_COLOUR,$dff180
-;			ENDIF
-;			; Test if plugin is active
-;			tst.l	mch_plugin_ptr(a6)
-;			beq.s	.\@_write_rem_std
-;			
-;			; Skip no-data plugins
-;			tst.w	mch_plugin_type(a6)
-;			bpl.s	.\@_write_rem_std
-;			
-;			; Check if sample position reset
-;			move.l	\1,d6
-;			sub.l	mch_plugin_output_buffer(a6),d6
-;			beq.s	.\@_write_rem_sam_reset
-;			
-;			; Sample is not reset
-;			add.l	d6,mch_sample_ptr(a6)		; Write sample pointer
-;			bra.s	.\@_write_rem_done
-;			
-;.\@_write_rem_sam_reset
-;			move.l	mch_loop_ptr(a6),mch_sample_ptr(a6)	; Write sample pointer
-;			bra.s	.\@_write_rem_done
-;			
-;.\@_write_rem_std
-;			move.l	\1,mch_sample_ptr(a6)		; Write sample pointer
-;.\@_write_rem_done
-;			IF MIXER_TIMING_BARS=1
-;				move.w	#MIXER_AUD_COLOUR,$dff180
-;			ENDIF
-;		ELSE
-			move.l	\1,mch_sample_ptr(a6)		; Write sample pointer
-;		ENDIF
+
+		move.l	\1,mch_sample_ptr(a6)		; Write sample pointer
 
 		; Check if remaining length <= smallest remaining length
 		IF mxslength_word=1
