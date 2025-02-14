@@ -690,20 +690,20 @@ MixPluginPitchStandard\1
 
 		; Determine amount of bytes to process
 .determine_length
-		moveq	#0,d2
-		move.l	d7,d6
-		sub.l	d1,d6
+;		moveq	#0,d2
+;		move.l	d7,d6
+;		sub.l	d1,d6
 		move.w	d0,d2
 		
-		cmp.l	d2,d6
-		blt.s	.lp_rem_smaller
+;		cmp.l	d2,d6
+;		blt.s	.lp_rem_smaller
 
-		moveq	#0,d0				; Nothing remains after loop
-		bra.s	.lp_size_calculated
+;		moveq	#0,d0				; Nothing remains after loop
+;		bra.s	.lp_size_calculated
 	
-.lp_rem_smaller
-		move.w	d6,d2				; remaining bytes < bytes to process
-		sub.w	d6,d0				; remaining bytes to process after loop
+;.lp_rem_smaller
+;		move.w	d6,d2				; remaining bytes < bytes to process
+;		sub.w	d6,d0				; remaining bytes to process after loop
 
 .lp_size_calculated
 		moveq	#0,d6
@@ -759,16 +759,18 @@ MixPluginPitchStandard\1
 			add.l	d3,d1
 			dbra	d2,.lp
 			
-			tst.w	d0
+;			tst.w	d0
 ;		ENDIF
-		beq.s	.lp_done
+;		beq.s	.lp_done
+		
+;		DBGPauseCol $f00
 		
 		; More bytes to process
-		tst.w	mpd_pit_loop(a1)
-		bpl.s	.silence
+;		tst.w	mpd_pit_loop(a1)
+;		bpl.s	.silence
 
-		move.l	mpd_pit_loop_offset(a1),d1
-		bra.s	.determine_length
+;		move.l	mpd_pit_loop_offset(a1),d1
+;		bra.s	.determine_length
 
 .lp_done
 		; Write resulting values back into data

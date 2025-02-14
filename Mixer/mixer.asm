@@ -1080,17 +1080,17 @@ MixCheckChannel	MACRO
 			; Set up parameters
 			IF mxslength_word=1
 				move.w	d1,d0
-				cmp.w	mch_loop_length(a6),d0
-				bls.s	.\@_plugin_len_set
+;				cmp.w	mch_loop_length(a6),d0
+;				bls.s	.\@_plugin_len_set
 				
-				move.w	mch_loop_length(a6),d0
+;				move.w	mch_loop_length(a6),d0
 			ELSE
 				moveq	#0,d0
 				move.w	d1,d0
-				cmp.l	mch_loop_length(a6),d0
-				bls.s	.\@_plugin_len_set
+;				cmp.l	mch_loop_length(a6),d0
+;				bls.s	.\@_plugin_len_set
 				
-				move.l	mch_loop_length(a6),d0
+;				move.l	mch_loop_length(a6),d0
 			ENDIF
 			
 .\@_plugin_len_set
