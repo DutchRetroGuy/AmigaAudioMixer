@@ -657,7 +657,12 @@ MixPluginPitch1x\1
 
 		TODO!
 
+		; Check if more work needs to be done
+		
+		TODO!
 
+
+		; OLD CODE FOLLOWS
 		moveq	#0,d6
 		move.w	d0,d6
 		move.l	mpd_pit_sample_offset(a1),d0
