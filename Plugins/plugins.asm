@@ -195,6 +195,7 @@ MixPluginInitPitch\1
 		move.l	mfx_sample_ptr(a0),mpd_pit_sample_ptr(a2)
 		move.w	mfx_loop(a0),mpd_pit_loop(a2)
 		clr.l	mpd_pit_sample_offset(a2)
+		clr.l	mpd_pit_output_offset(a2)
 		clr.w	mpd_pit_current_fp8(a2)
 		
 		; 0) Check for MXPLG_PITCH_LEVELS
@@ -208,11 +209,12 @@ MixPluginInitPitch\1
 		; Fetch correct FP8.8 ratio
 		lea.l	MixPluginLevels_pitch_table\1(pc),a0
 		move.w	mpid_pit_ratio_fp8(a1),d2
+		move.w	d2,mpd_pit_ratio_fp8(a2)
 		moveq	#0,d0
 		move.w	d2,d0
 		add.w	d0,d0
 		move.w	0(a0,d0.w),d0
-		
+
 		move.l	(sp)+,a0					; Stack
 		bra		.pitch_test_1x
 		
@@ -261,43 +263,45 @@ MixPluginInitPitch\1
 		beq.s	.precalc
 
 		; 3) Write original length into plugin data
-		move.l	mfx_length(a0),mpd_pit_length(a2)
+		move.l	mfx_length(a0),mpd_pit_original_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_pit_loop_offset(a2)
 		
-		; 4) Check if offset based looping is enabled
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop
-		
-		; No offset based looping, restart at sample start
-		clr.l	d1
-		bra.s	.cnt
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop
-		move.l	mfx_loop_offset(a0),d1
+;		; 4) Check if offset based looping is enabled
+;		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
+;		beq.s	.offset_loop
+;		
+;		; No offset based looping, restart at sample start
+;		clr.l	d1
+;		bra.s	.cnt
+;		
+;		; Offset based looping, restarts at loop offset
+;.offset_loop
+;		move.l	mfx_loop_offset(a0),d1
+;
+;		; 5) Write loop offset into plugin data
+;.cnt	move.l	d1,mpd_pit_loop_offset(a2)
 
-		; 5) Write loop offset into plugin data
-.cnt	move.l	d1,mpd_pit_loop_offset(a2)
-		
-
-		; 6) Calculate new length/loop offset values
-		moveq	#3,d1						; Set length/offset shift to 3
+		; 6) Calculate new length value
+		;moveq	#3,d1						; Set length shift to 3
+		moveq	#0,d1
 		bsr		MixPluginRatioPrecalc\1
+		move.l	mfx_length(a0),mpd_pit_length(a2)
 	
 		; 7) Check for MXPLG_PITCH_LEVELS
 		; TODO: neater path for MXPLG_PITCH_LEVELS than double compare
-.check_levels
-		moveq	#MXPLG_PITCH_LEVELS,d0
-		cmp.w	mpid_pit_mode(a1),d0
-		bne		.done
-		
-		move.w	d2,mpd_pit_ratio_fp8(a2)
+;.check_levels
+;		moveq	#MXPLG_PITCH_LEVELS,d0
+;		cmp.w	mpid_pit_mode(a1),d0
+;		bne		.done
+;		
+;		move.w	d2,mpd_pit_ratio_fp8(a2)
 
 .done
 		movem.l	(sp)+,d0/d1/d2				; Stack
 		rts
 
 .precalc
-		move.l	mpid_pit_length(a1),mpd_pit_length(a2)
+		move.l	mpid_pit_length(a1),mpd_pit_original_length(a2)
 		move.l	mpid_pit_loop_offset(a1),mpd_pit_loop_offset(a2)
 		movem.l	(sp)+,d0/d1					; Stack
 	ENDIF
@@ -579,9 +583,9 @@ MixPluginDummy\1
 		;   A0 - Pointer to the output buffer to use
 		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
-		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
-		;        loop offset (or at its start in case the loop offset is not
-		;        set)
+		;   D1 - Loop indicator. Set to 1 if the sample has to restart when
+		;        reaching its end. Restart has to be from the loop offset
+		;        point
 MixPluginPitch\1
 	IF MXPLUGIN_PITCH=1
 		move.l	d7,-(sp)
@@ -621,29 +625,39 @@ MixPluginPitch1x\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d6/a0/a2,-(sp)			; Stack
 
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
+		; Always receive mixer buffer size bytes to process
+		; So, loop or play silence as needed when sample ends
+
+.determine_length
+		; Determine length
+		; If bytes to process > remaining length, use remaining sample length
+		; Else use bytes to process
+		move.l	mpd_pit_length(a1),d6
+		sub.l	mpd_pit_output_offset(a1),d6	; D6 = remaining length
+		cmp.l	d0,d6
+		bcc.s	.setup_loop
 		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_loop_offset(a1),mpd_pit_sample_offset(a1)
+		move.l	d0,d6							; D6 = total bytes to process
 		
-.no_loop		
-		; Set up pitch loop length
-		move.w	d0,d7
+.setup_loop
+		; D6 = bytes to process
+		move.w	d6,d5							; D5 = source bytes processed
+		move.w	d6,d7
 		lsr.w	#2,d7
 		subq.w	#1,d7
 		
 		move.l	mpd_pit_sample_ptr(a1),a2
 		add.l	mpd_pit_sample_offset(a1),a2
 		
-		; The loop below does not deal correctly with sample end or looping
-		
 		; Fill output buffer with copy of original
 .lp_mv	move.l	(a2)+,(a0)+
 		dbra	d7,.lp_mv		
 		
-		; Update the sample offset
+		; Update the sample offsets
+
+		TODO!
+
+
 		moveq	#0,d6
 		move.w	d0,d6
 		move.l	mpd_pit_sample_offset(a1),d0
@@ -912,51 +926,50 @@ MixPluginPitchLevels\1
 
 		; Determine amount of bytes to process
 .determine_length
-		moveq	#0,d2
-		move.l	d7,d6
-		sub.l	d1,d6
+;		moveq	#0,d2
+;		move.l	d7,d6
+;		sub.l	d1,d6
 		move.w	d0,d2
 		
-		cmp.l	d2,d6
-		blt.s	.lp_rem_smaller
+;		cmp.l	d2,d6
+;		blt.s	.lp_rem_smaller
 
-		moveq	#0,d0				; Nothing remains after loop
-		bra.s	.lp_size_calculated
+;		moveq	#0,d0				; Nothing remains after loop
+;		bra.s	.lp_size_calculated
 	
-.lp_rem_smaller
-		move.w	d6,d2				; remaining bytes < bytes to process
-		sub.w	d6,d0				; remaining bytes to process after loop
+;.lp_rem_smaller
+;		move.w	d6,d2				; remaining bytes < bytes to process
+;		sub.w	d6,d0				; remaining bytes to process after loop
 
 .lp_size_calculated
 		bsr		MixPluginLevels_internal\1
 	
-		tst.w	d0
-		beq.s	.lp_done
+;		tst.w	d0
+;		beq.s	.lp_done
 		
 		; More bytes to process, check if at end of sample
-		cmp.l	mpd_pit_length(a1),d1
-		blt.s	.reset_length
+;		cmp.l	mpd_pit_length(a1),d1
+;		blt.s	.reset_length
 		
 		; End of sample reached, test for looping
-		tst.w	mpd_pit_loop(a1)
-		bpl.s	.silence
+;		tst.w	mpd_pit_loop(a1)
+;		bpl.s	.silence
 
-		move.l	mpd_pit_loop_offset(a1),d1
-.reset_length
-		move.l	mpd_pit_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
-		bra.s	.determine_length
+;		move.l	mpd_pit_loop_offset(a1),d1
+;.reset_length
+;		move.l	mpd_pit_length(a1),d7
+;		move.l	mpd_pit_sample_ptr(a1),a2
+;		bra.s	.determine_length
 
 .lp_done
 		; All bytes processed, check if at end of sample
-		cmp.l	mpd_pit_length(a1),d1
-		blt.s	.write_length
+;		cmp.l	mpd_pit_length(a1),d1
+;		blt.s	.write_length
 		
 		; Reset to loop start
-		DBGBreakPnt
-		move.l	mpd_pit_loop_offset(a1),d1
+;		move.l	mpd_pit_loop_offset(a1),d1
 		
-.write_length
+;.write_length 
 		; Write resulting values back into data
 		move.l	d1,mpd_pit_sample_offset(a1)
 	
@@ -4764,20 +4777,20 @@ MixPluginRatioPrecalc\1
 		; Fetch length
 		move.l	mfx_length(a0),d0
 		
-		; Check if offset based looping is enabled
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop
-		
-		; No offset based looping, restart at sample start
-		clr.l	d1
-		bra.s	.cnt
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop
-		move.l	mfx_loop_offset(a0),d1
-
-		; Calculate output length & output loop offset
-.cnt	
+;		; Check if offset based looping is enabled
+;		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
+;		beq.s	.offset_loop
+;		
+;		; No offset based looping, restart at sample start
+;		clr.l	d1
+;		bra.s	.cnt
+;		
+;		; Offset based looping, restarts at loop offset
+;.offset_loop
+;		move.l	mfx_loop_offset(a0),d1
+;
+;		; Calculate output length & output loop offset
+;.cnt	
 		; 1) Check if the ratio is valid
 		tst.w	d3
 		bne.s	.test_1x
@@ -4790,13 +4803,13 @@ MixPluginRatioPrecalc\1
 		
 		; 2) apply shift to length and offset
 		lsr.l	d2,d0
-		lsr.l	d2,d1
+;		lsr.l	d2,d1
 		
 		; 3) Convert divided length & offset to 16.8 fixed point
 		lsl.l	#8,d0						; D0 = 16.8
 		lsl.l	#8,d0						; Prepared for divide
-		lsl.l	#8,d1						; D1 = 16.8
-		lsl.l	#8,d1						; Prepared for divide
+;		lsl.l	#8,d1						; D1 = 16.8
+;		lsl.l	#8,d1						; Prepared for divide
 		
 		; 4) divide 16.8 fixed point length & offset by mpd_pit_ratio_fp8
 		IF MIXER_68020=1
@@ -4811,20 +4824,20 @@ MixPluginRatioPrecalc\1
 			MPlLongDiv d0,d3,d7,d5,d6,0
 		ENDIF
 
-		tst.l	d1
-		beq.s	.do_rounding				; Skip loop offset of zero
-		
-		IF MIXER_68020=1
-			IF MXPLUGIN_68020_ONLY=1
-				mc68020
-				divu.l	d3,d1
-				mc68000
-			ELSE
-				MPlLongDiv d1,d3,d7,d5,d6,0
-			ENDIF
-		ELSE
-			MPlLongDiv d1,d3,d7,d5,d6,0
-		ENDIF
+;		tst.l	d1
+;		beq.s	.do_rounding				; Skip loop offset of zero
+;		
+;		IF MIXER_68020=1
+;			IF MXPLUGIN_68020_ONLY=1
+;				mc68020
+;				divu.l	d3,d1
+;				mc68000
+;			ELSE
+;				MPlLongDiv d1,d3,d7,d5,d6,0
+;			ENDIF
+;		ELSE
+;			MPlLongDiv d1,d3,d7,d5,d6,0
+;		ENDIF
 		
 .do_rounding
 		; 5) round results up
@@ -4832,31 +4845,34 @@ MixPluginRatioPrecalc\1
 		and.w	#$00ff,d7
 		tst.w	d7
 		
-		beq.s	.rounded_length_2
+		beq.s	.rounded_done
 		
 		add.l	#$100,d0
 		
-.rounded_length_2
-		move.l	d1,d7
-		and.w	#$00ff,d7
-		tst.w	d7
-		
-		beq.s	.rounded_offset_2
-		
-		add.l	#$100,d1
-
-.rounded_offset_2
+;.rounded_length_2
+;		move.l	d1,d7
+;		and.w	#$00ff,d7
+;		tst.w	d7
+;		
+;		beq.s	.rounded_offset_2
+;		
+;		add.l	#$100,d1
+;
+;.rounded_offset_2
+.rounded_done
 
 		; 6) convert 16.8 fixed point length & offset back to integers
 		lsr.l	#8,d0						; D0 = int
-		lsr.l	#8,d1						; D1 = int
+;		lsr.l	#8,d1						; D1 = int
 		
-.write_length_offset
+		;DBGPauseCol $f00
+		
+.write_length
 		; 7) undo shift of length & offset and write results
 		lsl.l	d2,d0
 		move.l	d0,mfx_length(a0)
-		lsl.l	d2,d1
-		move.l	d1,mfx_loop_offset(a0)
+;		lsl.l	d2,d1
+;		move.l	d1,mfx_loop_offset(a0)
 		
 .done
 		movem.l	(sp)+,d0-d3/d5-d7			; Stack

@@ -551,11 +551,12 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 
 ; Structures (internal)
  STRUCTURE MXPDPitchData,0
+	LONG	mpd_pit_original_length
 	LONG	mpd_pit_length
 	APTR	mpd_pit_sample_ptr
 	LONG	mpd_pit_loop_offset
 	LONG	mpd_pit_sample_offset
-	UWORD	mpd_pit_loop
+	LONG	mpd_pit_output_offset
 	UWORD	mpd_pit_mode
 	UWORD	mpd_pit_ratio_fp8	
 	UWORD	mpd_pit_current_fp8
