@@ -632,17 +632,23 @@ MixPluginPitch1x\1
 		; Determine length
 		; If bytes to process > remaining length, use remaining sample length
 		; Else use bytes to process
-		move.l	mpd_pit_length(a1),d6
-		sub.l	mpd_pit_output_offset(a1),d6	; D6 = remaining length
-		cmp.l	d0,d6
+		; Register use:
+		;    - D6: total output length
+		;    - D5: remaining output length
+		;    - D4: source bytes processed
+
+		move.l	mpd_pit_length(a1),d6			; Total length
+		move.l	d6,d5
+		sub.l	mpd_pit_output_offset(a1),d5	; D5 = remaining length
+		cmp.l	d0,d5
 		bcc.s	.setup_loop
 		
-		move.l	d0,d6							; D6 = total bytes to process
+		move.l	d0,d5							; D5 = total bytes to process
 		
 .setup_loop
 		; D6 = bytes to process
-		move.w	d6,d5							; D5 = source bytes processed
-		move.w	d6,d7
+		move.l	d5,d4							; D4 = source bytes processed
+		move.w	d5,d7
 		lsr.w	#2,d7
 		subq.w	#1,d7
 		
@@ -654,11 +660,9 @@ MixPluginPitch1x\1
 		dbra	d7,.lp_mv		
 		
 		; Update the sample offsets
-
 		TODO!
 
 		; Check if more work needs to be done
-		
 		TODO!
 
 
