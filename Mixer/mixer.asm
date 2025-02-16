@@ -1246,13 +1246,13 @@ MixUpdateChannel	MACRO
 			move.l	a0,(a4)+
 			
 			; Set up parameters
-			IF mxslength_word=1
-				move.w	mixer\1+mx_buffer_size(pc),d0
+;			IF mxslength_word=1
+;				move.w	mixer\1+mx_buffer_size(pc),d0
 ;				cmp.w	mch_remaining_length(a2),d0
 ;				bls.s	.\@_plugin_len_set
-				
+;				
 ;				move.w	mch_remaining_length(a2),d0
-			ELSE
+;			ELSE
 				moveq	#0,d0
 				move.w	mixer\1+mx_buffer_size(pc),d0
 ;				cmp.l	mch_remaining_length(a2),d0
