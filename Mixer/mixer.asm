@@ -1226,11 +1226,13 @@ MixUpdateChannel	MACRO
 			move.l	d1,d5
 			movem.l	a0-a2,-(sp)
 			moveq	#0,d1
-			tst.b	mch_status+1(a2)
-			bne.s	.\@_check_plugin_type
+			move.b	mch_status(a2),d1	
+;			moveq	#0,d1
+;			tst.b	mch_status+1(a2)
+;			bne.s	.\@_check_plugin_type
 
-			moveq	#1,d1							; D1 = loop indicator
-			move.b	d1,mch_status+1(a2)				; Reset loop for plugins						
+;			moveq	#1,d1							; D1 = loop indicator
+;			move.b	d1,mch_status+1(a2)				; Reset loop for plugins						
 
 .\@_check_plugin_type			
 			tst.w	mch_plugin_type(a2)
@@ -1259,7 +1261,7 @@ MixUpdateChannel	MACRO
 ;				bls.s	.\@_plugin_len_set
 				
 ;				move.l	mch_remaining_length(a2),d0
-			ENDIF
+;			ENDIF
 
 .\@_plugin_len_set
 			move.l	mch_plugin_data_ptr(a2),a1		; Fetch data
