@@ -16,6 +16,7 @@
 
 ; Includes (OS includes assume at least NDK 1.3) 
 	include	mixer.i
+	include mixer_config.i
 	include plugins_config.i
 	include	plugins.i
 
@@ -4803,7 +4804,20 @@ MixPluginRatioPrecalc\1
 		move.w	d0,d3
 
 		; Fetch length
-		move.l	mfx_length(a0),d0
+		IF MIXER_68020=0
+			IF MIXER_WORDSIZED=1
+				moveq	#0,d0
+				move.w	mfx_length(a0),d0
+				moveq	#0,d1
+				move.w	mfx_loop_offset(a0),d1
+			ELSE
+				move.l	mfx_length(a0),d0
+				move.l	mfx_loop_offset(a0),d1
+			ENDIF
+		ELSE
+			move.l	mfx_length(a0),d0
+			move.l	mfx_loop_offset(a0),d1
+		ENDIF
 		
 ;		; Check if offset based looping is enabled
 ;		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
