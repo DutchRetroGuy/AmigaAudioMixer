@@ -78,11 +78,26 @@ MPlLongDiv	MACRO
 			
 		; Plugin macro's for dealing with correct length/looping conditions
 		
-		; Macro: MixPluginStart
+		; Macro: MixPluginLoopSetup
 		; This macro fetches the correct sample offset to use in A2 and
 		; determines the correct length to use for the main loop.
 		;
+		; Note: this macro contains the .determine_length label used by the
+		;       MixPluginLoopEnd macro.
+		;
+		; Parameters:
+		; \1 - structure prefix (i.e. mpd_pit for pitch change)
+		;
+		; Input registers:
+		; A1 - Pointer to plugin data structure. This structure must contain
+		;      the following members:
+		;         * <prefix>_sample_ptr
+		;         * <prefix>_sample_offset
+		;         * <prefix>_output_length
+		;         * <prefix>_output_offset
+		;
 		; Returns:
+		; D4 - zero (bytes processed source)
 		; D5 - bytes to process
 		; A2 - Sample pointer + offset
 MixPluginLoopSetup	MACRO
@@ -90,48 +105,72 @@ MixPluginLoopSetup	MACRO
 		; So, loop or play silence as needed when sample ends
 
 .fetch_pointers
-		move.l	mpd_pit_sample_ptr(a1),a2
-		add.l	mpd_pit_sample_offset(a1),a2
+		move.l	\1_sample_ptr(a1),a2
+		add.l	\1_sample_offset(a1),a2
 
 .determine_length
 		; Determine length
 		; If bytes to process > remaining length, use remaining sample length
 		; Else use bytes to process
 		; Register use:
-		;    - D5: remaining output length
-		move.l	mpd_pit_output_length(a1),d5	; Total length
-		sub.l	mpd_pit_output_offset(a1),d5	; D5 = remaining length
+		;    D4 - zero (bytes processed source) 
+		;    D5 - remaining output length
+		moveq	#0,d4
+		move.l	\1_output_length(a1),d5		; Total length
+		sub.l	\1_output_offset(a1),d5		; D5 = remaining length
 		cmp.l	d0,d5
 		blt.s	.setup_loop
 		
-		move.l	d0,d5							; D5 = total bytes to process
+		move.l	d0,d5						; D5 = total bytes to process
 		
 .setup_loop
 					ENDM
 		
+		; Macro: MixPluginLoopEnd
+		; This macro handles updating the sample/loop offsets and continuing
+		; to process in case of a looped sample.
+		;
+		; Note: this macro branches to .determine_length in case bytes remain
+		;       to process. See the MixPluginLoopSetup macro.
+		; Note: this macro branches to .silence in case of sample end. See 
+		;       the MixPluginSilenceLoop macro.
+		;
+		; Parameters:
+		; \1 - structure prefix (i.e. mpd_pit for pitch change)
+		;
+		; Input registers:
 		; D0 - total bytes to process
 		; D1 - loop indicator
 		; D4 - bytes processed (source)
 		; D5 - bytes processed (output)
+		;
+		; Registers trashed:
+		; D6, D7
+		;
+		; Returns:
+		; D0 - remaining bytes to process
 MixPluginLoopEnd	MACRO
 		; Update the sample offsets
 		moveq	#0,d6
-		add.l	d4,mpd_pit_sample_offset(a1)	; Update source offset
-		move.l	mpd_pit_output_offset(a1),d7
-		add.l	d5,d7							; Total output offset
-		cmp.l	mpd_pit_output_length(a1),d7
+		add.l	d4,a2
+		add.l	d4,\1_sample_offset(a1)				; Update source offset
+		move.l	\1_output_offset(a1),d7
+		add.l	d5,d7								; Total output offset
+		cmp.l	\1_output_length(a1),d7
 		blt.s	.update_offset
 		
 		; Reset loop offset
 		moveq	#1,d6								; Set the reset flag
-		move.l	mpd_pit_output_loop_offset(a1),d7	; Fetch output loop offset
-		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
+		move.l	\1_output_loop_offset(a1),d7		; Fetch output loop offset
+		move.l	\1_sample_loop_offset(a1),a2		; Fetch sample loop offset
+		move.l	a2,\1_sample_offset(a1)
+		add.l	\1_sample_ptr(a1),a2				; Corrected sample pointer
 		
 .update_offset
-		move.l	d7,mpd_pit_output_offset(a1)	; Store output offset
+		move.l	d7,\1_output_offset(a1)				; Store output offset
 
 		; Check if more work needs to be done
-		sub.l	d4,d0							; Update bytes remaining
+		sub.l	d5,d0								; Update bytes remaining
 		beq.s	.done
 		
 		; More work to do, check for end/loop
@@ -140,12 +179,26 @@ MixPluginLoopEnd	MACRO
 		
 		; Sample ended or looped
 		tst.w	d1
-		beq		.silence						; Sample ended
-		bra		.determine_length				; Sample looped
+		beq		.silence							; Sample ended
+		bra		.determine_length					; Sample looped
 
 .done
 					ENDM
-					
+		
+		; Macro: MixPluginSilenceLoop
+		; This macro adds silence to the remainder of the output buffer in
+		; case the sample ends.
+		;
+		; Note: this macro contains the .silence label used by the
+		;       MixPluginLoopEnd macro.
+		; Note: this macro should be places below the RTS of the plugin that
+		;       uses it.
+		;
+		; Input registers:
+		; D0 - number of bytes to process
+		;
+		; Trashes:
+		; D0,D6
 MixPluginSilenceLoop	MACRO
 .silence
 		; Write silence to remainder of buffer
@@ -690,10 +743,10 @@ MixPluginPitch1x\1
 		movem.l	d0/d4-d6/a0/a2,-(sp)			; Stack
 
 		; Set up for start of loop
-		; A2 = Sample pointer + offset
-		; D5 = bytes to process
-		MixPluginLoopSetup
+		MixPluginLoopSetup mpd_pit
 		
+		; Remaining loop set up
+		; A2 = sample pointer + offset
 		; D5 = bytes to process
 		move.l	d5,d4							; D4 = source bytes processed
 		move.w	d5,d7
@@ -706,147 +759,83 @@ MixPluginPitch1x\1
 		
 		; Deal with end of loop and potential looping of sample
 		; 
-		MixPluginLoopEnd
+		MixPluginLoopEnd mpd_pit
 
 		movem.l	(sp)+,d0/d4-d6/a0/a2			; Stack
 		move.l	(sp)+,d7
-	ENDIF
+
 		rts
 		
 		MixPluginSilenceLoop
+	ENDIF
 		
 MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2,-(sp)			; Stack
-		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
-.no_loop
-		
-		; Set up for loop
-		moveq	#0,d3
-		move.w	mpd_pit_ratio_fp8(a1),d4
-		move.w	mpd_pit_current_fp8(a1),d5
-		move.l	mpd_pit_sample_offset(a1),d1
-		move.l	mpd_pit_sample_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
-		
+		movem.l	d0-d6/a0/a2/a3,-(sp)		; Stack
+
+		TODO - crashes on loop with sample not 4 bytes aligned
+		       (output is aligned though)
+
+		; Pre-loop set up
+		move.w	d1,-(sp)					; Stack loop indicator
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	mpd_pit_current_fp8(a1),d3
+		moveq	#0,d2
+
 		; Split FP 8.8 values into two bytes
-		move.w	d4,d3
-		asr.w	#8,d3						; High-byte delta
-		and.w	#$00ff,d4					; Low-byte delta
+		move.w	d1,d2
+		asr.w	#8,d2						; High-byte delta
+		and.w	#$00ff,d1					; Low-byte delta
+		move.w	d1,a3						; Store Low-byte delta in temp register
 
-		; Determine amount of bytes to process
-.determine_length
-;		moveq	#0,d2
-;		move.l	d7,d6
-;		sub.l	d1,d6
-		move.w	d0,d2
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-;		cmp.l	d2,d6
-;		blt.s	.lp_rem_smaller
-
-;		moveq	#0,d0				; Nothing remains after loop
-;		bra.s	.lp_size_calculated
-	
-;.lp_rem_smaller
-;		move.w	d6,d2				; remaining bytes < bytes to process
-;		sub.w	d6,d0				; remaining bytes to process after loop
-
-.lp_size_calculated
-		moveq	#0,d6
-		asr.w	#2,d2
-		subq.w	#1,d2
-		bmi.s	.lp_done
+		; Remaining loop set up
+		; A2 = Sample pointer + offset
+		; D5 = bytes to process
+		moveq	#0,d6						; D6 = fractional carry
+		move.w	a3,d1						; D1 = FP8.8 low byte
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
 		
-		; Process D2 longwords
-;		IF MIXER_68020=1
-;			move.l	d0,-(sp)
-;
-;.lp		
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.l	d0,(a0)+
-;			dbra	d2,.lp
-;			
-;			move.l	(sp)+,d0
-;		ELSE
+		DBGBreakPnt
+		
+		; Process D7 longwords
 .lp		
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			dbra	d2,.lp
-			
-;			tst.w	d0
-;		ENDIF
-;		beq.s	.lp_done
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		dbra	d7,.lp
 		
-;		DBGPauseCol $f00
-		
-		; More bytes to process
-;		tst.w	mpd_pit_loop(a1)
-;		bpl.s	.silence
+		; Fetch loop indicator to D1
+		move.w	(sp),d1		
+		MixPluginLoopEnd mpd_pit
 
-;		move.l	mpd_pit_loop_offset(a1),d1
-;		bra.s	.determine_length
+		; Write resulting fractional part
+		move.w	d3,mpd_pit_current_fp8(a1)
 
-.lp_done
-		; Write resulting values back into data
-		move.w	d5,mpd_pit_current_fp8(a1)
-		move.l	d1,mpd_pit_sample_offset(a1)
-
-.done
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		move.w	(sp)+,d1
+		movem.l	(sp)+,d0-d6/a0/a2/a3		; Stack
 		move.l	(sp)+,d7
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		asr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
-		move.l	(sp)+,d7
+		MixPluginSilenceLoop mpd_pit
 	ENDIF
-		rts
 		
 MixPluginPitchLowQuality\1
 	IF MXPLUGIN_PITCH=1
@@ -4862,7 +4851,7 @@ MixPluginPitchRatioPrecalc\1
 
 		; 5) divide 16.8 fixed point loop offset by mpd_pit_ratio_fp8
 		tst.l	d1
-		beq.s	.do_rounding				; Skip loop offset of zero
+		beq.s	.convert_to_int				; Skip loop offset of zero
 		
 		IF MIXER_68020=1
 			IF MXPLUGIN_68020_ONLY=1
@@ -4875,35 +4864,16 @@ MixPluginPitchRatioPrecalc\1
 		ELSE
 			MPlLongDiv d1,d3,d7,d5,d6,0
 		ENDIF
-		
-.do_rounding
-		; 6) round results up
-		move.l	d0,d7
-		and.w	#$00ff,d7
-		tst.w	d7
-		
-		beq.s	.round_offset
-		
-		add.l	#$100,d0
-		
-.round_offset
-		move.l	d1,d7
-		and.w	#$00ff,d7
-		tst.w	d7
-		
-		beq.s	.rounding_done
-		
-		add.l	#$100,d1
 
-.rounding_done
-
+.convert_to_int
 		; 7) convert 16.8 fixed point length & offset back to integers
-		lsr.l	#8,d0						; D0 = int
-		lsr.l	#8,d1						; D1 = int
+		moveq	#8,d5
+		sub.b	d2,d5
+		lsr.l	d5,d0						; D0 = int
+		lsr.l	d5,d1						; D1 = int
 		
 .write_length
-		; 8) undo shift of length & offset and write results
-		lsl.l	d2,d0
+		; 8) write results
 		move.l	d0,mfx_length(a0)
 		lsl.l	d2,d1
 		move.l	d1,mfx_loop_offset(a0)
