@@ -75,6 +75,89 @@ MPlLongDiv	MACRO
 			movem.l	(sp)+,\4/\5				; Stack
 		ENDIF
 			ENDM
+			
+		; Plugin macro's for dealing with correct length/looping conditions
+		
+		; Macro: MixPluginStart
+		; This macro fetches the correct sample offset to use in A2 and
+		; determines the correct length to use for the main loop.
+		;
+		; Returns:
+		; D5 - bytes to process
+		; A2 - Sample pointer + offset
+MixPluginLoopSetup	MACRO
+		; Always receive mixer buffer size bytes to process
+		; So, loop or play silence as needed when sample ends
+
+.fetch_pointers
+		move.l	mpd_pit_sample_ptr(a1),a2
+		add.l	mpd_pit_sample_offset(a1),a2
+
+.determine_length
+		; Determine length
+		; If bytes to process > remaining length, use remaining sample length
+		; Else use bytes to process
+		; Register use:
+		;    - D5: remaining output length
+		move.l	mpd_pit_output_length(a1),d5	; Total length
+		sub.l	mpd_pit_output_offset(a1),d5	; D5 = remaining length
+		cmp.l	d0,d5
+		blt.s	.setup_loop
+		
+		move.l	d0,d5							; D5 = total bytes to process
+		
+.setup_loop
+					ENDM
+		
+		; D0 - total bytes to process
+		; D1 - loop indicator
+		; D4 - bytes processed (source)
+		; D5 - bytes processed (output)
+MixPluginLoopEnd	MACRO
+		; Update the sample offsets
+		moveq	#0,d6
+		add.l	d4,mpd_pit_sample_offset(a1)	; Update source offset
+		move.l	mpd_pit_output_offset(a1),d7
+		add.l	d5,d7							; Total output offset
+		cmp.l	mpd_pit_output_length(a1),d7
+		blt.s	.update_offset
+		
+		; Reset loop offset
+		moveq	#1,d6								; Set the reset flag
+		move.l	mpd_pit_output_loop_offset(a1),d7	; Fetch output loop offset
+		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
+		
+.update_offset
+		move.l	d7,mpd_pit_output_offset(a1)	; Store output offset
+
+		; Check if more work needs to be done
+		sub.l	d4,d0							; Update bytes remaining
+		beq.s	.done
+		
+		; More work to do, check for end/loop
+		tst.w	d6
+		beq		.determine_length
+		
+		; Sample ended or looped
+		tst.w	d1
+		beq		.silence						; Sample ended
+		bra		.determine_length				; Sample looped
+
+.done
+					ENDM
+					
+MixPluginSilenceLoop	MACRO
+.silence
+		; Write silence to remainder of buffer
+		moveq	#0,d6
+		asr.w	#2,d0						; Convert to longwords
+		subq.w	#1,d0
+		bmi.s	.done
+
+.si_lp	move.l	d6,(a0)+
+		dbra	d0,.si_lp
+		bra		.done
+						ENDM
 
 ;*****************************************************************************
 ;*****************************************************************************
@@ -606,87 +689,31 @@ MixPluginPitch1x\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d4-d6/a0/a2,-(sp)			; Stack
 
-		; Always receive mixer buffer size bytes to process
-		; So, loop or play silence as needed when sample ends
-
-.fetch_pointers
-		move.l	mpd_pit_sample_ptr(a1),a2
-		add.l	mpd_pit_sample_offset(a1),a2
-
-.determine_length
-		; Determine length
-		; If bytes to process > remaining length, use remaining sample length
-		; Else use bytes to process
-		; Register use:
-		;    - D5: remaining output length
-		;    - D4: source bytes processed
-		move.l	mpd_pit_output_length(a1),d5	; Total length
-		sub.l	mpd_pit_output_offset(a1),d5	; D5 = remaining length
-		cmp.l	d0,d5
-		blt.s	.setup_loop
+		; Set up for start of loop
+		; A2 = Sample pointer + offset
+		; D5 = bytes to process
+		MixPluginLoopSetup
 		
-		move.l	d0,d5							; D5 = total bytes to process
-		
-.setup_loop
 		; D5 = bytes to process
 		move.l	d5,d4							; D4 = source bytes processed
 		move.w	d5,d7
 		lsr.w	#2,d7
 		subq.w	#1,d7
 		
-		bpl.s	.dbg_ok
-		DBGBreakPnt
-.dbg_ok
-		
 		; Fill output buffer with copy of original
 .lp_mv	move.l	(a2)+,(a0)+
 		dbra	d7,.lp_mv		
 		
-		; Update the sample offsets
-		moveq	#0,d6
-		add.l	d4,mpd_pit_sample_offset(a1)	; Update source offset
-		move.l	mpd_pit_output_offset(a1),d7
-		add.l	d5,d7							; Total output offset
-		cmp.l	mpd_pit_output_length(a1),d7
-		blt.s	.update_offset
-		
-		; Reset loop offset
-		moveq	#1,d6								; Set the reset flag
-		move.l	mpd_pit_output_loop_offset(a1),d7	; Fetch output loop offset
-		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
-		
-.update_offset
-		move.l	d7,mpd_pit_output_offset(a1)	; Store output offset
+		; Deal with end of loop and potential looping of sample
+		; 
+		MixPluginLoopEnd
 
-		; Check if more work needs to be done
-		sub.l	d4,d0							; Update bytes remaining
-		beq.s	.done
-		
-		; More work to do, check for end/loop
-		tst.w	d6
-		beq		.determine_length
-		
-		; Sample ended or looped
-		tst.w	d1
-		beq		.silence						; Sample ended
-		bra		.determine_length				; Sample looped
-
-.done
 		movem.l	(sp)+,d0/d4-d6/a0/a2			; Stack
 		move.l	(sp)+,d7
 	ENDIF
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		moveq	#0,d6
-		asr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-		bra		.done
+		MixPluginSilenceLoop
 		
 MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1

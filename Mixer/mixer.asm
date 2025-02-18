@@ -2842,12 +2842,11 @@ MixerChannelWrite\1
 			moveq	#0,d7
 			move.l	d7,mch_plugin_ptr(a1)
 			move.l	d7,mch_plugin_deferred_ptr(a1)
-			move.l	mfx_plugin_ptr(a0),d7
+			tst.l	mfx_plugin_ptr(a0)
 			beq.s	.no_plugin
 			
-			; Save plugin pointer & loop offset from effect structure to stack
+			; Save loop offset from effect structure to stack
 			move.l	mfx_loop_offset(a0),-(sp)	; Stack
-			move.l	d7,-(sp)					; Stack
 	
 			; Check if loop offset needs to be reset
 			moveq	#MIX_FX_LOOP_OFFSET,d7
@@ -2866,14 +2865,12 @@ MixerChannelWrite\1
 				; Limit to multiple of  4 bytes
 				and.w	#$fffc,mfx_loop_offset+2(a0)
 			ENDIF
-			
-			; Restore plugin pointer from stack			
-			move.l	(sp)+,d7
-			
+
 			; Initialise plugin
 			movem.l	a1/a2/a6,-(sp)				; Stack
-			
-			move.l	d7,a6						; Plugin in A6
+
+			; Fetch plugin data
+			move.l	mfx_plugin_ptr(a0),a6		; Plugin in A6
 			move.w	mpl_plugin_type(a6),mch_plugin_type(a1)
 			move.l	mpl_plugin_ptr(a6),mch_plugin_ptr(a1)
 			move.l	mch_plugin_data_ptr(a1),a2	; Data in A2
