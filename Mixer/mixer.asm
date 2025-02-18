@@ -2844,7 +2844,32 @@ MixerChannelWrite\1
 			move.l	d7,mch_plugin_deferred_ptr(a1)
 			move.l	mfx_plugin_ptr(a0),d7
 			beq.s	.no_plugin
-
+			
+			; Save plugin pointer & loop offset from effect structure to stack
+			move.l	mfx_loop_offset(a0),-(sp)	; Stack
+			move.l	d7,-(sp)					; Stack
+	
+			; Check if loop offset needs to be reset
+			moveq	#MIX_FX_LOOP_OFFSET,d7
+			cmp.w	mfx_loop(a0),d7
+			beq.s	.plugin_offset_loop
+			
+			; Reset loop offset for non-loop offset effects
+			clr.l	mfx_loop_offset(a0)
+			
+.plugin_offset_loop		
+			; Align loop offset
+			IF mxsize_x32=1
+				; Limit to multiple of 32 bytes
+				and.w	#$ffe0,mfx_loop_offset+2(a0)
+			ELSE
+				; Limit to multiple of  4 bytes
+				and.w	#$fffc,mfx_loop_offset+2(a0)
+			ENDIF
+			
+			; Restore plugin pointer from stack			
+			move.l	(sp)+,d7
+			
 			; Initialise plugin
 			movem.l	a1/a2/a6,-(sp)				; Stack
 			
@@ -2865,6 +2890,9 @@ MixerChannelWrite\1
 			move.l	mfx_length(a0),d1			; Get correct length
 	
 			movem.l	(sp)+,a1/a2/a6				; Stack
+			
+			; Restore loop offset from stack to MFX structure
+			move.l	(sp)+,mfx_loop_offset(a0)	; Stack
 			
 .no_plugin
 			move.l	(sp)+,d7					; Stack
