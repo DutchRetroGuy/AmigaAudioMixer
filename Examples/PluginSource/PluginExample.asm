@@ -865,8 +865,8 @@ SetupPluginStructs
 .fill_plugin_pitch_data
 		move.w	#MXPLG_PITCH_STANDARD,mpid_pit_mode(a4)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
-		;move.w	#$180,mpid_pit_ratio_fp8(a4)
-		move.w	#$100,mpid_pit_ratio_fp8(a4)
+		move.w	#$200,mpid_pit_ratio_fp8(a4)
+		;move.w	#$100,mpid_pit_ratio_fp8(a4)
 		bra		.write_plugin_struct
 		
 .fill_plugin_pitch_lq_data

@@ -773,8 +773,13 @@ MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2/a3,-(sp)		; Stack
 
-		TODO - crashes on loop with sample not 4 bytes aligned
-		       (output is aligned though)
+		; Causes crashes because length to output can end up being <4 bytes
+		; This screws up the length calculation used in the mixer and causes
+		; it to jump into a jumptable at an incorrect offset.
+		
+		; In other words, this needs to be byte accurate and always process a
+		; multiple of 4 *output* bytes.
+		
 
 		; Pre-loop set up
 		move.w	d1,-(sp)					; Stack loop indicator

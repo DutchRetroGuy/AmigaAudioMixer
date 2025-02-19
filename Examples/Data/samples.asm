@@ -18,7 +18,8 @@
 
 ; 8 bit samples
 		cnop	0,4
-sample1		INCBIN	"Examples/Data/zap.raw"
+sample1		;INCBIN	"Examples/Data/zap.raw"
+			INCBIN "C:\Development\AmigaDev\Projects\amigaoutrun\sfx\15-MOTOR_MAX_SPEED_LIMITED.raw"
 		cnop	0,4
 .sample1_end
 sample1_size		EQU	(.sample1_end-sample1)
