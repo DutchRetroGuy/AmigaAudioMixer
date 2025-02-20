@@ -389,6 +389,26 @@ MixPluginInitPitch\1
 		move.l	mfx_length(a0),mpd_pit_output_length(a2)
 		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
 
+		; 5) make sure length/offset are multiples of 4
+		move.w	mfx_length+2(a0),d0
+		move.w	d0,d1
+		and.w	#$0003,d1
+		beq.s	.check_loop_offset
+		
+		and.w	#$fffc,d0
+		addq.w	#4,d0
+		move.w	d0,mfx_length+2(a0)
+		
+.check_loop_offset
+		move.w	mfx_loop_offset+2(a0),d0
+		move.w	d0,d1
+		and.w	#$0003,d1
+		beq.s	.done
+		
+		and.w	#$fffc,d0
+		addq.w	#4,d0
+		move.w	d0,mfx_length+2(a0)
+
 .done
 		movem.l	(sp)+,d0-d3					; Stack
 		rts
@@ -399,8 +419,6 @@ MixPluginInitPitch\1
 		move.l	mpid_pit_loop_offset(a1),d1
 		move.l	d0,mpd_pit_output_length(a2)
 		move.l	d1,mpd_pit_output_loop_offset(a2)
-		move.l	d0,mfx_length(a0)
-		move.l	d1,mfx_loop_offset(a0)
 		
 		; Check ratio
 		move.w	mpid_pit_mode(a1),d1
@@ -804,8 +822,20 @@ MixPluginPitchStandard\1
 		move.w	d5,d7
 		asr.w	#2,d7
 		subq.w	#1,d7
+		bpl.s	.lp
 		
-		DBGBreakPnt
+		; Deal with remainder here
+		; INCORRECT - causes glitches because output needs to be 4 byte aligned
+		move.w	d5,d7
+		subq.w	#1,d7
+
+		; Process D7 bytes
+.ilp	move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		dbra	d7,.ilp
+		bra.s	.lp_done
 		
 		; Process D7 longwords
 .lp		
@@ -827,6 +857,7 @@ MixPluginPitchStandard\1
 		add.l	d2,d4
 		dbra	d7,.lp
 		
+.lp_done
 		; Fetch loop indicator to D1
 		move.w	(sp),d1		
 		MixPluginLoopEnd mpd_pit
