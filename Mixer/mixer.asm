@@ -1254,13 +1254,17 @@ MixUpdateChannel	MACRO
 				cmp.w	mch_remaining_length(a2),d0
 				bls.s	.\@_plugin_len_set
 				
+				tst.b	d1
+				bne.s	.\@_plugin_len_set
 				move.w	mch_remaining_length(a2),d0
 			ELSE
 				moveq	#0,d0
 				move.w	mixer\1+mx_buffer_size(pc),d0
 				cmp.l	mch_remaining_length(a2),d0
 				bls.s	.\@_plugin_len_set
-				
+
+				tst.b	d1
+				bne.s	.\@_plugin_len_set
 				move.l	mch_remaining_length(a2),d0
 			ENDIF
 
