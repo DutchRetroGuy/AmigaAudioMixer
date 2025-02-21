@@ -224,6 +224,8 @@ MixPluginSilenceLoop	MACRO
 ; Note: by default, the plugins will not use a postfix. Enabling this is done
 ;       by setting the BUILD_MIXER_POSTFIX build flag. This will disable the
 ;       automatic use of this macro at the end of mixer.asm
+; Note: if a postfix is used, it should be the same as the corresponding postfix
+;       used for the mixer
 ; 
 ;*****************************************************************************
 ;*****************************************************************************
@@ -403,11 +405,24 @@ MixPluginInitPitch\1
 		move.w	mfx_loop_offset+2(a0),d0
 		move.w	d0,d1
 		and.w	#$0003,d1
-		beq.s	.done
+		beq.s	.check_looping
 		
 		and.w	#$fffc,d0
 		addq.w	#4,d0
-		move.w	d0,mfx_length+2(a0)
+		move.w	d0,mfx_loop_offset+2(a0)
+
+.check_looping
+		; 6) Check if the sample is looping
+		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
+		beq.s	.done
+
+		; Looping samples with pitch plugin get length = mixer buffer size
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
+		move.w	d0,mfx_length(a0)
 
 .done
 		movem.l	(sp)+,d0-d3					; Stack
@@ -789,7 +804,7 @@ MixPluginPitch1x\1
 		
 MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2/a3,-(sp)		; Stack
+		movem.l	d0-d6/a0/a2-a4,-(sp)		; Stack
 
 		; Causes crashes because length to output can end up being <4 bytes
 		; This screws up the length calculation used in the mixer and causes
@@ -820,22 +835,12 @@ MixPluginPitchStandard\1
 		moveq	#0,d6						; D6 = fractional carry
 		move.w	a3,d1						; D1 = FP8.8 low byte
 		move.w	d5,d7
+		and.w	#$3,d7						; Calculate remainder
+		move.w	d7,a4						; A4 = remainder
+		move.w	d5,d7
 		asr.w	#2,d7
 		subq.w	#1,d7
-		bpl.s	.lp
-		
-		; Deal with remainder here
-		; INCORRECT - causes glitches because output needs to be 4 byte aligned
-		move.w	d5,d7
-		subq.w	#1,d7
-
-		; Process D7 bytes
-.ilp	move.b	0(a2,d4.l),(a0)+
-		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
-		dbra	d7,.ilp
-		bra.s	.lp_done
+		bmi.s	.lp_remainder
 		
 		; Process D7 longwords
 .lp		
@@ -857,6 +862,19 @@ MixPluginPitchStandard\1
 		add.l	d2,d4
 		dbra	d7,.lp
 		
+.lp_remainder
+		; Deal with remainder here
+		move.w	a4,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
+
+		; Process D7 bytes
+.rem_lp	move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		dbra	d7,.rem_lp
+		
 .lp_done
 		; Fetch loop indicator to D1
 		move.w	(sp),d1		
@@ -866,7 +884,7 @@ MixPluginPitchStandard\1
 		move.w	d3,mpd_pit_current_fp8(a1)
 
 		move.w	(sp)+,d1
-		movem.l	(sp)+,d0-d6/a0/a2/a3		; Stack
+		movem.l	(sp)+,d0-d6/a0/a2-a4		; Stack
 		move.l	(sp)+,d7
 		rts
 		
