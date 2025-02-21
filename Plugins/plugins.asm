@@ -201,6 +201,7 @@ MixPluginLoopEnd	MACRO
 		; D0,D6
 MixPluginSilenceLoop	MACRO
 .silence
+
 		; Write silence to remainder of buffer
 		moveq	#0,d6
 		asr.w	#2,d0						; Convert to longwords
@@ -417,12 +418,18 @@ MixPluginInitPitch\1
 		beq.s	.done
 
 		; Looping samples with pitch plugin get length = mixer buffer size
+		moveq	#0,d0
+		move.l	d0,mfx_loop_offset(a0)
 		IFD BUILD_MIXER_POSTFIX
 			jsr		MixerGetChannelBufferSize\1
 		ELSE
 			bsr		MixerGetChannelBufferSize\1
 		ENDIF
-		move.w	d0,mfx_length(a0)
+		IF MIXER_WORDSIZED=1
+			move.w	d0,mfx_length(a0)
+		ELSE
+			move.l	d0,mfx_length(a0)
+		ENDIF
 
 .done
 		movem.l	(sp)+,d0-d3					; Stack
@@ -805,14 +812,6 @@ MixPluginPitch1x\1
 MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2-a4,-(sp)		; Stack
-
-		; Causes crashes because length to output can end up being <4 bytes
-		; This screws up the length calculation used in the mixer and causes
-		; it to jump into a jumptable at an incorrect offset.
-		
-		; In other words, this needs to be byte accurate and always process a
-		; multiple of 4 *output* bytes.
-		
 
 		; Pre-loop set up
 		move.w	d1,-(sp)					; Stack loop indicator
@@ -4860,8 +4859,7 @@ MixPluginPitchRatioPrecalc\1
 			IF MIXER_WORDSIZED=1
 				moveq	#0,d0
 				move.w	mfx_length(a0),d0
-				moveq	#0,d1
-				move.w	mfx_loop_offset(a0),d1
+				move.l	mfx_loop_offset(a0),d1
 			ELSE
 				move.l	mfx_length(a0),d0
 				move.l	mfx_loop_offset(a0),d1
@@ -4929,7 +4927,6 @@ MixPluginPitchRatioPrecalc\1
 .write_length
 		; 8) write results
 		move.l	d0,mfx_length(a0)
-		lsl.l	d2,d1
 		move.l	d1,mfx_loop_offset(a0)
 		
 .done

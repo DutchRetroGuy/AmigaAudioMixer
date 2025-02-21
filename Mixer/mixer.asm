@@ -1248,20 +1248,21 @@ MixUpdateChannel	MACRO
 			move.l	a0,(a4)+
 			
 			; Set up parameters
-;			IF mxslength_word=1
-;				move.w	mixer\1+mx_buffer_size(pc),d0
-;				cmp.w	mch_remaining_length(a2),d0
-;				bls.s	.\@_plugin_len_set
-;				
-;				move.w	mch_remaining_length(a2),d0
-;			ELSE
+			IF mxslength_word=1
 				moveq	#0,d0
 				move.w	mixer\1+mx_buffer_size(pc),d0
-;				cmp.l	mch_remaining_length(a2),d0
-;				bls.s	.\@_plugin_len_set
+				cmp.w	mch_remaining_length(a2),d0
+				bls.s	.\@_plugin_len_set
 				
-;				move.l	mch_remaining_length(a2),d0
-;			ENDIF
+				move.w	mch_remaining_length(a2),d0
+			ELSE
+				moveq	#0,d0
+				move.w	mixer\1+mx_buffer_size(pc),d0
+				cmp.l	mch_remaining_length(a2),d0
+				bls.s	.\@_plugin_len_set
+				
+				move.l	mch_remaining_length(a2),d0
+			ENDIF
 
 .\@_plugin_len_set
 			move.l	mch_plugin_data_ptr(a2),a1		; Fetch data
