@@ -3704,7 +3704,7 @@ MixerGetBufferSize\1
 MixerGetChannelBufferSize\1
 		move.l	a0,-(sp)					; Stack
 		lea.l	mixer\1(pc),a0
-		move.w	mx_buffer_size(a2),d0
+		move.w	mx_buffer_size(a0),d0
 		move.l	(sp)+,a0					; Stack
 		rts
 
