@@ -892,98 +892,64 @@ MixPluginPitchStandard\1
 		
 MixPluginPitchLowQuality\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2,-(sp)			; Stack
-		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
-.no_loop
+		movem.l	d0-d6/a0/a2-a4,-(sp)		; Stack
 
-		; Set up for loop
-		moveq	#0,d3
-		move.w	mpd_pit_ratio_fp8(a1),d4
-		move.w	mpd_pit_current_fp8(a1),d5
-		move.l	mpd_pit_sample_offset(a1),d1
-		move.l	mpd_pit_sample_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
+		; Pre-loop set up
+		move.w	d1,-(sp)					; Stack loop indicator
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	mpd_pit_current_fp8(a1),d3
+		moveq	#0,d2
+		
+		; Round bytes to process
+		and.w	#$fffc,d0
 
 		; Split FP 8.8 values into two bytes
-		move.w	d4,d3
-		lsr.w	#6,d3						; High-byte delta << 2
-		and.w	#$fffc,d3					; Round to nearest 4 bytes
-		and.w	#$00ff,d4					; Low-byte delta
+		move.w	d1,d2
+		lsr.w	#6,d2						; High-byte delta << 2
+		and.w	#$fffc,d2					; Round to nearest 4 bytes
+		and.w	#$00ff,d1					; Low-byte delta
+		move.w	d1,a3						; Store Low-byte delta in temp register
 
-		; Determine amount of bytes to process
-.determine_length
-		moveq	#0,d2
-		move.l	d7,d6
-		sub.l	d1,d6
-		move.w	d0,d2
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-		cmp.l	d2,d6
-		blt.s	.lp_rem_smaller
-
-		moveq	#0,d0				; Nothing remains after loop
-		bra.s	.lp_size_calculated
-	
-.lp_rem_smaller
-		move.w	d6,d2				; remaining bytes < bytes to process
-		sub.w	d6,d0				; remaining bytes to process after loop
-
-.lp_size_calculated
+		; Remaining loop set up
+		; A2 = Sample pointer + offset
+		; D5 = bytes to process
+		moveq	#4,d6						; D6 = longword mask
 		moveq	#0,d7
-		moveq	#4,d6
-		asr.w	#2,d2
-		subq.w	#1,d2
+		move.w	a3,d1						; D1 = FP8.8 low byte
+		move.w	d0,a4						; A4 = total bytes to process
+		move.w	d5,d0
+		asr.w	#2,d0
+		subq.w	#1,d0
 		bmi.s	.lp_done
 		
-		; Process D2 longwords
-.lp		
-		move.l	0(a2,d1.l),(a0)+
-		add.b	d4,d5
+		; Process D0 longwords
+.lp
+		move.l	0(a2,d4.l),(a0)+
+		add.b	d1,d3
 		scs		d7
 		and.b	d6,d7
-		add.l	d7,d1
-		add.l	d3,d1
-		dbra	d2,.lp
-
-		tst.w	d0
-		beq.s	.lp_done
+		add.l	d7,d4
+		add.l	d2,d4
+		dbra	d0,.lp
 		
-		; More bytes to process
-		;tst.w	mpd_pit_loop(a1)
-		bpl.s	.silence
-
-		move.l	mpd_pit_sample_loop_offset(a1),d1
-		move.l	mpd_pit_sample_length(a1),d7
-		bra.s	.determine_length
-
 .lp_done
-		; Write resulting values back into data
-		move.w	d5,mpd_pit_current_fp8(a1)
-		move.l	d1,mpd_pit_sample_offset(a1)
-	
-.done
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		move.w	a4,d0						; Restore total length to D0
+		move.w	(sp),d1						; Fetch loop indicator to D1
+		MixPluginLoopEnd mpd_pit
+
+		; Write resulting fractional part
+		move.w	d3,mpd_pit_current_fp8(a1)
+
+		move.w	(sp)+,d1
+		movem.l	(sp)+,d0-d6/a0/a2-a4		; Stack
 		move.l	(sp)+,d7
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		lsr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
-		move.l	(sp)+,d7
+		MixPluginSilenceLoop mpd_pit
 	ENDIF
-		rts
 
 MixPluginPitchLevels\1
 	IF MXPLUGIN_PITCH=1

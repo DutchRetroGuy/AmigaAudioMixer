@@ -42,7 +42,7 @@ MIXER_PLUGINS_CONFIG_I	SET	1
 ;       use 68020+ only instructions. Setting the define below to 1 changes
 ;       this so that the plugin code will use 68020+ only instructions as
 ;       well.
-MXPLUGIN_68020_ONLY		EQU	1
+MXPLUGIN_68020_ONLY		EQU	0
 
 ;-----------------------------------------------------------------------------
 ; Performance test configuration

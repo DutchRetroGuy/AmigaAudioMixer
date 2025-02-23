@@ -1232,7 +1232,7 @@ MixUpdateChannel	MACRO
 ;			bne.s	.\@_check_plugin_type
 
 ;			moveq	#1,d1							; D1 = loop indicator
-;			move.b	d1,mch_status+1(a2)				; Reset loop for plugins						
+;			move.b	d1,mch_status+1(a2)				; Reset loop for plugins
 
 .\@_check_plugin_type			
 			tst.w	mch_plugin_type(a2)
@@ -2850,9 +2850,6 @@ MixerChannelWrite\1
 			tst.l	mfx_plugin_ptr(a0)
 			beq.s	.no_plugin
 			
-			; Save loop offset from effect structure to stack
-			move.l	mfx_loop_offset(a0),-(sp)	; Stack
-	
 			; Check if loop offset needs to be reset
 			moveq	#MIX_FX_LOOP_OFFSET,d7
 			cmp.w	mfx_loop(a0),d7
@@ -2892,9 +2889,6 @@ MixerChannelWrite\1
 			move.l	mfx_length(a0),d1			; Get correct length
 	
 			movem.l	(sp)+,a1/a2/a6				; Stack
-			
-			; Restore loop offset from stack to MFX structure
-			move.l	(sp)+,mfx_loop_offset(a0)	; Stack
 			
 .no_plugin
 			move.l	(sp)+,d7					; Stack
