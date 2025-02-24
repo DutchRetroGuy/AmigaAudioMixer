@@ -358,7 +358,7 @@ MixPluginInitPitch\1
 		
 .check_ratio
 		; 2) Check if the ratio is valid
-		;moveq	#0,d0
+		moveq	#0,d0
 		move.w	mpid_pit_ratio_fp8(a1),d0
 	
 		tst.w	d0
@@ -387,7 +387,7 @@ MixPluginInitPitch\1
 		move.l	mfx_loop_offset(a0),mpd_pit_sample_loop_offset(a2)
 		
 		; 4) Calculate new length value
-		moveq	#2,d1						; Set length shift to 2
+		moveq	#2,d1					; Set length shift to 2
 		bsr		MixPluginPitchRatioPrecalc\1
 		move.l	mfx_length(a0),mpd_pit_output_length(a2)
 		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
