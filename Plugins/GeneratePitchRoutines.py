@@ -77,16 +77,16 @@ def generate_pitch_loop(params: PitchParams):
     # Add the pointer increment
     if params.reverse:
         output_code.append("\t\tadd.w\td6,a2")
-        output_code.append("\t\tadd.l\td6,d1")
+        output_code.append("\t\tadd.l\td6,d4")
         output_code.append("\t\tlea.l\t1(a0,d7.w),a0")
     else:
         if max_pos > 0:
             if max_pos <= 8:
                 output_code.append(f"\t\taddq.w\t#{max_pos},a2")
-                output_code.append(f"\t\taddq.l\t#{max_pos},d1")
+                output_code.append(f"\t\taddq.l\t#{max_pos},d4")
             else:
                 output_code.append(f"\t\tadd.w\t#{max_pos},a2")
-                output_code.append(f"\t\tadd.l\t#{max_pos},d1")
+                output_code.append(f"\t\tadd.l\t#{max_pos},d4")
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
 
@@ -202,9 +202,9 @@ def generate_jump_table(routine_name, num_steps):
         ".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY",
         "\t\tmoveq\t#0,d6",
         "\t\tIF .m68020_indicator=2",
-        "\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d4.w*4)\n\t\t\tmc68000",
+        "\t\t\tmc68020\n\t\t\tjmp .jt_table(pc,d1.w*4)\n\t\t\tmc68000",
         "\t\tELSE",
-        "\t\t\tmove.w\td4,d7\n\t\t\tadd.w\td7,d7\n\t\t\tadd.w\td7,d7\n\t\t\tjmp .jt_table(pc,d7.w)",
+        "\t\t\tmove.w\td1,d7\n\t\t\tadd.w\td7,d7\n\t\t\tadd.w\td7,d7\n\t\t\tjmp .jt_table(pc,d7.w)",
         "\t\tENDIF\n\n.jt_table"
             ]
 

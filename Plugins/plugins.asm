@@ -332,8 +332,7 @@ MixPluginInitPitch\1
 		clr.w	mpd_pit_current_fp8(a2)
 		
 		; 0) Check for pre-calc
-		moveq	#MXPLG_PITCH_PRECALC,d0
-		cmp.w	mpid_pit_precalc(a1),d0
+		cmp.w	#MXPLG_PITCH_PRECALC,mpid_pit_precalc(a1)
 		beq		.precalc
 		
 		; 1) Check for MXPLG_PITCH_LEVELS
@@ -347,7 +346,6 @@ MixPluginInitPitch\1
 		; Fetch correct FP8.8 ratio
 		lea.l	MixPluginLevels_pitch_table\1(pc),a0
 		move.w	mpid_pit_ratio_fp8(a1),d2
-		move.w	d2,mpd_pit_ratio_fp8(a2)
 		moveq	#0,d0
 		move.w	d2,d0
 		add.w	d0,d0
@@ -432,6 +430,14 @@ MixPluginInitPitch\1
 		ENDIF
 
 .done
+		; Check for MXPLG_PITCH_LEVELS
+		cmp.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a1)
+		bne		.return
+
+		; Reset pitch ratio field for MXPLG_PITCH_LEVELS
+		move.w	mpid_pit_ratio_fp8(a1),mpd_pit_ratio_fp8(a2)
+	
+.return
 		movem.l	(sp)+,d0-d3					; Stack
 		rts
 
@@ -776,6 +782,8 @@ MixPluginPitch\1
 		
 .done	move.l	(sp)+,d7
 		rts
+	ELSE
+		rts
 	ENDIF
 
 MixPluginPitch1x\1
@@ -798,7 +806,6 @@ MixPluginPitch1x\1
 		dbra	d7,.lp_mv		
 		
 		; Deal with end of loop and potential looping of sample
-		; 
 		MixPluginLoopEnd mpd_pit
 
 		movem.l	(sp)+,d0/d4-d6/a0/a2			; Stack
@@ -807,6 +814,8 @@ MixPluginPitch1x\1
 		rts
 		
 		MixPluginSilenceLoop
+	ELSE
+		rts
 	ENDIF
 		
 MixPluginPitchStandard\1
@@ -888,6 +897,8 @@ MixPluginPitchStandard\1
 		rts
 		
 		MixPluginSilenceLoop mpd_pit
+	ELSE
+		rts
 	ENDIF
 		
 MixPluginPitchLowQuality\1
@@ -953,91 +964,42 @@ MixPluginPitchLowQuality\1
 
 MixPluginPitchLevels\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2,-(sp)			; Stack
+		movem.l	d0/d4-d6/a0/a2-a4,-(sp)			; Stack
+
+		DBGBreakPnt
+
+		move.w	d1,-(sp)
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	d1,a3
+
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
+		; Remaining loop set up
+		; A2 = sample pointer + offset
+		; D5 = bytes to process
+		move.w	d5,d2
+		move.w	a3,d1
+		move.w	d5,a4
 		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_sample_loop_offset(a1),mpd_pit_sample_offset(a1)
-.no_loop
-
-		; Set up for loop
-		move.w	mpd_pit_ratio_fp8(a1),d4
-		move.l	mpd_pit_sample_offset(a1),d1
-		move.l	mpd_pit_sample_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
-		lea.l	0(a2,d1.l),a2
-
-		; Determine amount of bytes to process
-.determine_length
-;		moveq	#0,d2
-;		move.l	d7,d6
-;		sub.l	d1,d6
-		move.w	d0,d2
-		
-;		cmp.l	d2,d6
-;		blt.s	.lp_rem_smaller
-
-;		moveq	#0,d0				; Nothing remains after loop
-;		bra.s	.lp_size_calculated
-	
-;.lp_rem_smaller
-;		move.w	d6,d2				; remaining bytes < bytes to process
-;		sub.w	d6,d0				; remaining bytes to process after loop
-
-.lp_size_calculated
 		bsr		MixPluginLevels_internal\1
-	
-;		tst.w	d0
-;		beq.s	.lp_done
-		
-		; More bytes to process, check if at end of sample
-;		cmp.l	mpd_pit_length(a1),d1
-;		blt.s	.reset_length
-		
-		; End of sample reached, test for looping
-;		tst.w	mpd_pit_loop(a1)
-;		bpl.s	.silence
 
-;		move.l	mpd_pit_loop_offset(a1),d1
-;.reset_length
-;		move.l	mpd_pit_length(a1),d7
-;		move.l	mpd_pit_sample_ptr(a1),a2
-;		bra.s	.determine_length
-
-.lp_done
-		; All bytes processed, check if at end of sample
-;		cmp.l	mpd_pit_length(a1),d1
-;		blt.s	.write_length
-		
-		; Reset to loop start
-;		move.l	mpd_pit_loop_offset(a1),d1
-		
-;.write_length 
-		; Write resulting values back into data
-		move.l	d1,mpd_pit_sample_offset(a1)
+		move.w	a4,d5
+		move.w	(sp),d1
 	
-.done
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		; Deal with end of loop and potential looping of sample
+		MixPluginLoopEnd mpd_pit
+
+		move.w	(sp)+,d1
+		movem.l	(sp)+,d0/d4-d6/a0/a2-a4			; Stack
 		move.l	(sp)+,d7
+
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		lsr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-		
-		moveq	#0,d6						; Clear d6
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
-		move.l	(sp)+,d7
+		MixPluginSilenceLoop
+	ELSE
+		rts
 	ENDIF
-		rts
 
 		; Internal pitch shifting subroutines
 		; Note: all pitch ratios are rounded to nearest rational
@@ -1047,10 +1009,10 @@ MixPluginLevels_internal\1
 		moveq	#0,d6
 		IF .m68020_indicator=2
 			mc68020
-			jmp .jt_table(pc,d4.w*4)
+			jmp .jt_table(pc,d1.w*4)
 			mc68000
 		ELSE
-			move.w	d4,d7
+			move.w	d1,d7
 			add.w	d7,d7
 			add.w	d7,d7
 			jmp .jt_table(pc,d7.w)
@@ -1134,7 +1096,7 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		addq.w	#1,a2
-		addq.l	#1,d1
+		addq.l	#1,d4
 		dbra	d2,.lp_0
 
 .remainder_0
@@ -1181,7 +1143,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_0
@@ -1231,7 +1193,7 @@ MixPluginLevels_internal\1
 		move.b	1(a2),(a0)+
 		move.b	1(a2),(a0)+
 		addq.w	#2,a2
-		addq.l	#2,d1
+		addq.l	#2,d4
 		dbra	d2,.lp_1
 
 .remainder_1
@@ -1278,7 +1240,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_1
@@ -1328,7 +1290,7 @@ MixPluginLevels_internal\1
 		move.b	2(a2),(a0)+
 		move.b	2(a2),(a0)+
 		addq.w	#3,a2
-		addq.l	#3,d1
+		addq.l	#3,d4
 		dbra	d2,.lp_2
 
 .remainder_2
@@ -1375,7 +1337,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_2
@@ -1425,7 +1387,7 @@ MixPluginLevels_internal\1
 		move.b	3(a2),(a0)+
 		move.b	3(a2),(a0)+
 		addq.w	#4,a2
-		addq.l	#4,d1
+		addq.l	#4,d4
 		dbra	d2,.lp_3
 
 .remainder_3
@@ -1472,7 +1434,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_3
@@ -1522,7 +1484,7 @@ MixPluginLevels_internal\1
 		move.b	4(a2),(a0)+
 		move.b	4(a2),(a0)+
 		addq.w	#5,a2
-		addq.l	#5,d1
+		addq.l	#5,d4
 		dbra	d2,.lp_4
 
 .remainder_4
@@ -1569,7 +1531,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_4
@@ -1619,7 +1581,7 @@ MixPluginLevels_internal\1
 		move.b	5(a2),(a0)+
 		move.b	5(a2),(a0)+
 		addq.w	#6,a2
-		addq.l	#6,d1
+		addq.l	#6,d4
 		dbra	d2,.lp_5
 
 .remainder_5
@@ -1666,7 +1628,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_5
@@ -1716,7 +1678,7 @@ MixPluginLevels_internal\1
 		move.b	6(a2),(a0)+
 		move.b	6(a2),(a0)+
 		addq.w	#7,a2
-		addq.l	#7,d1
+		addq.l	#7,d4
 		dbra	d2,.lp_6
 
 .remainder_6
@@ -1763,7 +1725,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_6
@@ -1813,7 +1775,7 @@ MixPluginLevels_internal\1
 		move.b	7(a2),(a0)+
 		move.b	7(a2),(a0)+
 		addq.w	#8,a2
-		addq.l	#8,d1
+		addq.l	#8,d4
 		dbra	d2,.lp_7
 
 .remainder_7
@@ -1860,7 +1822,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_7
@@ -1910,7 +1872,7 @@ MixPluginLevels_internal\1
 		move.b	8(a2),(a0)+
 		move.b	8(a2),(a0)+
 		add.w	#9,a2
-		add.l	#9,d1
+		add.l	#9,d4
 		dbra	d2,.lp_8
 
 .remainder_8
@@ -1957,7 +1919,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_8
@@ -2007,7 +1969,7 @@ MixPluginLevels_internal\1
 		move.b	9(a2),(a0)+
 		move.b	9(a2),(a0)+
 		add.w	#10,a2
-		add.l	#10,d1
+		add.l	#10,d4
 		dbra	d2,.lp_9
 
 .remainder_9
@@ -2054,7 +2016,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_9
@@ -2104,7 +2066,7 @@ MixPluginLevels_internal\1
 		move.b	10(a2),(a0)+
 		move.b	10(a2),(a0)+
 		add.w	#11,a2
-		add.l	#11,d1
+		add.l	#11,d4
 		dbra	d2,.lp_10
 
 .remainder_10
@@ -2151,7 +2113,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_10
@@ -2201,7 +2163,7 @@ MixPluginLevels_internal\1
 		move.b	11(a2),(a0)+
 		move.b	11(a2),(a0)+
 		add.w	#12,a2
-		add.l	#12,d1
+		add.l	#12,d4
 		dbra	d2,.lp_11
 
 .remainder_11
@@ -2248,7 +2210,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_11
@@ -2298,7 +2260,7 @@ MixPluginLevels_internal\1
 		move.b	12(a2),(a0)+
 		move.b	12(a2),(a0)+
 		add.w	#13,a2
-		add.l	#13,d1
+		add.l	#13,d4
 		dbra	d2,.lp_12
 
 .remainder_12
@@ -2345,7 +2307,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_12
@@ -2395,7 +2357,7 @@ MixPluginLevels_internal\1
 		move.b	13(a2),(a0)+
 		move.b	13(a2),(a0)+
 		add.w	#14,a2
-		add.l	#14,d1
+		add.l	#14,d4
 		dbra	d2,.lp_13
 
 .remainder_13
@@ -2442,7 +2404,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_13
@@ -2492,7 +2454,7 @@ MixPluginLevels_internal\1
 		move.b	14(a2),(a0)+
 		move.b	14(a2),(a0)+
 		add.w	#15,a2
-		add.l	#15,d1
+		add.l	#15,d4
 		dbra	d2,.lp_14
 
 .remainder_14
@@ -2539,7 +2501,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_14
@@ -2589,7 +2551,7 @@ MixPluginLevels_internal\1
 		move.b	15(a2),(a0)+
 		move.b	15(a2),(a0)+
 		add.w	#16,a2
-		add.l	#16,d1
+		add.l	#16,d4
 		dbra	d2,.lp_15
 
 .remainder_15
@@ -2636,7 +2598,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_15
@@ -2686,7 +2648,7 @@ MixPluginLevels_internal\1
 		move.b	15(a2),(a0)+
 		move.b	16(a2),(a0)+
 		add.w	#17,a2
-		add.l	#17,d1
+		add.l	#17,d4
 		dbra	d2,.lp_16
 
 .remainder_16
@@ -2733,7 +2695,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_16
@@ -2783,7 +2745,7 @@ MixPluginLevels_internal\1
 		move.b	16(a2),(a0)+
 		move.b	17(a2),(a0)+
 		add.w	#18,a2
-		add.l	#18,d1
+		add.l	#18,d4
 		dbra	d2,.lp_17
 
 .remainder_17
@@ -2830,7 +2792,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_17
@@ -2880,7 +2842,7 @@ MixPluginLevels_internal\1
 		move.b	17(a2),(a0)+
 		move.b	18(a2),(a0)+
 		add.w	#19,a2
-		add.l	#19,d1
+		add.l	#19,d4
 		dbra	d2,.lp_18
 
 .remainder_18
@@ -2927,7 +2889,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_18
@@ -2977,7 +2939,7 @@ MixPluginLevels_internal\1
 		move.b	18(a2),(a0)+
 		move.b	19(a2),(a0)+
 		add.w	#20,a2
-		add.l	#20,d1
+		add.l	#20,d4
 		dbra	d2,.lp_19
 
 .remainder_19
@@ -3024,7 +2986,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_19
@@ -3074,7 +3036,7 @@ MixPluginLevels_internal\1
 		move.b	19(a2),(a0)+
 		move.b	20(a2),(a0)+
 		add.w	#21,a2
-		add.l	#21,d1
+		add.l	#21,d4
 		dbra	d2,.lp_20
 
 .remainder_20
@@ -3121,7 +3083,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_20
@@ -3171,7 +3133,7 @@ MixPluginLevels_internal\1
 		move.b	20(a2),(a0)+
 		move.b	21(a2),(a0)+
 		add.w	#22,a2
-		add.l	#22,d1
+		add.l	#22,d4
 		dbra	d2,.lp_21
 
 .remainder_21
@@ -3218,7 +3180,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_21
@@ -3268,7 +3230,7 @@ MixPluginLevels_internal\1
 		move.b	21(a2),(a0)+
 		move.b	22(a2),(a0)+
 		add.w	#23,a2
-		add.l	#23,d1
+		add.l	#23,d4
 		dbra	d2,.lp_22
 
 .remainder_22
@@ -3315,7 +3277,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_22
@@ -3365,7 +3327,7 @@ MixPluginLevels_internal\1
 		move.b	22(a2),(a0)+
 		move.b	23(a2),(a0)+
 		add.w	#24,a2
-		add.l	#24,d1
+		add.l	#24,d4
 		dbra	d2,.lp_23
 
 .remainder_23
@@ -3412,7 +3374,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_23
@@ -3462,7 +3424,7 @@ MixPluginLevels_internal\1
 		move.b	23(a2),(a0)+
 		move.b	24(a2),(a0)+
 		add.w	#25,a2
-		add.l	#25,d1
+		add.l	#25,d4
 		dbra	d2,.lp_24
 
 .remainder_24
@@ -3509,7 +3471,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_24
@@ -3559,7 +3521,7 @@ MixPluginLevels_internal\1
 		move.b	24(a2),(a0)+
 		move.b	25(a2),(a0)+
 		add.w	#26,a2
-		add.l	#26,d1
+		add.l	#26,d4
 		dbra	d2,.lp_25
 
 .remainder_25
@@ -3606,7 +3568,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_25
@@ -3656,7 +3618,7 @@ MixPluginLevels_internal\1
 		move.b	25(a2),(a0)+
 		move.b	26(a2),(a0)+
 		add.w	#27,a2
-		add.l	#27,d1
+		add.l	#27,d4
 		dbra	d2,.lp_26
 
 .remainder_26
@@ -3703,7 +3665,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_26
@@ -3753,7 +3715,7 @@ MixPluginLevels_internal\1
 		move.b	26(a2),(a0)+
 		move.b	27(a2),(a0)+
 		add.w	#28,a2
-		add.l	#28,d1
+		add.l	#28,d4
 		dbra	d2,.lp_27
 
 .remainder_27
@@ -3800,7 +3762,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_27
@@ -3850,7 +3812,7 @@ MixPluginLevels_internal\1
 		move.b	27(a2),(a0)+
 		move.b	28(a2),(a0)+
 		add.w	#29,a2
-		add.l	#29,d1
+		add.l	#29,d4
 		dbra	d2,.lp_28
 
 .remainder_28
@@ -3897,7 +3859,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_28
@@ -3947,7 +3909,7 @@ MixPluginLevels_internal\1
 		move.b	28(a2),(a0)+
 		move.b	29(a2),(a0)+
 		add.w	#30,a2
-		add.l	#30,d1
+		add.l	#30,d4
 		dbra	d2,.lp_29
 
 .remainder_29
@@ -3994,7 +3956,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_29
@@ -4044,7 +4006,7 @@ MixPluginLevels_internal\1
 		move.b	29(a2),(a0)+
 		move.b	30(a2),(a0)+
 		add.w	#31,a2
-		add.l	#31,d1
+		add.l	#31,d4
 		dbra	d2,.lp_30
 
 .remainder_30
@@ -4091,7 +4053,7 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_30
@@ -4141,7 +4103,7 @@ MixPluginLevels_internal\1
 		move.b	30(a2),(a0)+
 		move.b	31(a2),(a0)+
 		add.w	#32,a2
-		add.l	#32,d1
+		add.l	#32,d4
 		dbra	d2,.lp_31
 
 .remainder_31
@@ -4188,7 +4150,7 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		add.w	d6,a2
-		add.l	d6,d1
+		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_31
@@ -4243,6 +4205,8 @@ MixPluginVolume\1
 		jmp		MixPluginVolumeShift\1(pc)
 		
 .done	move.l	(sp)+,d7
+		rts
+	ELSE
 		rts
 	ENDIF
 
@@ -4337,10 +4301,11 @@ MixPluginVolumeTable\1
 				movem.l	(sp)+,d0/d6/a0-a3		; Stack
 			ENDIF
 			move.l	(sp)+,d7
-
 		ENDIF
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 		
 		; Shift based volume
 MixPluginVolumeShift\1
@@ -4495,8 +4460,10 @@ MixPluginVolumeShift\1
 			movem.l	(sp)+,d0/d5-d6/a0-a3	; Stack
 		ENDIF
 		move.l	(sp)+,d7
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 	
 		; Routine: MixPluginRepeat
 		; This routine forms the repeat plugin routine. See 
@@ -4534,8 +4501,10 @@ MixPluginRepeat\1
 		ENDIF
 		move.l	(sp)+,a0					; Stack
 .done
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 		
 		; Routine: MixPluginRepeatDeferred
 		; This routine is the deferred routine for MixPluginRepeat. It does
@@ -4572,8 +4541,10 @@ MixPluginRepeatDeferred\1
 		ENDIF
 
 		movem.l	(sp)+,d0/a0					; Stack
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 		
 		; Routine: MixPluginSync
 		; This routine forms the sync plugin routine. See MixPluginInitSync
@@ -4733,8 +4704,10 @@ MixPluginSync\1
 		movem.l	(sp)+,d6/d7/a0				; Stack
 
 .done
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 
 ;-----------------------------------------------------------------------------
 ; Plugin support routines

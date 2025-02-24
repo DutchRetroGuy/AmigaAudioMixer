@@ -871,11 +871,11 @@ SetupPluginStructs
 		bra		.write_plugin_struct
 		
 .fill_plugin_pitch_lq_data
-		move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a4)
-		;move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a4)
+		;move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a4)
+		move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a4)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
-		move.w	#$180,mpid_pit_ratio_fp8(a4)
-		;move.w	#15,mpid_pit_ratio_fp8(a4)
+		;move.w	#$180,mpid_pit_ratio_fp8(a4)
+		move.w	#15,mpid_pit_ratio_fp8(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_volume_data
