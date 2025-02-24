@@ -4289,34 +4289,15 @@ MixPluginVolumeTable\1
 			moveq	#0,d6
 
 .lp_vol		
-;			IF MIXER_68020=1
-;				move.l	(a3)+,d4
-;				rol.l	#8,d4
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				move.b	0(a2,d6.w),d5
-;				move.l	d5,(a0)+
-;			ELSE
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-;			ENDIF
+			move.b	(a3)+,d6
+			move.b	0(a2,d6.w),(a0)+
+			move.b	(a3)+,d6
+			move.b	0(a2,d6.w),(a0)+
+			move.b	(a3)+,d6
+			move.b	0(a2,d6.w),(a0)+
+			move.b	(a3)+,d6
+			move.b	0(a2,d6.w),(a0)+
+
 			dbra	d7,.lp_vol
 			bra.s	.update_sample_offset
 		

@@ -1034,93 +1034,8 @@ MixCheckChannel	MACRO
 		ELSE
 			move.l	mch_loop_length(a6),d3	; Fetch total length
 		ENDIF
-;		IF MIXER_ENABLE_PLUGINS=1
-;			IF MIXER_TIMING_BARS=1
-;				move.w	#MIXER_PLUGIN_COLOUR,$dff180
-;			ENDIF
-;			; Check if a plugin is set
-;			move.l	d7,d6
-;			move.l	mch_plugin_ptr(a6),d7
-;			beq.s	.\@_no_plugin
-;			
-;			; Check plugin type (NODATA plugins always fire, even at 0 bytes
-;			; remaining)
-;			tst.w	mch_plugin_type(a6)
-;			bne.s	.\@_no_data_plugin
-;			
-;			; Check if this is a one-shot sample (= no standard plugin) or if
-;			; the remaining number of bytes to process is zero.
-;			tst.w	d1
-;			beq.s	.\@_no_plugin
-;			
-;			tst.w	mch_status(a6)
-;			bmi.s	.\@_run_plugin
-;			
-;.\@_no_plugin
-;			move.l	mch_loop_ptr(a6),\1		; No plugin in use
-;			bra.s	.\@_plugin_done
-;			
-;.\@_no_data_plugin
-;			move.l	d0,d4
-;			move.l	d1,d5
-;			movem.l	a0-a1/a6,-(sp)
-;			move.l	mch_loop_ptr(a6),a0
-;			bra.s	.\@_plugin_address_set
-;			
-;.\@_run_plugin
-;			; Run the plugin
-;			move.l	d0,d4
-;			move.l	d1,d5
-;			movem.l	a0-a1/a6,-(sp)
-;			move.l	mch_plugin_output_buffer(a6),a0
-;
-;.\@_plugin_address_set
-;			;move.l	a0,\1					; Update pointer
-;
-;			; Set up parameters
-;			IF mxslength_word=1
-;				move.w	d1,d0
-;				;add.w	d0,d3
-;;				cmp.w	mch_loop_length(a6),d0
-;;				bls.s	.\@_plugin_len_set
-;				
-;;				move.w	mch_loop_length(a6),d0
-;			ELSE
-;				moveq	#0,d0
-;				move.w	d1,d0
-;;				cmp.l	mch_loop_length(a6),d0
-;;				bls.s	.\@_plugin_len_set
-;				
-;;				move.l	mch_loop_length(a6),d0
-;			ENDIF
-;			
-;.\@_plugin_len_set
-;			move.l	mch_plugin_data_ptr(a6),a1	; Fetch data
-;			
-;			
-;			; Set loop status
-;			moveq	#0,d1
-;			tst.w	mch_status(a6)
-;			sne		d1
-;
-;			move.l	a2,-(sp)
-;			move.l	a6,a2						; Channel info in A2
-;			move.l	d7,a6
-;			;jsr		(a6)						; Call plugin
-;			
-;			move.l	(sp)+,a2
-;			movem.l	(sp)+,a0-a1/a6
-;			move.l	d4,d0
-;			move.l	d5,d1
-;
-;.\@_plugin_done
-;			move.l	d6,d7
-;			IF MIXER_TIMING_BARS=1
-;				move.w	#MIXER_AUD_COLOUR,$dff180
-;			ENDIF
-;		ELSE
-			move.l	mch_loop_ptr(a6),\1			; Update pointer
-;		ENDIF
+
+		move.l	mch_loop_ptr(a6),\1			; Update pointer
 		
 		IF MIXER_ENABLE_CALLBACK=1
 			; Check if this is a looping sample (= no callback)
@@ -1227,12 +1142,6 @@ MixUpdateChannel	MACRO
 			movem.l	a0-a2,-(sp)
 			moveq	#0,d1
 			move.b	mch_status(a2),d1	
-;			moveq	#0,d1
-;			tst.b	mch_status+1(a2)
-;			bne.s	.\@_check_plugin_type
-
-;			moveq	#1,d1							; D1 = loop indicator
-;			move.b	d1,mch_status+1(a2)				; Reset loop for plugins
 
 .\@_check_plugin_type			
 			tst.w	mch_plugin_type(a2)
@@ -1390,16 +1299,13 @@ MixUpdateChannelBufSize	MACRO
 			
 .\@_run_plugin
 			; Run plugin
-			movem.l	d0/d1/a0-a2,-(sp)
+			move.l	d0,d4
+			move.l	d1,d5
+			movem.l	a0-a2,-(sp)
 			moveq	#0,d1
-			tst.b	mch_status+1(a2)
-			bne.s	.\@_check_plugin_type
+			move.b	mch_status(a2),d1	
 
-			moveq	#1,d1							; D1 = loop indicator
-			move.b	d1,mch_status+1(a2)				; Reset loop for plugins						
-
-.\@_check_plugin_type
-
+.\@_check_plugin_type			
 			tst.w	mch_plugin_type(a2)
 			beq.s	.\@_std_plugin
 			
@@ -1419,13 +1325,17 @@ MixUpdateChannelBufSize	MACRO
 				cmp.w	mch_remaining_length(a2),d0
 				bls.s	.\@_plugin_len_set
 				
+				tst.b	d1
+				bne.s	.\@_plugin_len_set
 				move.w	mch_remaining_length(a2),d0
 			ELSE
 				moveq	#0,d0
 				move.w	mixer\1+mx_buffer_size(pc),d0
 				cmp.l	mch_remaining_length(a2),d0
 				bls.s	.\@_plugin_len_set
-				
+
+				tst.b	d1
+				bne.s	.\@_plugin_len_set
 				move.l	mch_remaining_length(a2),d0
 			ENDIF
 
@@ -1433,8 +1343,10 @@ MixUpdateChannelBufSize	MACRO
 			move.l	mch_plugin_data_ptr(a2),a1		; Fetch data
 			move.l	d7,a5
 			jsr		(a5)							; Call plugin
-		
-			movem.l	(sp)+,d0/d1/a0-a2
+
+			movem.l	(sp)+,a0-a2
+			move.l	d4,d0
+			move.l	d5,d1
 			
 .\@_plugin_done
 			move.l	d6,d7
