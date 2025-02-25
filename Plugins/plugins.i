@@ -561,13 +561,17 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 	UWORD	mpd_pit_mode
 	UWORD	mpd_pit_ratio_fp8	
 	UWORD	mpd_pit_current_fp8
+	UWORD	mpd_pit_align					; For 68020+ performance
 	LABEL	mpd_pit_SIZEOF
 
  STRUCTURE MXPDVolumeData,0
-	LONG	mpd_vol_length
-	APTR	mpd_vol_sample_ptr
-	LONG	mpd_vol_loop_offset
+ 	LONG	mpd_vol_sample_length
+	LONG	mpd_vol_output_length
+	LONG	mpd_vol_sample_loop_offset
+	LONG	mpd_vol_output_loop_offset
 	LONG	mpd_vol_sample_offset
+	LONG	mpd_vol_output_offset
+	APTR	mpd_vol_sample_ptr
 	UWORD	mpd_vol_mode
 	UWORD	mpd_vol_table_offset
 	UWORD	mpd_vol_volume
