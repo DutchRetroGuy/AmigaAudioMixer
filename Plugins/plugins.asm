@@ -192,7 +192,7 @@ MixPluginLoopEnd	MACRO
 		;
 		; Note: this macro contains the .silence label used by the
 		;       MixPluginLoopEnd macro.
-		; Note: this macro should be places below the RTS of the plugin that
+		; Note: this macro should be placed below the RTS of the plugin that
 		;       uses it.
 		;
 		; Input registers:
@@ -220,7 +220,7 @@ MixPluginSilenceLoop	MACRO
 		; sample.
 		;
 		; Note: this macro contains the .copy label
-		; Note: this macro should be places below the RTS of the plugin that
+		; Note: this macro should be placed below the RTS of the plugin that
 		;       uses it.
 		;
 		; Input registers:
@@ -232,7 +232,7 @@ MixPluginCopyLoop	MACRO
 .copy
 		; Copy contents of sample to output buffer
 		move.l	a2,d6
-		move.w	d0,d7
+		move.w	d5,d7
 		asr.w	#2,d7						; Convert to longwords
 		subq.w	#1,d7
 		bmi.s	.loop_end
@@ -403,7 +403,7 @@ MixPluginInitPitch\1
 		move.w	#MXPLG_PITCH_1x,mpd_pit_mode(a2)
 		move.l	mfx_length(a0),mpd_pit_output_length(a2)
 		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
-		bra		.done
+		bra		.check_looping
 
 .pitch_valid
 		; Copy over mpid values
@@ -495,8 +495,8 @@ MixPluginInitPitch\1
 .pitch_valid_precalc
 		move.w	d0,mpd_pit_ratio_fp8(a2)
 		move.w	d1,mpd_pit_mode(a2)
-
-		movem.l	(sp)+,d0-d3					; Stack
+		
+		bra		.check_looping
 	ENDIF
 		rts
 		
@@ -559,7 +559,27 @@ MixPluginInitVolume\1
 		subq.w	#1,d0
 		asl.w	#8,d0
 		move.w	d0,mpd_vol_table_offset(a2)
+		
+.check_looping
+		; Check if the sample is looping
+		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
+		beq.s	.done
 
+		; Looping samples with pitch plugin get length = mixer buffer size
+		moveq	#0,d0
+		move.l	d0,mfx_loop_offset(a0)
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
+		IF MIXER_WORDSIZED=1
+			move.w	d0,mfx_length(a0)
+		ELSE
+			move.l	d0,mfx_length(a0)
+		ENDIF
+
+.done
 		move.l	(sp)+,d0					; Stack
 	ENDIF
 		rts
@@ -4239,14 +4259,14 @@ MixPluginVolumeTable\1
 			
 			; Check for silence (= volume 0)
 			move.w	mpd_vol_volume(a1),d6
-			beq		.silence
+			beq		.vol_silence
 		
 			; Check for maximum volume
+			move.l	a2,a4
 			cmp.w	#15,d6
 			beq		.copy
 			
 			; Fill output buffer based on volume table
-			move.l	a2,a4
 			lea.l	vol_level_1\1(pc),a3
 			move.w	mpd_vol_table_offset(a1),d6
 			lea.l	0(a3,d6.w),a3
@@ -4277,6 +4297,21 @@ MixPluginVolumeTable\1
 			move.l	(sp)+,d7
 		ENDIF
 		rts
+		
+.vol_silence
+			moveq	#0,d6
+			move.l	a2,a4
+			move.l	d5,d4
+			move.w	d5,d7
+			asr.w	#2,d7
+			subq.w	#1,d7
+			bmi.s	.lp_done
+			
+.lp_vol_silence
+			move.l	d6,(a0)+
+			dbra	d7,.lp_vol_silence
+			
+			bra		.lp_done
 		
 		MixPluginSilenceLoop
 		
