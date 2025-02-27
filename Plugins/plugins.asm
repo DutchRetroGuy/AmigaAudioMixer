@@ -4254,6 +4254,8 @@ MixPluginVolumeTable\1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
 			movem.l	d0/d4-d6/a0/a2-a4,-(sp)		; Stack
 			
+			DBGBreakPnt
+			
 			; Set up for start of loop
 			MixPluginLoopSetup mpd_vol
 			
@@ -4261,8 +4263,11 @@ MixPluginVolumeTable\1
 			move.w	mpd_vol_volume(a1),d6
 			beq		.vol_silence
 		
-			; Check for maximum volume
+			; Generic setup for non-silent volumes
 			move.l	a2,a4
+			move.l	d5,d4
+			
+			; Check for maximum volume
 			cmp.w	#15,d6
 			beq		.copy
 			
@@ -4271,7 +4276,6 @@ MixPluginVolumeTable\1
 			move.w	mpd_vol_table_offset(a1),d6
 			lea.l	0(a3,d6.w),a3
 			moveq	#0,d6
-			move.l	d5,d4
 			move.w	d5,d7
 			asr.w	#2,d7
 			subq.w	#1,d7
