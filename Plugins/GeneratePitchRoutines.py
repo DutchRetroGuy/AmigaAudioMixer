@@ -199,6 +199,7 @@ def generate_jump_table(routine_name, num_steps):
         "\t\t; Note: all pitch ratios are rounded to nearest rational",
         routine_name,
         "\tIF MXPLUGIN_PITCH=1",
+        "\tIF MXPLUGIN_NO_PITCH_LEVELS=1"
         ".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY",
         "\t\tmoveq\t#0,d6",
         "\t\tIF .m68020_indicator=2",

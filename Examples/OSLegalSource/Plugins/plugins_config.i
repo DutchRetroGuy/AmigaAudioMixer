@@ -49,5 +49,12 @@ MXPLUGIN_68020_ONLY			EQU	0
 ; Note: this define has no effect if MXPLUGIN_VOLUME is set to 0.
 MXPLUGIN_NO_VOLUME_TABLES	EQU	0
 
+; Set define below to 1 to remove the MXPLUGIN_PITCH_LEVELS mode. This saves
+; memory and disables level based pitch selection in the pitch plugin. The
+; other modes remain available.
+;
+; Note: this define has no effect if MXPLUGIN_PITCH is set to 0.
+MXPLUGIN_NO_PITCH_LEVELS	EQU 0
+
 	ENDC	; MIXER_PLUGINS_CONFIG_I
 ; End of File

@@ -1005,6 +1005,7 @@ MixPluginPitchLowQuality\1
 
 MixPluginPitchLevels\1
 	IF MXPLUGIN_PITCH=1
+	IF MXPLUGIN_NO_PITCH_LEVELS=1
 		movem.l	d0/d2-d6/a0/a2-a4,-(sp)			; Stack
 
 		move.w	d1,d3
@@ -1037,12 +1038,16 @@ MixPluginPitchLevels\1
 		MixPluginSilenceLoop
 	ELSE
 		rts
+	ELSE
+		rts
+	ENDIF
 	ENDIF
 
 		; Internal pitch shifting subroutines
 		; Note: all pitch ratios are rounded to nearest rational
 MixPluginLevels_internal\1
 	IF MXPLUGIN_PITCH=1
+	IF MXPLUGIN_NO_PITCH_LEVELS=1
 .m68020_indicator	SET MIXER_68020+MXPLUGIN_68020_ONLY
 		moveq	#0,d6
 		IF .m68020_indicator=2
@@ -4194,6 +4199,11 @@ MixPluginLevels_internal\1
 .lp_done_31
 		rts
 
+		ELSE
+			rts
+		ENDIF
+		ELSE
+			RTS
 		ENDIF
 
 .end_pitch_routines\1
