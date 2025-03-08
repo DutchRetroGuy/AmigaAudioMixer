@@ -22,15 +22,11 @@ EXREF	MACRO
 
 ; External references
 	EXREF	clist1
-	EXREF	sptrs
-	EXREF	sptrs_o
 	EXREF	pal1
 	EXREF	bpptrs
 	EXREF	bpptrs_o
 	EXREF	shifts
 	EXREF	shifts_o
-	EXREF	sprlayer1	
-	EXREF	sprlayer2
 	EXREF	sbptrs
 	EXREF	pal2
 	
