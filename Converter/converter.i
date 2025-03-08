@@ -39,6 +39,7 @@
 MIXER_CONVERTER_I	SET	1
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_CONVERTER
 			XDEF \1
@@ -46,6 +47,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; References
 	EXREF	ConvertSampleDivide

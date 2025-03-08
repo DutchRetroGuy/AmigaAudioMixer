@@ -14,6 +14,7 @@
 ; Includes
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_PLUGINS_WRAPPER
 			XDEF \1
@@ -21,6 +22,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; References
 	EXREF	PLPerfTest_init_routines

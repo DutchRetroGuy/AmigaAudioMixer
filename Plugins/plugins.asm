@@ -4381,12 +4381,12 @@ MixPluginVolumeShift\1
 			; Setup masks for use in the loop
 			IF MXPLUGIN_68020_ONLY=1
 				mc68020
-				jmp	.shift_mask_jptable(pc,d6.w*8)
+				jmp		.shift_mask_jptable(pc,d6.w*8)
 				mc68000
 			ELSE
 				move.w	d6,d5
 				asl.w	#3,d5
-				jmp	.shift_mask_jptable(pc,d5)
+				jmp		.shift_mask_jptable(pc,d5)
 			ENDIF
 
 .shift_mask_jptable
