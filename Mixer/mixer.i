@@ -455,6 +455,7 @@ MIXER_I	SET	1
 	IFND	BUILD_MIXER_WRAPPER
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_MIXER
 			XDEF \1
@@ -462,6 +463,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; References
 	EXREF	MixerSetup

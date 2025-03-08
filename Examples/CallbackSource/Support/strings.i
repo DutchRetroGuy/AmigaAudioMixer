@@ -12,6 +12,7 @@
 ; TAB size = 4 spaces
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_STRINGS_CB
 			XDEF \1
@@ -19,6 +20,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	IFND EXREF
 
 ; External references
 	EXREF	preptxt
