@@ -715,6 +715,11 @@ MixPluginInitRepeat\1
 		;      MixerPlayChannelFX()
 MixPluginInitSync\1
 	IF MXPLUGIN_SYNC=1
+		; Copy over mfx values
+		move.l	mfx_length(a0),mpd_snc_sample_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_snc_sample_loop_offset(a2)
+		clr.l	mpd_snc_sample_offset(a2)
+	
 		; Copy over mpid values
 		move.l	mpid_snc_address(a1),mpd_snc_address(a2)
 		move.w	mpid_snc_mode(a1),mpd_snc_mode(a2)
