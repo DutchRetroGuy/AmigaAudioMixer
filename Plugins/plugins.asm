@@ -514,7 +514,7 @@ MixPluginInitSync\1
 		
 .no_remainder
 		swap	d1
-		move.w	d1,mpd_snc_delay(a1)
+		move.w	d1,mpd_snc_delay(a2)
 		
 		movem.l	(sp)+,d0/d1					; Stack
 		
