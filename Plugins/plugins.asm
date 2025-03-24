@@ -755,7 +755,7 @@ MixPluginInitSync\1
 		
 .no_remainder
 		swap	d1
-		move.w	d1,mpd_snc_delay(a1)
+		move.w	d1,mpd_snc_delay(a2)
 		
 		movem.l	(sp)+,d0/d1					; Stack
 		
@@ -4264,8 +4264,6 @@ MixPluginVolumeTable\1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
 			movem.l	d0/d4-d6/a0/a2-a4,-(sp)		; Stack
 			
-			DBGBreakPnt
-			
 			; Set up for start of loop
 			MixPluginLoopSetup mpd_vol
 			
@@ -4337,46 +4335,31 @@ MixPluginVolumeTable\1
 		; Shift based volume
 MixPluginVolumeShift\1
 	IF MXPLUGIN_VOLUME=1
-		IF MIXER_68020=1
-			movem.l	d0/d2-d6/a0-a3,-(sp)	; Stack
-		ELSE
-			movem.l	d0/d5-d6/a0-a3,-(sp)	; Stack
-		ENDIF
+		movem.l	d0/d4-d6/a0/a2-a5,-(sp)		; Stack
 		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_vol_sample_loop_offset(a1),mpd_vol_sample_offset(a1)
-		
-.no_loop		
-		; Set up volume loop length
-		move.w	d0,d7
-		lsr.w	#2,d7
-		subq.w	#1,d7
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_vol
 		
 		; Check for silence (= volume 8)
 		move.w	mpd_vol_volume(a1),d6
 		cmp.w	#8,d6
-		IF MIXER_68020=1
-			bge		.silence
-		ELSE
-			bge.s	.silence
-		ENDIF
+		beq		.vol_silence
+	
+		; Generic setup for non-silent volumes
+		move.l	a2,a4
+		move.l	d5,d4
 		
-		; Check for maximum volume
+		; Check for maximum volume (= volume 0)
 		tst.w	d6
-		IF MIXER_68020=1
-			beq		.max_volume
-		ELSE
-			beq.s	.max_volume
-		ENDIF
+		beq		.copy
 		
-		; Fill output buffer based on shifting
-		move.l	mpd_vol_sample_ptr(a1),a3
-		add.l	mpd_vol_sample_offset(a1),a3
-		
+		; Fill output buffer based on volume shifting
+		move.w	d5,a5
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
+
 		IF MIXER_68020=1
 			; Setup masks for use in the loop
 			IF MXPLUGIN_68020_ONLY=1
@@ -4417,7 +4400,7 @@ MixPluginVolumeShift\1
 		
 .lp_vol	
 		IF MIXER_68020=1
-			move.l	(a3)+,d4
+			move.l	(a2)+,d4
 			btst	#31,d4
 			sne		d5
 			lsl.l	#8,d5
@@ -4435,59 +4418,50 @@ MixPluginVolumeShift\1
 			or.l	d5,d4					; Correct upper bits set in D0
 			move.l	d4,(a0)+
 		ELSE
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
 		ENDIF
 		dbra	d7,.lp_vol
-		bra.s	.update_sample_offset
-		
-		; Fill output buffer with silence
-.silence
-		moveq	#0,d6
-		
-.lp_si	move.l	d6,(a0)+
-		dbra	d7,.lp_si
-		bra.s	.update_sample_offset
-		
-		; Fill output buffer with copy of original
-.max_volume
-		move.l	mpd_vol_sample_ptr(a1),a2
-		add.l	mpd_vol_sample_offset(a1),a2
-		
-.lp_mv	move.l	(a2)+,(a0)+
-		dbra	d7,.lp_mv		
-		
-.update_sample_offset
-		moveq	#0,d6
-		move.w	d0,d6
-		move.l	mpd_vol_sample_offset(a1),d0
-		add.l	d6,d0
-		cmp.l	mpd_vol_sample_length(a1),d0
-		blt.s	.no_reset
-		
-		; Reset offset here
-		move.l	mpd_vol_sample_loop_offset(a1),d0
-		
-.no_reset
-		move.l	d0,mpd_vol_sample_offset(a1)
+			
+.lp_done
+		move.l	a4,a2
+		move.l	a5,d5
+		MixPluginLoopEnd mpd_vol
 
-		IF MIXER_68020=1
-			movem.l	(sp)+,d0/d2-d6/a0-a3	; Stack
-		ELSE
-			movem.l	(sp)+,d0/d5-d6/a0-a3	; Stack
-		ENDIF
+		movem.l	(sp)+,d0/d4-d6/a0/a2-a5		; Stack
 		move.l	(sp)+,d7
+
 		rts
+		
+.vol_silence
+		moveq	#0,d6
+		move.l	a2,a4
+		move.l	d5,a5
+		move.l	d5,d4
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
+			
+.lp_vol_silence
+		move.l	d6,(a0)+
+		dbra	d7,.lp_vol_silence
+		
+		bra		.lp_done
+		
+		MixPluginSilenceLoop
+		
+		MixPluginCopyLoop
 	ELSE
 		rts
 	ENDIF

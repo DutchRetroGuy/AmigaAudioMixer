@@ -879,8 +879,8 @@ SetupPluginStructs
 		bra		.write_plugin_struct
 
 .fill_plugin_volume_data
-		move.w	#MXPLG_VOL_TABLE,mpid_vol_mode(a4)
-		move.w	#15,mpid_vol_volume(a4)
+		move.w	#MXPLG_VOL_SHIFT,mpid_vol_mode(a4)
+		move.w	#8,mpid_vol_volume(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_repeat_data
@@ -893,7 +893,7 @@ SetupPluginStructs
 		clr.w	(a0)
 		move.l	a0,mpid_snc_address(a4)
 		move.w	#10,mpid_snc_delay(a4)
-		move.w	#MXPLG_SYNC_START_AND_LOOP,mpid_snc_mode(a4)
+		move.w	#MXPLG_SYNC_LOOP,mpid_snc_mode(a4)
 		move.w	#MXPLG_SYNC_ONE,mpid_snc_type(a4)
 		move.l	(sp)+,a0					; Stack
 		bra		.write_plugin_struct

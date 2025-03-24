@@ -594,6 +594,9 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 	
  STRUCTURE MXPDSyncData,0
 	APTR	mpd_snc_address
+ 	LONG	mpd_snc_sample_length
+	LONG	mpd_snc_sample_loop_offset
+	LONG	mpd_snc_sample_offset
 	UWORD	mpd_snc_mode
 	UWORD	mpd_snc_type
 	UWORD	mpd_snc_delay
