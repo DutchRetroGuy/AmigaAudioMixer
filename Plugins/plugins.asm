@@ -4570,6 +4570,26 @@ MixPluginSync\1
 
 		movem.l	d6/d7/a0,-(sp)				; Stack
 		
+		; Test if this is a looping sample
+		tst.w	d1
+		beq.s	.cnt
+		
+		; Update sample position
+		moveq	#0,d6
+		move.w	d0,d6
+		move.l	mpd_snc_sample_offset(a1),d7
+		add.l	d6,d7
+		
+		; Test 
+		move.l	mpd_snc_sample_length(a2),d6
+		cmp.l	d6,d7
+		
+		
+		move.l	mfx_length(a0),mpd_snc_sample_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_snc_sample_loop_offset(a2)
+		clr.l	mpd_snc_sample_offset(a2)
+		
+.cnt
 		; Set flag register to 0
 		moveq	#0,d7
 		
