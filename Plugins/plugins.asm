@@ -4568,11 +4568,14 @@ MixPluginSync\1
 		tst.w	mpd_snc_done(a1)
 		bne		.done
 
-		movem.l	d6/d7/a0,-(sp)				; Stack
+		movem.l	d1/d6/d7/a0,-(sp)			; Stack
 		
 		; Test if this is a looping sample
 		tst.w	d1
-		beq.s	.cnt
+		beq.s	.select_sync
+		
+		; Reset looping indicator
+		moveq	#0,d1
 		
 		; Update sample position
 		moveq	#0,d6
@@ -4580,16 +4583,21 @@ MixPluginSync\1
 		move.l	mpd_snc_sample_offset(a1),d7
 		add.l	d6,d7
 		
-		; Test 
-		move.l	mpd_snc_sample_length(a2),d6
-		cmp.l	d6,d7
+		; Test if sample looped
+		sub.l	mpd_snc_sample_length(a2),d7
+		bpl.s	.update_offset
 		
+		; Sample looped, reset offset
+		moveq	#1,d1
+		neg.l	d7
+		add.l	mpd_snc_sample_loop_offset(a2),d7
+		move.l	d7,mpd_snc_sample_offset(a2)
+		bra.s	.select_sync
+
+.update_offset
+		add.l	d6,mpd_snc_sample_offset(a2)
 		
-		move.l	mfx_length(a0),mpd_snc_sample_length(a2)
-		move.l	mfx_loop_offset(a0),mpd_snc_sample_loop_offset(a2)
-		clr.l	mpd_snc_sample_offset(a2)
-		
-.cnt
+.select_sync
 		; Set flag register to 0
 		moveq	#0,d7
 		
@@ -4703,19 +4711,19 @@ MixPluginSync\1
 		; Set trigger value to 1
 .sync_one
 		move.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d2/d6/d7/a0		; Stack
 		rts
 
 		; Trigger value incremented by 1
 .sync_increment
 		addq.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 
 		; Trigger value decremented by 1
 .sync_decrement
 		subq.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 		
 .sync_deferred
@@ -4727,7 +4735,7 @@ MixPluginSync\1
 		ENDIF
 
 .sync_update_done
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 
 .done
 		rts
