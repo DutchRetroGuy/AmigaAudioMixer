@@ -4575,6 +4575,7 @@ MixPluginSync\1
 		beq.s	.select_sync
 		
 		; Reset looping indicator
+		DBGBreakPnt
 		moveq	#0,d1
 		
 		; Update sample position
@@ -4584,19 +4585,20 @@ MixPluginSync\1
 		add.l	d6,d7
 		
 		; Test if sample looped
-		sub.l	mpd_snc_sample_length(a2),d7
-		bpl.s	.update_offset
+		sub.l	mpd_snc_sample_length(a1),d7
+		bpl.s	.sample_looped
+
+.update_offset
+		add.l	d6,mpd_snc_sample_offset(a1)
+		bra.s	.select_sync
 		
+.sample_looped
 		; Sample looped, reset offset
 		moveq	#1,d1
 		neg.l	d7
-		add.l	mpd_snc_sample_loop_offset(a2),d7
-		move.l	d7,mpd_snc_sample_offset(a2)
-		bra.s	.select_sync
+		add.l	mpd_snc_sample_loop_offset(a1),d7
+		move.l	d7,mpd_snc_sample_offset(a1)
 
-.update_offset
-		add.l	d6,mpd_snc_sample_offset(a2)
-		
 .select_sync
 		; Set flag register to 0
 		moveq	#0,d7
@@ -4711,7 +4713,7 @@ MixPluginSync\1
 		; Set trigger value to 1
 .sync_one
 		move.w	#1,(a0)
-		movem.l	(sp)+,d1/d2/d6/d7/a0		; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 
 		; Trigger value incremented by 1
