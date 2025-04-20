@@ -2791,7 +2791,7 @@ MixerChannelWrite\1
 			tst.w	dmaconr(a6)						; Wait for A4000
 		ELSE
 			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
+				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
@@ -2824,7 +2824,7 @@ MixerChannelWrite\1
 			ENDIF
 
 			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
 				move.l	(sp)+,a1
 			ENDIF
@@ -2967,7 +2967,7 @@ MixerChannelWrite\1
 			move.w	d7,intena(a6)				; Enable audio interrupts
 		ELSE
 			IF MIXER_C_DEFS=1
-				movem.l	d0/d1/a0/a1,-(sp)
+				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
 				move.l	a1,-(sp)
 			ENDIF
@@ -2997,7 +2997,7 @@ MixerChannelWrite\1
 			ENDIF
 
 			IF MIXER_C_DEFS=1
-				movem.l	(sp)+,d0/d1/a0/a1
+				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
 				move.l	(sp)+,a1
 			ENDIF
