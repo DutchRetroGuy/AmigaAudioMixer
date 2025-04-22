@@ -1,5 +1,15 @@
-# Ignore build artifacts
+# Ignore build artefacts
 *.o
 
 # Ignore drafts folder
 Drafts/
+
+# Ignore duplicate mixer.asm, mixer.i, mixer.h
+Examples/*/Mixer/mixer.asm
+Examples/*/Mixer/mixer.i
+Examples/*/Mixer/mixer.h
+
+# Ignore duplicate plugins.asm, plugins.i, plugins.h
+Examples/*/Plugins/plugins.asm
+Examples/*/Plugins/plugins.i
+Examples/*/Plugins/plugins.h

@@ -30,11 +30,26 @@
 	IFND	MIXER_PLUGINS_CONFIG_I
 MIXER_PLUGINS_CONFIG_I	SET	1
 ; Configuration defines
+
+;-----------------------------------------------------------------------------
+; Optimisation related options
+;-----------------------------------------------------------------------------
+; Set define below to 1 to allow the plugins to use code that only runs on 
+; 68020+ based systems.
+;
+; Note: if MIXER_68020 is set to 1, the code generated for plugins will be
+;       optimised for 68020+ where possible, but the generated code will not
+;       use 68020+ only instructions. Setting the define below to 1 changes
+;       this so that the plugin code will use 68020+ only instructions as
+;       well.
+MXPLUGIN_68020_ONLY		EQU	0
+
 ;-----------------------------------------------------------------------------
 ; Performance test configuration
 ;-----------------------------------------------------------------------------
 PLPERF_SIZE_TEST		SET 0		; Set to 1 to get a report on the various 
 									; code sizes.
+
 
 
 	; No other configuration is needed at present.

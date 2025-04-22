@@ -12,6 +12,7 @@
 ; TAB size = 4 spaces
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_TILES
 			XDEF \1
@@ -19,6 +20,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; External references
 	EXREF	sb_tiles

@@ -13,6 +13,7 @@
 ; TAB size = 4 spaces
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_DBUFFERS
 			XDEF \1
@@ -20,6 +21,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; Buffers
 	EXREF	fg_buf1

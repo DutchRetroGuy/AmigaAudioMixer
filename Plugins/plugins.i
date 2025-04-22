@@ -417,7 +417,10 @@
 	IFND	MIXER_PLUGINS_I
 MIXER_PLUGINS_I	SET	1
 
+	IFND	BUILD_MIXER_WRAPPER
+
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_PLUGINS
 			XDEF \1
@@ -425,6 +428,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; References
 	EXREF	MixPluginInitDummy
@@ -443,6 +447,8 @@ EXREF	MACRO
 	EXREF	MixerPluginGetMaxInitDataSize
 	EXREF	MixerPluginGetMaxDataSize
 	EXREF	MixPluginRatioPrecalc
+	
+	ENDIF
 
 ; Constants
 MXPLG_MULTIPLIER_4			EQU	0
@@ -499,23 +505,48 @@ MXPLG_SYNC_DEFERRED			EQU	3
 	LABEL	mpid_snc_SIZEOF
 	
 mxplg_max_idata_size	SET		0
+	IFD BUILD_MIXER_WRAPPER
+mxplg_max_idata_size	SET		mpid_rep_SIZEOF
+	ELSE
 	IF MXPLUGIN_REPEAT=1
 mxplg_max_idata_size	SET		mpid_rep_SIZEOF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpid_snc_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_snc_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_SYNC=1
 		IF mpid_snc_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_snc_SIZEOF
 		ENDIF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpid_vol_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_vol_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_VOLUME=1
 		IF mpid_vol_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_vol_SIZEOF
 		ENDIF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpid_pit_SIZEOF>mxplg_max_idata_size
+mxplg_max_idata_size	SET		mpid_pit_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_PITCH=1
 		IF mpid_pit_SIZEOF>mxplg_max_idata_size
 mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 		ENDIF
+	ENDIF
 	ENDIF
 
 
@@ -565,23 +596,48 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 	LABEL	mpd_snc_SIZEOF
 
 mxplg_max_data_size	SET		0
+	IFD BUILD_MIXER_WRAPPER
+mxplg_max_data_size	SET		mpd_rep_SIZEOF
+	ELSE
 	IF MXPLUGIN_REPEAT=1
 mxplg_max_data_size	SET		mpd_rep_SIZEOF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpd_snc_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_snc_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_SYNC=1
 		IF mpd_snc_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_snc_SIZEOF
 		ENDIF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpd_vol_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_vol_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_VOLUME=1
 		IF mpd_vol_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_vol_SIZEOF
 		ENDIF
 	ENDIF
+	ENDIF
+	
+	IFD BUILD_MIXER_WRAPPER
+		IF mpd_pit_SIZEOF>mxplg_max_data_size
+mxplg_max_data_size	SET		mpd_pit_SIZEOF
+		ENDIF
+	ELSE
 	IF MXPLUGIN_PITCH=1
 		IF mpd_pit_SIZEOF>mxplg_max_data_size
 mxplg_max_data_size	SET		mpd_pit_SIZEOF
 		ENDIF
+	ENDIF
 	ENDIF
 	
 	ENDC	; MIXER_PLUGINS_I

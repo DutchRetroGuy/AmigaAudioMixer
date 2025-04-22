@@ -1,4 +1,4 @@
-; $VER: mixer_config.i 3.6 (04.02.24)
+; $VER: mixer_config.i 3.7 (28.01.25)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -12,8 +12,8 @@
 ;       signed limits or overflow from positive to negative (or vice versa).
 ; 
 ; Author: Jeroen Knoester
-; Version: 3.6
-; Revision: 20240204
+; Version: 3.7
+; Revision: 20250128
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -172,6 +172,10 @@ MIXER_DEFAULT_COLOUR	EQU	$000
 
 ; Set define below to 1 to enable CIA based timing of the performance of the
 ; interrupt handler. This uses the CIA-A timer.
+;
+; Note: this option should not be enabled if the mixer option 
+;       MIXER_EXTERNAL_IRQ_DMA has been enabled and the mixer has been set up
+;       to run using the OS's interrupt mechanism.
 MIXER_CIA_TIMER			EQU 0
 ; Set define below to 1 to enable restoring the keyboard for OS use after
 ; using CIA based performance timing. Has no function if MIXER_CIA_TIMER is
@@ -207,8 +211,46 @@ MIXER_ENABLE_CALLBACK	EQU 0
 ; Note: enabling plugins slightly increases CPU and memory costs of the mixer
 ;       for all mixer channels playing back samples. In addition, the effects
 ;       routines themselves will also add CPU overhead.
-; Note: enabling plugins will 
 MIXER_ENABLE_PLUGINS	EQU 0
+
+; Set define below to enable the return vector. The return vector is a user
+; specified routine that will be called at the end of audio interrupt
+; processing.
+;
+; Note: enabling the return vector slightly increases CPU overhead during
+;       interrupt processing.
+MIXER_ENABLE_RETURN_VECTOR	EQU 0
+
+; Set define below to 1 to change the mixer such that it no longer uses its
+; built-in interrupt handler and DMACON handling, but rather uses callbacks to
+; deal with these aspects. These callback can be set up by calling the routine
+; MixerSetupIRQDMACallbacks().
+;
+; Note: the primary purpose of this setting is to allow external engines/API's
+;       to have control over interrupts and DMA flags. This feature can also
+;       be used to create an OS-legal interrupt handler.
+; Note: enabling this feature also makes the mixer interrupt handler end in
+;       RTS, rather than RTE, to facilitate incorporating the mixer interrupt
+;       handler in an external one. It is up to these external routines to
+;       make sure the mixer's interrupt handler is called once per audio 
+;       interrupt on enabled channels.
+; Note: enabling this feature disables the MIXER_CIA_TIMER setting.
+; Note: enabling callback functions slightly increases CPU cost of the mixer.
+MIXER_EXTERNAL_IRQ_DMA	EQU 0
+
+; Set define below to 1 to change the mixer such that calls to the external
+; interrupt and DMA handling routines calls these once per bit to be set, 
+; rather than providing a full mask containing all relevant bits in one call.
+;
+; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+MIXER_EXTERNAL_BITWISE	EQU 0
+
+; Set define below to 1 to revert the mixer's behaviour when 
+; MIXER_EXTERNAL_IRQ_DMA is set to 1 to using an RTE to end the interrupt
+; interrupt, rather than an RTS.
+;
+; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+MIXER_EXTERNAL_RTE		EQU	0
 
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
@@ -218,7 +260,6 @@ MIXER_SECTION			EQU	1
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
 MIXER_NO_ECHO			EQU 0
-	ENDC	; MIXER_CONFIG_I
 	
 ; Set define below to 1 to include C style function definition aliases in
 ; addition to the standard function definitions. This effectively creates
@@ -229,4 +270,5 @@ MIXER_NO_ECHO			EQU 0
 ;       handled, so that they can deal with the registers that C compilers can
 ;       trash between function calls.
 MIXER_C_DEFS			EQU 0
+	ENDC	; MIXER_CONFIG_I
 ; End of File

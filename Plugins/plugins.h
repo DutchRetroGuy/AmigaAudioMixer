@@ -18,8 +18,8 @@
  *       whether or not to generate C style function definitions.
  *
  * Author: Jeroen Knoester
- * Version: 1.1
- * Revision: 20240204
+ * Version: 1.2
+ * Revision: 202501029
  *
  * TAB size = 4 spaces
  */
@@ -33,12 +33,16 @@
 #include "../mixer/mixer.h"
 
 /* REGARG define to call assembly routines */
-#if !defined(MIX_REGARG)
-#if defined(__VBCC__)
+#if defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
+// Exploit the fact that Bartman's compiler doesn't add underscore to its C symbols and use them to call underscored mixer function from asm side
+#define PLG_API __attribute__((always_inline)) static inline
+#define MIX_REGARG(arg, reg) arg
+#elif defined(__VBCC__)
+#define PLG_API
 #define MIX_REGARG(arg, reg) __reg(reg) arg
 #elif defined(__GNUC__) // Bebbo
+#define PLG_API
 #define MIX_REGARG(arg, reg) arg asm(reg)
-#endif
 #endif
 
 /* Constants */
@@ -150,7 +154,7 @@ void MixPluginInitDummy(void)
 						  or MIX_PLUGIN_NODATA
 	* all other fields are ignored
 */
-void MixPluginInitDummy(void);
+PLG_API void MixPluginInitDummy(void);
 
 /*
 void MixPluginInitRepeat(void *mxeffect, void *plugin_init_data, 
@@ -166,10 +170,10 @@ void MixPluginInitRepeat(void *mxeffect, void *plugin_init_data,
 	* mpl_plugin_ptr	- Pointer to MixPluginRepeat()
 	* mpl_init_data_ptr	- Pointer to instance of structure MXPDRepeatInitData
 */
-void MixPluginInitRepeat(MIX_REGARG(void *mxeffect, "a0"),
-                         MIX_REGARG(void *plugin_init_data, "a1"),
-                         MIX_REGARG(void *plugin_data, "a2"),
-						 MIX_REGARG(UWORD hardware_channel, "d0"));
+PLG_API void MixPluginInitRepeat(MIX_REGARG(void *mxeffect, "a0"),
+								 MIX_REGARG(void *plugin_init_data, "a1"),
+								 MIX_REGARG(void *plugin_data, "a2"),
+								 MIX_REGARG(UWORD hardware_channel, "d0"));
 
 /*
 void MixPluginInitSync(void *mxeffect, void *plugin_init_data, 
@@ -193,9 +197,9 @@ void MixPluginInitSync(void *mxeffect, void *plugin_init_data,
 		  This data follows the definition of MXPDSyncData, as found in 
 		  plugins.i
 */
-void MixPluginInitSync(MIX_REGARG(void *mxeffect, "a0"),
-                       MIX_REGARG(void *plugin_init_data, "a1"),
-                       MIX_REGARG(void *plugin_data, "a2"));
+PLG_API void MixPluginInitSync(MIX_REGARG(void *mxeffect, "a0"),
+							   MIX_REGARG(void *plugin_init_data, "a1"),
+							   MIX_REGARG(void *plugin_data, "a2"));
 
 /*
 void MixPluginInitVolume(void *mxeffect, void *plugin_init_data, 
@@ -210,9 +214,9 @@ void MixPluginInitVolume(void *mxeffect, void *plugin_init_data,
 	parameters.
 	See the types above for information how to set up this structure.
 */
-void MixPluginInitVolume(MIX_REGARG(void *mxeffect, "a0"),
-                         MIX_REGARG(void *plugin_init_data, "a1"),
-                         MIX_REGARG(void *plugin_data, "a2"));
+PLG_API void MixPluginInitVolume(MIX_REGARG(void *mxeffect, "a0"),
+								 MIX_REGARG(void *plugin_init_data, "a1"),
+								 MIX_REGARG(void *plugin_data, "a2"));
 
 /*
 void MixPluginInitPitch(void *mxeffect, void *plugin_init_data, 
@@ -240,51 +244,51 @@ void MixPluginInitPitch(void *mxeffect, void *plugin_init_data,
 	* mpl_init_data_ptr	- Pointer to instance of structure MXPDPitchInitData
 
 */
-void MixPluginInitPitch(MIX_REGARG(void *mxeffect, "a0"),
-                        MIX_REGARG(void *plugin_init_data, "a1"),
-                        MIX_REGARG(void *plugin_data, "a2"));
+PLG_API void MixPluginInitPitch(MIX_REGARG(void *mxeffect, "a0"),
+								MIX_REGARG(void *plugin_init_data, "a1"),
+								MIX_REGARG(void *plugin_data, "a2"));
 
 /*
 void MixPluginDummy(void)
 	Plugin routine for the dummy plugin. See MixPluginInitDummy().
 */	
-void MixPluginDummy(void);
+PLG_API void MixPluginDummy(void);
 
 /*
 void MixPluginRepeat(void *plugin_data, void *channel_data, 
                      UWORD loop_indicator)
 	Plugin routine for the repeat plugin. See MixPluginInitRepeat().
 */
-void MixPluginRepeat(MIX_REGARG(void *plugin_data, "a1"),
-                     MIX_REGARG(void *channel_data, "a2"),
-					 MIX_REGARG(UWORD loop_indicator, "d1"));
+PLG_API void MixPluginRepeat(MIX_REGARG(void *plugin_data, "a1"),
+							 MIX_REGARG(void *channel_data, "a2"),
+							 MIX_REGARG(UWORD loop_indicator, "d1"));
 
 /*
 void MixPluginSync(void *plugin_data, UWORD loop_indicator)
 	Plugin routine for the synchronisation plugin. See MixPluginInitSync().
 */
-void MixPluginSync(MIX_REGARG(void *plugin_data, "a1"),
-				   MIX_REGARG(UWORD loop_indicator, "d1"));
+PLG_API void MixPluginSync(MIX_REGARG(void *plugin_data, "a1"),
+						   MIX_REGARG(UWORD loop_indicator, "d1"));
 
 /*
 void MixPluginVolume(void *plugin_output_buffer, void *plugin_data, 
                      UWORD bytes_to_process, UWORD loop_indicator)
 	Plugin routine for the volume plugin. See MixPluginInitVolume().
 */
-void MixPluginVolume(MIX_REGARG(void *plugin_output_buffer, "a0"),
-                     MIX_REGARG(void *plugin_data, "a1"),
-					 MIX_REGARG(UWORD bytes_to_process, "d0"),
-					 MIX_REGARG(UWORD loop_indicator, "d1"));
+PLG_API void MixPluginVolume(MIX_REGARG(void *plugin_output_buffer, "a0"),
+							 MIX_REGARG(void *plugin_data, "a1"),
+							 MIX_REGARG(UWORD bytes_to_process, "d0"),
+							 MIX_REGARG(UWORD loop_indicator, "d1"));
 
 /*
 void MixPluginPitch(void *plugin_output_buffer, void *plugin_data, 
                     UWORD bytes_to_process, UWORD loop_indicator)
 	Plugin routine for the pitch plugin. See MixPluginInitPitch().
 */
-void MixPluginPitch(MIX_REGARG(void *plugin_output_buffer, "a0"),
-                    MIX_REGARG(void *plugin_data, "a1"),
-					MIX_REGARG(UWORD bytes_to_process, "d0"),
-					MIX_REGARG(UWORD loop_indicator, "d1"));
+PLG_API void MixPluginPitch(MIX_REGARG(void *plugin_output_buffer, "a0"),
+							MIX_REGARG(void *plugin_data, "a1"),
+							MIX_REGARG(UWORD bytes_to_process, "d0"),
+							MIX_REGARG(UWORD loop_indicator, "d1"));
 	
 /*
 ULONG MixPluginGetMultiplier(void)
@@ -295,21 +299,21 @@ ULONG MixPluginGetMultiplier(void)
 	Returns either MXPLG_MULTIPLIER_4, MXPLG_MULTIPLIER_32 or 
 	MXPLG_MULTIPLIER_BUFSIZE.
 */
-ULONG MixPluginGetMultiplier(void);
+PLG_API ULONG MixPluginGetMultiplier(void);
 
 /*
 LONG MixerPluginGetMaxInitDataSize(void)
 	This routine returns the maximum size of any of the built in plugin
 	initialisation data structures.
 */
-LONG MixerPluginGetMaxInitDataSize(void);
+PLG_API LONG MixerPluginGetMaxInitDataSize(void);
 
 /*
 LONG MixerPluginGetMaxDataSize(void)
 	This routine returns the maximum size of any of the built in plugin data
 	structures.
 */
-LONG MixerPluginGetMaxDataSize(void);
+PLG_API LONG MixerPluginGetMaxDataSize(void);
 
 /*
 ULONG MixPluginRatioPrecalc(MXEffect *effect_structure, UWORD pitch_ratio, 
@@ -328,9 +332,262 @@ ULONG MixPluginRatioPrecalc(MXEffect *effect_structure, UWORD pitch_ratio,
 		  2^shift factor, at a cost of an ever increasing inaccuracy.
 
 */
-ULONG MixPluginRatioPrecalc(MIX_REGARG(MXEffect *effect_structure, "a0"),
-                            MIX_REGARG(UWORD pitch_ratio, "d0"),
-                            MIX_REGARG(UWORD shift_value, "d1"));
+PLG_API ULONG MixPluginRatioPrecalc(MIX_REGARG(MXEffect *effect_structure, "a0"),
+									MIX_REGARG(UWORD pitch_ratio, "d0"),
+									MIX_REGARG(UWORD shift_value, "d1"));
 
 #undef MIX_REGARG
+
+/*
+ Bartman GCC specific wrapper functions follow
+ */
+#if defined(BARTMAN_GCC) // Bartman
+PLG_API void MixPluginInitDummy(void)
+{
+	__asm__ volatile (
+		"jsr _MixPluginInitDummy"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginInitRepeat(void *mxeffect,
+								 void *plugin_init_data,
+								 void *plugin_data,
+								 UWORD hardware_channel)
+{
+	register volatile void *reg_mxeffect __asm("a0") = mxeffect;
+	register volatile void *reg_plugin_init_data __asm("a1") = plugin_init_data;
+	register volatile void *reg_plugin_data __asm("a2") = plugin_data;
+	register volatile UWORD reg_hardware_channel __asm("d0") = hardware_channel;
+
+	__asm__ volatile (
+		"jsr _MixPluginInitRepeat\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_mxeffect), "r" (reg_plugin_init_data), "r" (reg_plugin_data),
+			"r" (reg_hardware_channel)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginInitSync(void *mxeffect,
+							   void *plugin_init_data,
+							   void *plugin_data)
+{
+	register volatile void *reg_mxeffect __asm("a0") = mxeffect;
+	register volatile void *reg_plugin_init_data __asm("a1") = plugin_init_data;
+	register volatile void *reg_plugin_data __asm("a2") = plugin_data;
+
+	__asm__ volatile (
+		"jsr _MixPluginInitSync\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_mxeffect), "r" (reg_plugin_init_data), "r" (reg_plugin_data)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginInitVolume(void *mxeffect,
+								 void *plugin_init_data,
+								 void *plugin_data)
+{
+	register volatile void *reg_mxeffect __asm("a0") = mxeffect;
+	register volatile void *reg_plugin_init_data __asm("a1") = plugin_init_data;
+	register volatile void *reg_plugin_data __asm("a2") = plugin_data;
+
+	__asm__ volatile (
+		"jsr _MixPluginInitVolume\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_mxeffect), "r" (reg_plugin_init_data), "r" (reg_plugin_data)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginInitPitch(void *mxeffect,
+								void *plugin_init_data,
+								void *plugin_data)
+{
+	register volatile void *reg_mxeffect __asm("a0") = mxeffect;
+	register volatile void *reg_plugin_init_data __asm("a1") = plugin_init_data;
+	register volatile void *reg_plugin_data __asm("a2") = plugin_data;
+
+	__asm__ volatile (
+		"jsr _MixPluginInitPitch\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_mxeffect), "r" (reg_plugin_init_data), "r" (reg_plugin_data)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginDummy(void)
+{
+	__asm__ volatile (
+		"jsr _MixPluginDummy"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginRepeat(void *plugin_data,
+							 void *channel_data,
+							 UWORD loop_indicator)
+{
+	register volatile void *reg_plugin_data __asm("a1") = plugin_data;
+	register volatile void *reg_channel_data __asm("a2") = channel_data;
+	register volatile UWORD reg_loop_indicator __asm("d1") = loop_indicator;
+
+	__asm__ volatile (
+		"jsr _MixPluginRepeat\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_plugin_data), "r" (reg_channel_data), "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginSync(void *plugin_data,
+						   UWORD loop_indicator)
+{
+	register volatile void *reg_plugin_data __asm("a1") = plugin_data;
+	register volatile UWORD reg_loop_indicator __asm("d1") = loop_indicator;
+
+	__asm__ volatile (
+		"jsr _MixPluginSync\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_plugin_data), "r" , "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginVolume(void *plugin_output_buffer,
+							 void *plugin_data,
+							 UWORD bytes_to_process,
+							 UWORD loop_indicator)
+{
+	register volatile void *reg_plugin_output_buffer __asm("a0") = plugin_output_buffer;
+	register volatile void *reg_plugin_data __asm("a1") = plugin_data;
+	register volatile UWORD reg_bytes_to_process __asm("d0") = bytes_to_process;
+	register volatile UWORD reg_loop_indicator __asm("d1") = loop_indicator;
+
+	__asm__ volatile (
+		"jsr _MixPluginVolume\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_plugin_output_buffer), "r" (reg_plugin_data), 
+			"r" (reg_bytes_to_process), "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API void MixPluginPitch(void *plugin_output_buffer,
+							void *plugin_data,
+							UWORD bytes_to_process,
+							UWORD loop_indicator)
+{
+	register volatile void *reg_plugin_output_buffer __asm("a0") = plugin_output_buffer;
+	register volatile void *reg_plugin_data __asm("a1") = plugin_data;
+	register volatile UWORD reg_bytes_to_process __asm("d0") = bytes_to_process;
+	register volatile UWORD reg_loop_indicator __asm("d1") = loop_indicator;
+
+	__asm__ volatile (
+		"jsr _MixPluginPitch\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_plugin_output_buffer), "r" (reg_plugin_data), 
+			"r" (reg_bytes_to_process), "r" (reg_loop_indicator)
+		// Clobbers
+		: "cc"
+	);
+}
+							
+PLG_API ULONG MixPluginGetMultiplier(void)
+{
+	__asm__ volatile (
+		"jsr _MixPluginGetMultiplier"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API LONG MixerPluginGetMaxInitDataSize(void)
+{
+	__asm__ volatile (
+		"jsr _MixerPluginGetMaxInitDataSize"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API LONG MixerPluginGetMaxDataSize(void)
+{
+	__asm__ volatile (
+		"jsr _MixerPluginGetMaxDataSize"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+PLG_API ULONG MixPluginRatioPrecalc(MXEffect *effect_structure,
+									UWORD pitch_ratio,
+									UWORD shift_value)
+{
+	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
+	register volatile UWORD reg_pitch_ratio __asm("d0") = pitch_ratio;
+	register volatile UWORD reg_shift_value __asm("d1") = shift_value;
+	register volatile ULONG reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixPluginRatioPrecalc\n"
+		// OutputOperands
+		: "r" (reg_result)
+		// InputOperands
+		: "r" (reg_effect_structure), "r" (reg_pitch_ratio), 
+			"r" (reg_shift_value)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+#endif
+
 #endif

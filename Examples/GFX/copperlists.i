@@ -12,6 +12,7 @@
 ; TAB size = 4 spaces
 
 ; References macro
+	IFND EXREF
 EXREF	MACRO
 		IFD BUILD_COPPERLIST
 			XDEF \1
@@ -19,18 +20,15 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
+	ENDIF
 
 ; External references
 	EXREF	clist1
-	EXREF	sptrs
-	EXREF	sptrs_o
 	EXREF	pal1
 	EXREF	bpptrs
 	EXREF	bpptrs_o
 	EXREF	shifts
 	EXREF	shifts_o
-	EXREF	sprlayer1	
-	EXREF	sprlayer2
 	EXREF	sbptrs
 	EXREF	pal2
 	

@@ -20,7 +20,7 @@
 		
 		; Copperlist
 clist1	dc.w	$01fc,$0000			; AGA compatibility
-		dc.w	$008e,$2c92			; DIWSTRT/STOP (288x240+1 empty line)
+		dc.w	$008e,$2c91			; DIWSTRT/STOP (288x240+1 empty line)
 		dc.w	$0090,$1db1
 		dc.w	$0092,$0038			; DDFSTRT/STOP (304px)
 		dc.w	$0094,$00c8

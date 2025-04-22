@@ -1,4 +1,4 @@
-# Audio Mixer 3.6 documentation
+# Audio Mixer 3.7 documentation
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@
 - [Combining the mixer and a music player](#combining-the-mixer-and-a-music-player)
 - [Examples](#examples)
 - [Tools](#tools)
-- [API Changes between version 3.1/3.2 and 3.6](#api-changes-between-version-3132-and-36)
+- [API Changes between version 3.1/3.2 and 3.7](#api-changes-between-version-3132-and-37)
 - [Mixer API](#mixer-api)
 - [Callback API](#callback-api)
 - [Plugin API](#plugin-api)
@@ -56,12 +56,28 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 - Supports playback of samples of any size that will fit in RAM\*.
 - Sample rate used can be configured at assembly time, using standard Paula period values.
 - Fully PC relative code is used to make relocation as easy as possible.
+- Optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively.
 
 \*) in practice, this is limited by the largest maximum single block of free RAM that exists. A system with multiple memory expansions will be limited to a much smaller maximum sample size than the total RAM size would seem to indicate.
 
 ### Release Notes
 
 Release notes for the Audio Mixer
+
+#### v3.7
+- (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.
+- (NEW) A new C based example has been added that showcases using the new external IRQ/DMA option to run the mixer using Amiga OS interrupt handlers. The example is called OSLegalExample.
+- (NEW) A new example has been added that showcases the use of external IRQ/DMA callbacks to handle IRQ and DMA registers. The example is called ExternalIRQExample.
+- (NEW) The mixer now optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively. This option allows for, amongst other things, implementing an OS-legal interrupt server for the mixer, or implementing the mixer as part of another API.
+  - This option is configured to be off by default, use MIXER_EXTERNAL_IRQ_DMA to enable it.
+  - The callbacks can be set by calling MixerSetIRQDMACallbacks().
+- (NEW) The mixer now supports calling a routine at the end of interrupt processing, to allow user code to execute actions as close to the mixer interrupt loop as possible. This option is configured to be off by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
+  - The vector for this routine can be set by calling MixerSetReturnVector().
+- (BUGFIX) Performance test now correctly uses 68020 routines for 68020 plugin tests.
+- (BUGFIX) Fixed a potential issue with the include guard in mixer_config.i
+- (MAINTENANCE) mixer.asm, mixer.i, mixer.h, plugins.asm, plugins.i. plugins.h are now kept in only one directory, their main ones. Any duplicates needed for building the examples are now temporarily placed in the example directories and cleaned updated afterwards.
+- (MAINTENANCE) The makefile now uses batch based copy and delete operations where possible.
+- (MAINTENANCE) The makefile is now platform agnostic and will work on both Windows based systems and Unix-like systems (including Linux, BSD & Mac OS X).
 
 #### v3.6
 
@@ -369,6 +385,7 @@ The configuration consists of six sections. In the first section, the mixer type
 
       NOTE: setting this option to 1 assumes CIA-A timer A is available for use.  
       NOTE: the routine *MixerCalcTicks()* and the values mixer_ticks_last/best/ worst/average are only available if this option is set to 1.
+	  NOTE: this option should not be enabled if MIXER_EXTERNAL_IRQ_DMA is set with the goal of using Amiga OS interrupt handlers for the mixer interrupt.
 
       The option *MIXER_CIA_KBOARD_RES* is used to restore the keyboard for Amiga OS if *MIXER_CIA_TIMER* is set to one and *MixerRemoveHandler()* is called. If this option is not set, the CIA-A timer will merely be stopped. If this option is set, the CIA-A timer registers and control register A will be set such that the keyboard will function correctly in the OS.
 
@@ -399,7 +416,11 @@ The configuration consists of six sections. In the first section, the mixer type
 
       - MIXER_ENABLE_CALLBACK
       - MIXER_ENABLE_PLUGINS
+	  - MIXER_ENABLE_RETURN_VECTOR
       - MIXER_SECTION
+	  - MIXER_EXTERNAL_IRQ_DMA
+	  - MIXER_EXTERNAL_BITWISE
+	  - MIXER_EXTERNAL_RTE
       - MIXER_NO_ECHO
       - MIXER_C_DEFS
 
@@ -423,6 +444,16 @@ The configuration consists of six sections. In the first section, the mixer type
       MIXER_ENABLE_PLUGINS    EQU 1
       ```
 
+      The option *MIXER_ENABLE_RETURN_VECTOR* can be used to enable calling a routine at the end of the mixer interrupt handler.
+	  
+	  Enabling return vector support has a small CPU overhead cost. In addition, the routine called will also add to the interrupt overhead.
+
+      To enable return vector support, set the equate to 1:
+
+      ```
+      MIXER_ENABLE_RETURN_VECTOR    EQU 1
+      ```
+
       The option *MIXER_SECTION* can be used to disable adding the mixer to section code,code. By default this option is set to 1 and the mixer is added to section code,code. If set to 0, the mixer is not added to any section.
 
       To enable this option, set the equate to 1:
@@ -432,6 +463,35 @@ The configuration consists of six sections. In the first section, the mixer type
       ```
 
       NOTE: normally, this setting should not be changed. But in certain situations it can be useful to not utilise sections. In those cases, set the value to 0.
+
+
+      The option *MIXER_EXTERNAL_IRQ_DMA* can be used to enable external handling of the INTENA, INTREQ and DMACON registers. In addition it also enables setting the interrupt handler vector. If this setting is enabled, these tasks will be given to callbacks the mixer will call when needed. Setting up these callbacks is done through the MixerSetIRQDMACallbacks() function. See the ["Mixer API"](#mixer-api) for more information.
+
+      Enabling external IRQ and DMA support has a small CPU overhead cost.
+
+      To enable external IRQ and DMA support, set the equate to 1:
+
+      ```
+      MIXER_EXTERNAL_IRQ_DMA    EQU 1
+	  ```
+	  
+      The option *MIXER_EXTERNAL_BITWISE* can be used to enable the mixer IRQ & DMA callback support to only set one bit per callback. This option is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+
+      Enabling bitwise operations has a small CPU overhead cost.
+
+      To enable bitwise operations, set the equate to 1:
+
+      ```
+      MIXER_EXTERNAL_BITWISE    EQU 1
+	  ```
+	  
+      The option *MIXER_EXTERNAL_RTE* can be used to change the behaviour of the MIXER_EXTERNAL_IRQ_DMA setting. Normally, this will cause the mixer interrupt to end in an RTS instruction. Setting this option to 1 changes that to be an RTE. This option is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+
+      To enable external RTE support, set the equate to 1:
+
+      ```
+      MIXER_EXTERNAL_RTE    EQU 1
+	  ```
 
       The option *MIXER_NO_ECHO* can be set to 1 to disable the use of the "echo" directive to display certain messages during assembly. Not all assemblers support the use of the "echo" directive and with this option such assemblers might still be usable.
 
@@ -762,11 +822,19 @@ The mixer comes with a number of example programs which show the abilities of th
 
   It also allows you to select a plugin to use. You can select no plugin, an example custom plugin that replaces the sample played back by a simple sine wave, the built-in repeat plugin, the built-in synchronisation plugin, the built-in volume plugin and the built-in pitch change plugin.
 
+- #### ExternalIRQExample
+
+  An example program with external IRQ/DMA handling enabled and a minimum of extra features or support code. The purpose of the example is to show a simple case of using external IRQ/DMA handling with the mixer. Note that this example does not disable the OS, assumes the VBR is at address 0 and that the code is running on a PAL Amiga.
+
 - #### CMixerExample
 
   An example program that shows the ability of the mixer to be integrated in C programs. Like the MinimalMixerExample, the example is kept as simple as possible. Note that this example does not disable the OS, assumes the VBR is at address 0 and that the code is running on a PAL Amiga.
 
   Unlike the MinimalMixerExample however, it also shows the use of plugins and callback routines. The plugin used to showcase plugin use is the pitch change plugin.
+
+- #### OSLegalExample
+
+  An example program in C that shows how to use the mixer in an OS legal way.
 
 ### Tools
 
@@ -798,9 +866,9 @@ Alongside the mixer, two tools have been included. These tools are:
 
   Note that this conversion process is only strictly needed for the standard mixing mode, the high quality mode can play back normal 8-bit samples. However, it can still be useful to run the SampleConverter with the number of software channels set to 1 as a convenient way to pad the samples to a multiple of 4 bytes (which is still required for the high quality mode).
 
-### API Changes between version 3.1/3.2 and 3.6
+### API Changes between version 3.1/3.2 and 3.7
 
-Version 3.6 of the mixer makes several changes to the existing API. These changes are summarised in this section. For more detailed information, see [Mixer API](#mixer-api), [Callback API](#callback-api), [Plugin API](#plugin-api) and [Performance Measuring API](#performance-measuring-api).
+Version 3.7 of the mixer makes several changes to the existing API. These changes are summarised in this section. For more detailed information, see [Mixer API](#mixer-api), [Callback API](#callback-api), [Plugin API](#plugin-api) and [Performance Measuring API](#performance-measuring-api).
 
 #### New API's
 
@@ -959,6 +1027,71 @@ For 68020+ based systems, it's recommended to store samples on 4 byte boundaries
   - mfx_SIZEOF  
     Gives the length of the structure in bytes
 
+- MXIRQDMACallbacks
+  This structure is only available if *MIXER_EXTERNAL_IRQ_DMA* is set to 1 and is used by the function
+  MixerSetIRQDMACallbacks() to set the callback function pointers it requires.
+
+  The structure elements are as follows:
+
+  - mxicb_set_irq_vector 
+    Function pointer to routine that sets the IRQ vector for audio interrupts. 
+    This function has a parameter:
+
+    - A0 = vector to mixer interrupt handler
+
+    Note: the mixer interrupt handler will return using RTS rather
+          than RTE when using external IRQ/DMA callbacks. This
+          behaviour can be overridden by setting 
+          MIXER_EXTERNAL_RTE to 1, in which case the interrupt
+          handler will exit using RTE.
+  - mxicb_remove_irq_vector
+    Function pointer to routine that removes the IRQ vector for audio interrupts.
+
+    Note: if MIXER_EXTERNAL_BITWISE is set to 1, this routine is 
+          also responsible for resetting INTENA to the value it 
+          had prior to calling MixerInstallHandler(), if this is
+          desired.
+          When MIXER_EXTERNAL_BITWISE is set to 0, this is done by
+          the mixer automatically
+  - mxicb_set_irq_bits
+    Function pointer to routine that sets the correct bits in INTENA to enable audio interrupts for the mixer.
+
+    This function has a parameter:
+    - D0 = INTENA bits to set
+
+    Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits
+          are passed as individual INTENA values, where the 
+          set/clear bit is set as appropriate
+  - mxicb_disable_irq
+    Function pointer to routine that disables audio interrupts
+
+    This function has a parameter:
+    - D0 = INTENA bits to disable
+
+    Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits
+          are passed as individual INTENA values, where the
+          set/clear bit is set as appropriate
+    Note: this is a separate routine from mxicb_set_irq_bits
+          because disabling interrupts should also make sure to
+          reset the corresponding bits in INTREQ
+  - mxicb_acknowledge_irq
+    Function pointer to routine that acknowledges audio interrupt.
+
+    This function has a parameter:
+    - D0 = INTREQ value
+
+    Note: this will always pass the INTREQ value for a single
+          channel.
+  - mxicb_set_dmacon
+    Function pointer to routine that enables audio DMA.
+
+    This function has a parameter:
+    - D0 = DMACON value
+
+    Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits
+          are passed as individual DMACON values, where the
+          set/clear bit is set as appropriate
+
 #### Routine info follows:
 
 *MixerSetup(A0=buffer, A1=plugin_buffer, A2=plugin_data, D0=video_system.w, D1=plugin_data_length.w)*  
@@ -1064,6 +1197,32 @@ This routine returns the total number of internal channels the mixer supports fo
 
 *D0=MixerGetChannelBufferSize()*  
 This routine returns the value of the internal mixer buffer size. This is the size of the buffer the mixer uses per HW audio channel assigned to it. Its primary purpose is to give plugins a way to get this value without needing access to the internal mixer structure.
+
+*MixerSetReturnVector(A0=return_function_ptr)*  
+This routine sets the optional vector the mixer can call at to at the end of interrupt execution.
+
+Note: this vector should point to a standard routine ending in RTS.
+
+*MixerSetIRQDMACallbacks(A0=callback_structure)*  
+This routine sets up the vectors used for callback routines to 
+manage setting up interrupt vectors and DMA flags. This routine and
+associated callbacks are only required if MIXER_EXTERNAL_IRQ_DMA is
+set to 1 in mixer_config.i.
+
+The function has a parameter:
+
+- A0 - Points to an instance of the *MXIRQDMACallbacks* structure
+
+Note: MixerSetup should be run before calling this routine
+
+Note: if MIXER_C_DEFS is set to 0, all callback routines should save &
+      restore all registers they use. 
+      If MIXER_C_DEFS is set to 1, registers d0,d1,a0 and a1 will be
+      pushed to and popped from the stack by the mixer. All callback 
+      routines should save & restore all other registers they use.
+
+Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
+
 
 #### The following two routines are deprecated and will no longer receive new functionality when the mixer is updated. They are still available for backwards compatibility purposes and have been updated with the new offset loop mode.
 
@@ -1691,13 +1850,13 @@ In order to use the Mixer in C programs, several steps need to be followed:
 
 - mixer.h must be included into the C program which is to use the mixer
 
-  Note: mixer.h is designed for VBCC & Bebbo's GCC compiler. Other compilers will need a different method for calling the functions. It should be possible to make the mixer work with other compilers, but only VBCC and Bebbo's GCC compiler are officially supported.
+  Note: mixer.h is designed for VBCC, Bebbo's GCC compiler and Bartman's GCC compiler. Other compilers will need a different method for calling the functions. It should be possible to make the mixer work with other compilers, but only VBCC, Bebbo and Bartman are officially supported.
 
 If the above is done, the mixer API (as described in ["Mixer API"](#mixer-api)) becomes available to the C program. The C program will now need to follow the steps in ["Using the mixer"](#using-the-mixer) to enable mixing.
 
 The complete function prototypes that can be used by C programs can be found in mixer.h (note that this is the same set of routines that are offered through mixer.i for assembly programs).
 
-As pointed out above, the supplied mixer.h file is designed for use with VBCC and Bebbo's version of the GCC compiler. To use the mixer using other GCC based compilers, a set of calling routines needs to be constructed. (these are not provided in this package)
+As pointed out above, the supplied mixer.h file is designed for use with VBCC, Bebbo and Bartman. To use the mixer using other GCC based compilers, a set of calling routines needs to be constructed. (these are not provided in this package)
 
 #### Two examples of how to make these routines follows:
 

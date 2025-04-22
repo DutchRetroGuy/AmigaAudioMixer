@@ -18,6 +18,10 @@
 	include	mixer.i
 	include plugins_config.i
 	include	plugins.i
+
+	IFD BUILD_MIXER_DEBUG
+		include debug.i
+	ENDIF
 	
 ; Start of code
 		section code,code
@@ -70,7 +74,25 @@ MPlLongDiv	MACRO
 			movem.l	(sp)+,\4/\5				; Stack
 		ENDIF
 			ENDM
-		
+
+;*****************************************************************************
+;*****************************************************************************
+; Plugins all code macro
+; This macro allows adding a postfix to plugin routines & variables. This is
+; used by the PerfomanceTest tool to be able to utilise many different 
+; configurations for the plugins.
+;
+; \1 - postfix to use
+;
+; Note: by default, the plugins will not use a postfix. Enabling this is done
+;       by setting the BUILD_MIXER_POSTFIX build flag. This will disable the
+;       automatic use of this macro at the end of mixer.asm
+; 
+;*****************************************************************************
+;*****************************************************************************
+PlgAllCode	MACRO	
+
+	
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
 ;-----------------------------------------------------------------------------
@@ -82,7 +104,7 @@ MPlLongDiv	MACRO
 		;
 		; Plugin type: PLUGIN_NODATA or PLUGIN_STD
 		; Plugin data structure: N/A
-MixPluginInitDummy
+MixPluginInitDummy\1
 		rts
 		
 		; Routine: MixPluginInitPitch
@@ -165,7 +187,7 @@ MixPluginInitDummy
 		;      MixerPlayFX() or MixerPlayChannelFX()
 		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
 		;      MixerPlayChannelFX()
-MixPluginInitPitch
+MixPluginInitPitch\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d1,-(sp)					; Stack
 
@@ -239,7 +261,7 @@ MixPluginInitPitch
 
 		; 6) Calculate new length/loop offset values
 		moveq	#3,d1						; Set length/offset shift to 3
-		bsr		MixPluginRatioPrecalc
+		bsr		MixPluginRatioPrecalc\1
 	
 .done
 		movem.l	(sp)+,d0/d1					; Stack
@@ -285,7 +307,7 @@ MixPluginInitPitch
 		;      MixerPlayFX() or MixerPlayChannelFX()
 		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
 		;      MixerPlayChannelFX()
-MixPluginInitVolume
+MixPluginInitVolume\1
 	IF MXPLUGIN_VOLUME=1
 		move.w	d0,-(sp)					; Stack
 		
@@ -340,7 +362,7 @@ MixPluginInitVolume
 		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
 		;      MixerPlayChannelFX()
 		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
-MixPluginInitRepeat
+MixPluginInitRepeat\1
 	IF MXPLUGIN_REPEAT=1
 		move.l	d0,-(sp)					; Stack
 	
@@ -450,7 +472,7 @@ MixPluginInitRepeat
 		;      MixerPlayFX() or MixerPlayChannelFX()
 		; A2 - Pointer to plugin data structure, as passed by MixerPlayFX() or
 		;      MixerPlayChannelFX()
-MixPluginInitSync
+MixPluginInitSync\1
 	IF MXPLUGIN_SYNC=1
 		; Copy over mpid values
 		move.l	mpid_snc_address(a1),mpd_snc_address(a2)
@@ -476,7 +498,11 @@ MixPluginInitSync
 		movem.l	d0/d1,-(sp)					; Stack
 		
 		; Set up correct delay value for MXPLG_SYNC_END
-		bsr		MixerGetChannelBufferSize
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
 		move.l	mfx_length(a0),d1
 		divu.w	d0,d1
 		swap	d1
@@ -488,7 +514,7 @@ MixPluginInitSync
 		
 .no_remainder
 		swap	d1
-		move.w	d1,mpd_snc_delay(a1)
+		move.w	d1,mpd_snc_delay(a2)
 		
 		movem.l	(sp)+,d0/d1					; Stack
 		
@@ -511,7 +537,7 @@ MixPluginInitSync
 		;
 		; Plugin type: PLUGIN_NODATA or PLUGIN_STD
 		; Plugin data structure: N/A
-MixPluginDummy
+MixPluginDummy\1
 		rts
 		
 		; Routine: MixPluginPitch
@@ -527,7 +553,7 @@ MixPluginDummy
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginPitch
+MixPluginPitch\1
 	IF MXPLUGIN_PITCH=1
 		move.l	d7,-(sp)
 		
@@ -553,15 +579,15 @@ MixPluginPitch
 		ENDIF
 		
 .jp_table
-		jmp		MixPluginPitch1x(pc)
-		jmp		MixPluginPitchStandard(pc)
-		jmp		MixPluginPitchLowQuality(pc)
+		jmp		MixPluginPitch1x\1(pc)
+		jmp		MixPluginPitchStandard\1(pc)
+		jmp		MixPluginPitchLowQuality\1(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
 	ENDIF
 
-MixPluginPitch1x
+MixPluginPitch1x\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0/d6/a0/a2,-(sp)			; Stack
 
@@ -607,7 +633,7 @@ MixPluginPitch1x
 	ENDIF
 		rts
 		
-MixPluginPitchStandard
+MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2,-(sp)			; Stack
 		
@@ -657,34 +683,34 @@ MixPluginPitchStandard
 		bmi.s	.lp_done
 		
 		; Process D2 longwords
-		IF MIXER_68020=1
-			move.l	d0,-(sp)
-
-.lp		
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			lsl.l	#8,d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),d0
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.l	d0,(a0)+
-			dbra	d2,.lp
-			
-			move.l	(sp)+,d0
-		ELSE
+;		IF MIXER_68020=1
+;			move.l	d0,-(sp)
+;
+;.lp		
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			lsl.l	#8,d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.b	0(a2,d1.l),d0
+;			add.b	d4,d5
+;			addx.l	d6,d1
+;			add.l	d3,d1
+;			move.l	d0,(a0)+
+;			dbra	d2,.lp
+;			
+;			move.l	(sp)+,d0
+;		ELSE
 .lp		
 			move.b	0(a2,d1.l),(a0)+
 			add.b	d4,d5
@@ -705,7 +731,7 @@ MixPluginPitchStandard
 			dbra	d2,.lp
 			
 			tst.w	d0
-		ENDIF
+;		ENDIF
 		beq.s	.lp_done
 		
 		; More bytes to process
@@ -739,7 +765,7 @@ MixPluginPitchStandard
 	ENDIF
 		rts
 		
-MixPluginPitchLowQuality
+MixPluginPitchLowQuality\1
 	IF MXPLUGIN_PITCH=1
 		movem.l	d0-d6/a0/a2,-(sp)			; Stack
 		
@@ -848,7 +874,7 @@ MixPluginPitchLowQuality
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)	
-MixPluginVolume
+MixPluginVolume\1
 	IF MXPLUGIN_VOLUME=1
 		move.l	d7,-(sp)
 		
@@ -874,15 +900,15 @@ MixPluginVolume
 		ENDIF
 		
 .jp_table
-		jmp		MixPluginVolumeTable(pc)
-		jmp		MixPluginVolumeShift(pc)
+		jmp		MixPluginVolumeTable\1(pc)
+		jmp		MixPluginVolumeShift\1(pc)
 		
 .done	move.l	(sp)+,d7
 		rts
 	ENDIF
 
 		; Table based volume
-MixPluginVolumeTable
+MixPluginVolumeTable\1
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
 		
@@ -915,7 +941,7 @@ MixPluginVolumeTable
 			beq.s	.max_volume
 			
 			; Fill output buffer based on volume table
-			lea.l	vol_level_1(pc),a2
+			lea.l	vol_level_1\1(pc),a2
 			move.l	mpd_vol_sample_ptr(a1),a3
 			add.l	mpd_vol_sample_offset(a1),a3
 			move.w	mpd_vol_table_offset(a1),d6
@@ -924,25 +950,25 @@ MixPluginVolumeTable
 			moveq	#0,d6
 
 .lp_vol		
-			IF MIXER_68020=1
-				move.l	(a3)+,d4
-				rol.l	#8,d4
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				rol.l	#8,d4
-				move.b	0(a2,d6.w),d5
-				lsl.l	#8,d5
-				move.b	d4,d6
-				move.b	0(a2,d6.w),d5
-				move.l	d5,(a0)+
-			ELSE
+;			IF MIXER_68020=1
+;				move.l	(a3)+,d4
+;				rol.l	#8,d4
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				rol.l	#8,d4
+;				move.b	0(a2,d6.w),d5
+;				lsl.l	#8,d5
+;				move.b	d4,d6
+;				move.b	0(a2,d6.w),d5
+;				move.l	d5,(a0)+
+;			ELSE
 				move.b	(a3)+,d6
 				move.b	0(a2,d6.w),(a0)+
 				move.b	(a3)+,d6
@@ -951,7 +977,7 @@ MixPluginVolumeTable
 				move.b	0(a2,d6.w),(a0)+
 				move.b	(a3)+,d6
 				move.b	0(a2,d6.w),(a0)+
-			ENDIF
+;			ENDIF
 			dbra	d7,.lp_vol
 			bra.s	.update_sample_offset
 		
@@ -997,7 +1023,7 @@ MixPluginVolumeTable
 		rts
 		
 		; Shift based volume
-MixPluginVolumeShift
+MixPluginVolumeShift\1
 	IF MXPLUGIN_VOLUME=1
 		IF MIXER_68020=1
 			movem.l	d0/d2-d6/a0-a3,-(sp)	; Stack
@@ -1042,7 +1068,9 @@ MixPluginVolumeShift
 		IF MIXER_68020=1
 			; Setup masks for use in the loop
 			IF MXPLUGIN_68020_ONLY=1
+				mc68020
 				jmp	.shift_mask_jptable(pc,d6.w*8)
+				mc68000
 			ELSE
 				move.w	d6,d5
 				asl.w	#3,d5
@@ -1162,7 +1190,7 @@ MixPluginVolumeShift
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginRepeat
+MixPluginRepeat\1
 	IF MXPLUGIN_REPEAT=1
 		; Test if the effect triggered already
 		tst.w	mpd_rep_triggered(a1)
@@ -1178,8 +1206,12 @@ MixPluginRepeat
 		move.w	#1,mpd_rep_triggered(a1)
 		
 		; Set deferred action routine
-		lea.l	MixPluginRepeatDeferred(pc),a0
-		bsr		MixerSetPluginDeferredPtr
+		lea.l	MixPluginRepeatDeferred\1(pc),a0
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerSetPluginDeferredPtr\1
+		ELSE
+			bsr		MixerSetPluginDeferredPtr\1
+		ENDIF
 		move.l	(sp)+,a0					; Stack
 .done
 	ENDIF
@@ -1197,13 +1229,13 @@ MixPluginRepeat
 		; Plugin data structure: MXPDRepeatData
 		;
 		;   A1 - Pointer to the plugin data structure
-MixPluginRepeatDeferred
+MixPluginRepeatDeferred\1
 	IF MXPLUGIN_REPEAT=1
 		; Delay done, fire the repeat
 		movem.l	d0/a0,-(sp)					; Stack
 
 		; Fill FX struct
-		lea.l	plugin_fx_struct(pc),a0
+		lea.l	plugin_fx_struct\1(pc),a0
 		move.l	mpd_rep_length(a1),mfx_length(a0)
 		move.l	mpd_rep_sample_ptr(a1),mfx_sample_ptr(a0)
 		move.w	mpd_rep_loop(a1),mfx_loop(a0)
@@ -1213,7 +1245,11 @@ MixPluginRepeatDeferred
 		
 		; Play the sample again (if a channel is free)
 		move.w	mpd_rep_channel(a1),d0
-		bsr		MixerPlayFX
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerPlayFX\1
+		ELSE
+			bsr		MixerPlayFX\1
+		ENDIF
 
 		movem.l	(sp)+,d0/a0					; Stack
 	ENDIF
@@ -1229,7 +1265,7 @@ MixPluginRepeatDeferred
 		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
 		;        loop offset (or at its start in case the loop offset is not
 		;        set)
-MixPluginSync
+MixPluginSync\1
 	IF MXPLUGIN_SYNC=1
 		; Test if the sync plugin is done
 		tst.w	mpd_snc_done(a1)
@@ -1367,7 +1403,11 @@ MixPluginSync
 		
 .sync_deferred
 		; Set deferred action routine
-		bsr		MixerSetPluginDeferredPtr
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerSetPluginDeferredPtr\1
+		ELSE
+			bsr		MixerSetPluginDeferredPtr\1
+		ENDIF
 
 .sync_update_done
 		movem.l	(sp)+,d6/d7/a0				; Stack
@@ -1384,7 +1424,7 @@ MixPluginSync
 		; of.
 		;
 		; D0 - Minimum multiple size
-MixPluginGetMultiplier
+MixPluginGetMultiplier\1
 		IF MIXER_SIZEX32=1
 			IF MIXER_SIZEXBUF=1
 				moveq	#MXPLG_MULTIPLIER_BUFSIZE,d0
@@ -1403,14 +1443,14 @@ MixPluginGetMultiplier
 		; Routine: MixerPluginGetMaxInitDataSize
 		; This routine returns the maximum size of any of the plugin init data
 		; structures.
-MixerPluginGetMaxInitDataSize
+MixerPluginGetMaxInitDataSize\1
 		move.l	#mxplg_max_idata_size,d0
 		rts
 		
 		; Routine: MixerPluginGetMaxDataSize
 		; This routine returns the maximum size of any of the plugin data
 		; structures.
-MixerPluginGetMaxDataSize
+MixerPluginGetMaxDataSize\1
 		move.l	#mxplg_max_data_size,d0
 		rts
 
@@ -1433,7 +1473,7 @@ MixerPluginGetMaxDataSize
 		; A0 - Pointer to filled MXEffect structure
 		; D0 - FP8.8 ratio value
 		; D1 - Shift value
-MixPluginRatioPrecalc
+MixPluginRatioPrecalc\1
 		movem.l	d0-d3/d5-d7,-(sp)			; Stack
 
 		; Save shift value in D2 & ratio in D3
@@ -1546,11 +1586,11 @@ MixPluginRatioPrecalc
 	IF MIXER_68020=1
 		cnop 0,4
 	ENDIF
-plugin_fx_struct		blk.b	mfx_SIZEOF
+plugin_fx_struct\1		blk.b	mfx_SIZEOF
 
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
-vol_level_1		dc.b -9,-8,-8,-8,-8,-8,-8,-8
+vol_level_1\1	dc.b -9,-8,-8,-8,-8,-8,-8,-8
 				dc.b -8,-8,-8,-8,-8,-8,-8,-8
 				dc.b -7,-7,-7,-7,-7,-7,-7,-7
 				dc.b -7,-7,-7,-7,-7,-7,-7,-6
@@ -1583,7 +1623,7 @@ vol_level_1		dc.b -9,-8,-8,-8,-8,-8,-8,-8
 				dc.b 7,8,8,8,8,8,8,8
 				dc.b 8,8,8,8,8,8,8,8
 
-vol_level_2		dc.b -17,-17,-17,-17,-17,-16,-16,-16
+vol_level_2\1	dc.b -17,-17,-17,-17,-17,-16,-16,-16
 				dc.b -16,-16,-16,-16,-15,-15,-15,-15
 				dc.b -15,-15,-15,-15,-14,-14,-14,-14
 				dc.b -14,-14,-14,-13,-13,-13,-13,-13
@@ -1616,7 +1656,7 @@ vol_level_2		dc.b -17,-17,-17,-17,-17,-16,-16,-16
 				dc.b 15,15,15,15,15,16,16,16
 				dc.b 16,16,16,16,17,17,17,17
 
-vol_level_3		dc.b -26,-25,-25,-25,-25,-25,-24,-24
+vol_level_3\1	dc.b -26,-25,-25,-25,-25,-25,-24,-24
 				dc.b -24,-24,-24,-23,-23,-23,-23,-23
 				dc.b -22,-22,-22,-22,-22,-21,-21,-21
 				dc.b -21,-21,-20,-20,-20,-20,-20,-19
@@ -1649,7 +1689,7 @@ vol_level_3		dc.b -26,-25,-25,-25,-25,-25,-24,-24
 				dc.b 22,23,23,23,23,23,24,24
 				dc.b 24,24,24,25,25,25,25,25
 
-vol_level_4		dc.b -34,-34,-34,-33,-33,-33,-33,-32
+vol_level_4\1	dc.b -34,-34,-34,-33,-33,-33,-33,-32
 				dc.b -32,-32,-31,-31,-31,-31,-30,-30
 				dc.b -30,-30,-29,-29,-29,-29,-28,-28
 				dc.b -28,-27,-27,-27,-27,-26,-26,-26
@@ -1682,7 +1722,7 @@ vol_level_4		dc.b -34,-34,-34,-33,-33,-33,-33,-32
 				dc.b 30,30,30,31,31,31,31,32
 				dc.b 32,32,33,33,33,33,34,34
 
-vol_level_5		dc.b -43,-42,-42,-42,-41,-41,-41,-40
+vol_level_5\1	dc.b -43,-42,-42,-42,-41,-41,-41,-40
 				dc.b -40,-40,-39,-39,-39,-38,-38,-38
 				dc.b -37,-37,-37,-36,-36,-36,-35,-35
 				dc.b -35,-34,-34,-34,-33,-33,-33,-32
@@ -1715,7 +1755,7 @@ vol_level_5		dc.b -43,-42,-42,-42,-41,-41,-41,-40
 				dc.b 37,38,38,38,39,39,39,40
 				dc.b 40,40,41,41,41,42,42,42
 
-vol_level_6		dc.b -51,-51,-50,-50,-50,-49,-49,-48
+vol_level_6\1	dc.b -51,-51,-50,-50,-50,-49,-49,-48
 				dc.b -48,-48,-47,-47,-46,-46,-46,-45
 				dc.b -45,-44,-44,-44,-43,-43,-42,-42
 				dc.b -42,-41,-41,-40,-40,-40,-39,-39
@@ -1748,7 +1788,7 @@ vol_level_6		dc.b -51,-51,-50,-50,-50,-49,-49,-48
 				dc.b 45,45,46,46,46,47,47,48
 				dc.b 48,48,49,49,50,50,50,51
 
-vol_level_7		dc.b -60,-59,-59,-58,-58,-57,-57,-56
+vol_level_7\1	dc.b -60,-59,-59,-58,-58,-57,-57,-56
 				dc.b -56,-56,-55,-55,-54,-54,-53,-53
 				dc.b -52,-52,-51,-51,-50,-50,-49,-49
 				dc.b -49,-48,-48,-47,-47,-46,-46,-45
@@ -1781,7 +1821,7 @@ vol_level_7		dc.b -60,-59,-59,-58,-58,-57,-57,-56
 				dc.b 52,53,53,54,54,55,55,56
 				dc.b 56,56,57,57,58,58,59,59
 
-vol_level_8		dc.b -68,-68,-67,-67,-66,-66,-65,-65
+vol_level_8\1	dc.b -68,-68,-67,-67,-66,-66,-65,-65
 				dc.b -64,-63,-63,-62,-62,-61,-61,-60
 				dc.b -60,-59,-59,-58,-58,-57,-57,-56
 				dc.b -55,-55,-54,-54,-53,-53,-52,-52
@@ -1814,7 +1854,7 @@ vol_level_8		dc.b -68,-68,-67,-67,-66,-66,-65,-65
 				dc.b 60,60,61,61,62,62,63,63
 				dc.b 64,65,65,66,66,67,67,68
 
-vol_level_9		dc.b -77,-76,-76,-75,-74,-74,-73,-73
+vol_level_9\1	dc.b -77,-76,-76,-75,-74,-74,-73,-73
 				dc.b -72,-71,-71,-70,-70,-69,-68,-68
 				dc.b -67,-67,-66,-65,-65,-64,-64,-63
 				dc.b -62,-62,-61,-61,-60,-59,-59,-58
@@ -1847,7 +1887,7 @@ vol_level_9		dc.b -77,-76,-76,-75,-74,-74,-73,-73
 				dc.b 67,68,68,69,70,70,71,71
 				dc.b 72,73,73,74,74,75,76,76
 
-vol_level_10	dc.b -85,-85,-84,-83,-83,-82,-81,-81
+vol_level_10\1	dc.b -85,-85,-84,-83,-83,-82,-81,-81
 				dc.b -80,-79,-79,-78,-77,-77,-76,-75
 				dc.b -75,-74,-73,-73,-72,-71,-71,-70
 				dc.b -69,-69,-68,-67,-67,-66,-65,-65
@@ -1880,7 +1920,7 @@ vol_level_10	dc.b -85,-85,-84,-83,-83,-82,-81,-81
 				dc.b 75,75,76,77,77,78,79,79
 				dc.b 80,81,81,82,83,83,84,85
 
-vol_level_11	dc.b -94,-93,-92,-92,-91,-90,-89,-89
+vol_level_11\1	dc.b -94,-93,-92,-92,-91,-90,-89,-89
 				dc.b -88,-87,-87,-86,-85,-84,-84,-83
 				dc.b -82,-81,-81,-80,-79,-78,-78,-77
 				dc.b -76,-76,-75,-74,-73,-73,-72,-71
@@ -1913,7 +1953,7 @@ vol_level_11	dc.b -94,-93,-92,-92,-91,-90,-89,-89
 				dc.b 82,83,84,84,85,86,87,87
 				dc.b 88,89,89,90,91,92,92,93
 
-vol_level_12	dc.b -102,-102,-101,-100,-99,-98,-98,-97
+vol_level_12\1	dc.b -102,-102,-101,-100,-99,-98,-98,-97
 				dc.b -96,-95,-94,-94,-93,-92,-91,-90
 				dc.b -90,-89,-88,-87,-86,-86,-85,-84
 				dc.b -83,-82,-82,-81,-80,-79,-78,-78
@@ -1946,7 +1986,7 @@ vol_level_12	dc.b -102,-102,-101,-100,-99,-98,-98,-97
 				dc.b 90,90,91,92,93,94,94,95
 				dc.b 96,97,98,98,99,100,101,102
 
-vol_level_13	dc.b -111,-110,-109,-108,-107,-107,-106,-105
+vol_level_13\1	dc.b -111,-110,-109,-108,-107,-107,-106,-105
 				dc.b -104,-103,-102,-101,-101,-100,-99,-98
 				dc.b -97,-96,-95,-94,-94,-93,-92,-91
 				dc.b -90,-89,-88,-88,-87,-86,-85,-84
@@ -1979,7 +2019,7 @@ vol_level_13	dc.b -111,-110,-109,-108,-107,-107,-106,-105
 				dc.b 97,98,99,100,101,101,102,103
 				dc.b 104,105,106,107,107,108,109,110
 
-vol_level_14	dc.b -119,-119,-118,-117,-116,-115,-114,-113
+vol_level_14\1	dc.b -119,-119,-118,-117,-116,-115,-114,-113
 				dc.b -112,-111,-110,-109,-108,-107,-106,-105
 				dc.b -105,-104,-103,-102,-101,-100,-99,-98
 				dc.b -97,-96,-95,-94,-93,-92,-91,-91
@@ -2018,40 +2058,54 @@ vol_level_14	dc.b -119,-119,-118,-117,-116,-115,-114,-113
 		
 		IF MIXER_C_DEFS=1
 ; C style routine aliases
-_MixPluginInitDummy				EQU MixPluginInitDummy
-_MixPluginInitRepeat			EQU MixPluginInitRepeat
-_MixPluginInitSync				EQU MixPluginInitSync
-_MixPluginInitVolume			EQU MixPluginInitVolume
-_MixPluginInitPitch				EQU MixPluginInitPitch
+_MixPluginInitDummy\1				EQU MixPluginInitDummy\1
+_MixPluginInitRepeat\1				EQU MixPluginInitRepeat\1
+_MixPluginInitSync\1				EQU MixPluginInitSync\1
+_MixPluginInitVolume\1				EQU MixPluginInitVolume\1
+_MixPluginInitPitch\1				EQU MixPluginInitPitch\1
 
-_MixPluginDummy					EQU MixPluginDummy
-_MixPluginRepeat				EQU MixPluginRepeat
-_MixPluginSync					EQU MixPluginSync
-_MixPluginVolume				EQU MixPluginVolume
-_MixPluginPitch					EQU MixPluginPitch
-_MixPluginRatioPrecalc			EQU	MixPluginRatioPrecalc
+_MixPluginDummy\1					EQU MixPluginDummy\1
+_MixPluginRepeat\1					EQU MixPluginRepeat\1
+_MixPluginSync\1					EQU MixPluginSync\1
+_MixPluginVolume\1					EQU MixPluginVolume\1
+_MixPluginPitch\1					EQU MixPluginPitch\1
+_MixPluginRatioPrecalc\1			EQU	MixPluginRatioPrecalc\1
 
-_MixPluginGetMultiplier			EQU MixPluginGetMultiplier
-_MixerPluginGetMaxInitDataSize	EQU MixerPluginGetMaxInitDataSize
-_MixerPluginGetMaxDataSize		EQU MixerPluginGetMaxDataSize
+_MixPluginGetMultiplier\1			EQU MixPluginGetMultiplier\1
+_MixerPluginGetMaxInitDataSize\1	EQU MixerPluginGetMaxInitDataSize\1
+_MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 
-	XDEF	_MixPluginInitDummy
-	XDEF	_MixPluginInitRepeat
-	XDEF	_MixPluginInitSync
-	XDEF	_MixPluginInitVolume
-	XDEF	_MixPluginInitPitch
+	XDEF	_MixPluginInitDummy\1
+	XDEF	_MixPluginInitRepeat\1
+	XDEF	_MixPluginInitSync\1
+	XDEF	_MixPluginInitVolume\1
+	XDEF	_MixPluginInitPitch\1
 
-	XDEF	_MixPluginDummy
-	XDEF	_MixPluginRepeat
-	XDEF	_MixPluginSync
-	XDEF	_MixPluginVolume
-	XDEF	_MixPluginPitch
+	XDEF	_MixPluginDummy\1
+	XDEF	_MixPluginRepeat\1
+	XDEF	_MixPluginSync\1
+	XDEF	_MixPluginVolume\1
+	XDEF	_MixPluginPitch\1
 
-	XDEF	_MixPluginGetMultiplier
-	XDEF	_MixerPluginGetMaxInitDataSize
-	XDEF	_MixerPluginGetMaxDataSize
-	XDEF	_MixPluginRatioPrecalc
+	XDEF	_MixPluginGetMultiplier\1
+	XDEF	_MixerPluginGetMaxInitDataSize\1
+	XDEF	_MixerPluginGetMaxDataSize\1
+	XDEF	_MixPluginRatioPrecalc\1
 
 		ENDIF
+	ENDM
+	
+;*****************************************************************************
+;*****************************************************************************
+; End of plugins code base macro
+;*****************************************************************************
+;*****************************************************************************
+
+;-----------------------------------------------------------------------------
+; Run Plugins Macro if not in postfix mode
+;-----------------------------------------------------------------------------
+	IFND BUILD_MIXER_POSTFIX
+		PlgAllCode
+	ENDIF
 
 ; End of File

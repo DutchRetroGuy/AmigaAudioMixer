@@ -12,8 +12,8 @@
  *       instabilities considering the way the mixer works.
  *
  * Author: Jeroen Knoester
- * Version: 1.0
- * Revision: 20230319
+ * Version: 1.1
+ * Revision: 20250129
  *
  * TAB size = 4 spaces
  */
@@ -26,6 +26,7 @@
 #include <exec/exec.h>
 #include <proto/exec.h>
 #include <hardware/dmabits.h>
+
 #include "mixer/mixer.h"
 #include "plugins/plugins.h"
 
@@ -134,12 +135,23 @@ void ConvertSample(signed char *sample, ULONG size, int voices)
 }
 
 /* Callback function */
-int callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
-                      MIX_REGARG(UWORD mixer_channel,"d0"))
+#if !defined(BARTMAN_GCC) || defined(__INTELLISENSE__)
+ULONG callback_function(MIX_REGARG(APTR sample_pointer,"a0"),
+                        MIX_REGARG(UWORD mixer_channel,"d0"))
 {
-	callback_output = (long)sample_pointer;
+	callback_output = (ULONG)sample_pointer;
 	return 0;
 }
+#else // Bartman
+ULONG callback_function()
+{
+	register volatile APTR sample_pointer __asm("a0");
+	register volatile UWORD mixer_channel __asm("d0");
+	
+	callback_output = (ULONG)sample_pointer;
+	return 0;
+}
+#endif
 
 /* Vector handler function */
 void test_function()
