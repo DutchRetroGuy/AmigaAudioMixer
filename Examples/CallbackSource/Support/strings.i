@@ -20,7 +20,7 @@ EXREF	MACRO
 			XREF \1
 		ENDIF
 		ENDM
-	IFND EXREF
+	ENDIF
 
 ; External references
 	EXREF	preptxt
