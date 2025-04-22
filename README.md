@@ -24,15 +24,15 @@ programs that disable the OS.
 - Samples can be set to loop from either sample start, or from a given offset into the sample and both looping/non-looping samples can be stopped on request
 - Samples can be assigned to one of the virtual channels the mixer uses (up to 4 per hardware channel), allowing fine-grained control of SFX playback.
 - Supports the use of optional plugins via a plugin system. These plugins can either be used as control/communication mechanism to other code, or to alter sample data in real time. There are several plugins included and custom plugins are also supported.
-     The included plugins are:
-        - MixPluginRepeat()
-             - plays the sample sample again after a given delay.
-        - MixPluginSync()
-             - allows various ways to synchronise sample playback with the code that calls the mixer.
-        - MixPluginVolume()
-             - allows changing of the playback volume of the sample being played.
-        - MixPluginPitch()
-             - allows changing of the pitch of the sample being played.
+The included plugins are:
+ - MixPluginRepeat()
+  - plays the sample sample again after a given delay.
+ - MixPluginSync()
+  - allows various ways to synchronise sample playback with the code that calls the mixer.
+ - MixPluginVolume()
+  - allows changing of the playback volume of the sample being played.
+ - MixPluginPitch()
+  - allows changing of the pitch of the sample being played.
 - Supports the use of a callback routine whenever sample playback ends, to allow custom code to be executed on sample end. The callback routine can immediately play back another sample if desired, which allows for seamless sample-to-sample playback using this method.
 - Supports playback of samples of any size that will fit in RAM*.
 - Sample rate used can be configured at assembly time, using standard Paula period values.
