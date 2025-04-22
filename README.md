@@ -39,6 +39,7 @@ programs that disable the OS.
 - Fully PC relative code is used to make relocation as easy as possible.
 - Optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively.
 
+
 *) in practice, this is limited by the largest maximum single block of free RAM that exists. A system with multiple memory expansions will be limited to a much smaller maximum sample size than the total RAM size would seem to indicate.
    
 The Audio Mixer is provided as full assembly source code with examples,
