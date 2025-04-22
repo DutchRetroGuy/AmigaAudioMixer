@@ -25,7 +25,7 @@ programs that disable the OS.
 - Samples can be assigned to one of the virtual channels the mixer uses (up to 4 per hardware channel), allowing fine-grained control of SFX playback.
 - Supports the use of optional plugins via a plugin system. These plugins can either be used as control/communication mechanism to other code, or to alter sample data in real time. There are several plugins included and custom plugins are also supported.
 The included plugins are:
- - MixPluginRepeat()
+-- MixPluginRepeat()
   - plays the sample sample again after a given delay.
  - MixPluginSync()
   - allows various ways to synchronise sample playback with the code that calls the mixer.
