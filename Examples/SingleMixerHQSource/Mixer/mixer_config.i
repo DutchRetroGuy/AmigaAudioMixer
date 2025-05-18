@@ -263,7 +263,6 @@ MIXER_SECTION			EQU	1
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
 MIXER_NO_ECHO			EQU 0
-	ENDC	; MIXER_CONFIG_I
 
 ; Set define below to 1 to include C style function definition aliases in
 ; addition to the standard function definitions. This effectively creates
@@ -274,4 +273,5 @@ MIXER_NO_ECHO			EQU 0
 ;       handled, so that they can deal with the registers that C compilers can
 ;       trash between function calls.
 MIXER_C_DEFS			EQU 0
+	ENDC	; MIXER_CONFIG_I
 ; End of File
