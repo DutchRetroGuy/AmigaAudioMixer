@@ -270,6 +270,5 @@ MIXER_NO_ECHO			EQU 0
 ;       handled, so that they can deal with the registers that C compilers can
 ;       trash between function calls.
 MIXER_C_DEFS			EQU 0
-
 	ENDC	; MIXER_CONFIG_I
 ; End of File
