@@ -4340,7 +4340,11 @@ MixPluginVolumeTable\1
 		; Shift based volume
 MixPluginVolumeShift\1
 	IF MXPLUGIN_VOLUME=1
-		movem.l	d0/d4-d6/a0/a2-a5,-(sp)		; Stack
+		IF MIXER_68020=0
+			movem.l	d0/d4-d6/a0/a2-a5,-(sp)		; Stack
+		ELSE
+			movem.l	d0/d2-d6/a0/a2-a5,-(sp)		; Stack
+		ENDIF
 		
 		; Set up for start of loop
 		MixPluginLoopSetup mpd_vol
@@ -4443,7 +4447,11 @@ MixPluginVolumeShift\1
 		move.l	a5,d5
 		MixPluginLoopEnd mpd_vol
 
-		movem.l	(sp)+,d0/d4-d6/a0/a2-a5		; Stack
+		IF MIXER_68020=0
+			movem.l	(sp)+,d0/d4-d6/a0/a2-a5		; Stack
+		ELSE
+			movem.l	(sp)+,d0/d2-d6/a0/a2-a5		; Stack
+		ENDIF
 		move.l	(sp)+,d7
 
 		rts
@@ -4575,7 +4583,6 @@ MixPluginSync\1
 		beq.s	.select_sync
 		
 		; Reset looping indicator
-		DBGBreakPnt
 		moveq	#0,d1
 		
 		; Update sample position

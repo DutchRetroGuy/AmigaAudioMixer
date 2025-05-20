@@ -759,7 +759,6 @@ RunSingleTestPlg
 		bra		.set_vars
 		
 .setup_volshift_020
-		DBGBreakPnt
 		lea.l	plvolume+4(a4),a4
 		lea.l	plvolume+4(a5),a5
 		moveq	#MIX_PLUGIN_STD,d4
