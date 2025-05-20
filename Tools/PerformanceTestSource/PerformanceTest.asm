@@ -33,6 +33,8 @@
 	include strings.i
 	include support.i
 
+	include debug.i
+
 ; Custom chips offsets
 custombase			EQU	$dff000
 ciabase				EQU $bfe000
@@ -757,6 +759,7 @@ RunSingleTestPlg
 		bra		.set_vars
 		
 .setup_volshift_020
+		DBGBreakPnt
 		lea.l	plvolume+4(a4),a4
 		lea.l	plvolume+4(a5),a5
 		moveq	#MIX_PLUGIN_STD,d4
