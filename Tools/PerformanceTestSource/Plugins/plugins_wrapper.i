@@ -1,4 +1,4 @@
-; $VER: plugins_wrapper.i 3.6 (04.02.24)
+; $VER: plugins_wrapper.i 3.7 (04.02.24)
 ;
 ; plugins_wrapper.i
 ; Include file for plugins_wrapper.asm

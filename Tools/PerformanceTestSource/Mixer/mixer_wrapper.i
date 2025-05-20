@@ -1,4 +1,4 @@
-; $VER: mixer_wrapper.i 3.6 (04.02.24)
+; $VER: mixer_wrapper.i 3.7 (04.02.24)
 ;
 ; mixer_wrapper.i
 ; Include file for mixer_wrapper.asm
