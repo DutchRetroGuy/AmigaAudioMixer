@@ -888,7 +888,7 @@ res_line_offset_2	EQU .line3-.line2
 palhtxt		dc.w	1					; Count
 			dc.w	7,1,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"Audio Mixing v3.6 (PAL/"
+.line1		dc.b	"Audio Mixing v3.7 (PAL/"
 			cnop 0,2	; Realign
 .line1_end
 			
@@ -896,7 +896,7 @@ palhtxt		dc.w	1					; Count
 ntschtxt	dc.w	1					; Count
 			dc.w	7,0,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"Audio Mixing v3.6 (NTSC/"
+.line1		dc.b	"Audio Mixing v3.7 (NTSC/"
 			cnop 0,2	; Realign
 .line1_end
 
