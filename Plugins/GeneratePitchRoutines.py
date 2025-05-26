@@ -26,21 +26,83 @@ class PitchParams:
     pitch_factor: float
     reverse: bool
 
+@dataclass
+class PitchLoop:
+    output_code: []
+    remainder_table: []
+
 
 # Functions
 def find_best_rational(num, max_denominator=64):
     # Find the best rational approximation with denominator <= max_denominator
     return Fraction(num).limit_denominator(max_denominator)
 
+def process_sequences(table_content):
+    # Process sequences of identical numbers, incrementing them at the halfway point.
+
+    if not table_content:
+        return table_content
+
+    result = []
+    i = 0
+
+    while i < len(table_content):
+        # Find the start of a sequence
+        current_val = table_content[i]
+        sequence_start = i
+
+        # Find the end of the sequence
+        while i < len(table_content) and table_content[i] == current_val:
+            i += 1
+        sequence_end = i
+
+        # Calculate sequence length and halfway point
+        sequence_length = sequence_end - sequence_start
+        halfway_point = sequence_start + sequence_length // 2
+
+        # Add the sequence with modification
+        for j in range(sequence_start, sequence_end):
+            if j < halfway_point:
+                result.append(current_val)
+            else:
+                result.append(current_val + 1)
+
+    return result
+
+def generate_remainder_table(table_content):
+    output_table = []
+    row_counter = 0
+    output_row = ""
+
+    processed_content = process_sequences(table_content)
+
+    for val in processed_content:
+        if row_counter % 16 == 0:
+            if row_counter != 0:
+                output_table.append(output_row)
+                output_row = ""
+            output_row = output_row + "\t\tdc.b "
+        output_row = output_row + str(val)
+        if row_counter % 16 != 15:
+            output_row = output_row + ","
+        row_counter = row_counter + 1
+
+    output_table.append(output_row)
+
+    return output_table
 
 def generate_pitch_loop(params: PitchParams):
+    return_params = PitchLoop([],[])
+
     output_code = [f".{params.loop_label}_{params.level_num}"]
 
     # Calculate exact positions for the bytes based on the ratio
     positions = []
+    remainder_table = []
     for i in range(params.output_bytes):
         input_pos = math.floor(i * params.pitch_factor)
         positions.append(input_pos)
+        remainder_table.append(input_pos)
 
     instructions = []
 
@@ -67,15 +129,20 @@ def generate_pitch_loop(params: PitchParams):
         output_code.append(f"\t\tjmp\t\t.jt_table_{params.level_num}(pc,d5.w)")
         output_code.append("")
         output_code.append(f".jt_table_{params.level_num}")
+        output_code.append("\topt o2-")
 
     # Add instructions to output code
     output_code.extend(instructions)
+
+    if params.reverse:
+        output_code.append("\topt o2+")
 
     # Calculate exact input bytes needed for this pattern
     max_pos = max(positions) + 1
 
     # Add the pointer increment
     if params.reverse:
+        output_code.append(f"\t\tmove.b\t.remainder_table_{params.level_num}(pc,d6.w),d6")
         output_code.append("\t\tadd.w\td6,a2")
         output_code.append("\t\tadd.l\td6,d4")
         output_code.append("\t\tlea.l\t1(a0,d7.w),a0")
@@ -90,13 +157,18 @@ def generate_pitch_loop(params: PitchParams):
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
 
-    return output_code
+    return_params.output_code = output_code
+    return_params.remainder_table = generate_remainder_table(remainder_table)
+
+    return return_params
 
 
 def generate_pitch_routine_68000(pitch_factor, level_num):
     # Generate assembly code for a specific pitch factor.
     # pitch_factor: float representing the speed multiplier (e.g., 2.0 for double speed)
     # level_num: integer for the routine number
+
+    pitch_loop = PitchLoop([],[])
 
     # Find rational approximation
     rational = find_best_rational(pitch_factor)
@@ -143,7 +215,8 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         pitch_factor=pitch_factor,
         reverse=False
     )
-    code.extend(generate_pitch_loop(params))
+    pitch_loop = generate_pitch_loop(params)
+    code.extend(pitch_loop.output_code)
 
     # Continue here to reach 4 bytes-output offset
     #if output_bytes > 4:
@@ -162,12 +235,18 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
         pitch_factor=pitch_factor,
         reverse=True
     )
-    code.extend(generate_pitch_loop(params))
+    pitch_loop = generate_pitch_loop(params)
+    code.extend(pitch_loop.output_code)
     code.pop()
 
     code.append("")
     code.append(f".lp_done_{level_num}")
     code.append("\t\trts")
+    code.append("")
+    code.append(f".remainder_table_{params.level_num}")
+    code.extend(pitch_loop.remainder_table)
+    code.append("")
+    code.append("\t\tcnop 0,2")
     code.append("")
 
     return "\n".join(code)
@@ -186,6 +265,11 @@ def generate_all_routines(min_pitch, max_pitch, num_steps):
         pitch = min_pitch + (i * pitch_step)
         all_code.append(generate_pitch_routine_68000(pitch, i))
 
+    all_code.append("\t\tELSE")
+    all_code.append("\t\t\trts")
+    all_code.append("\t\tENDIF")
+    all_code.append("\t\tELSE")
+    all_code.append("\t\t\trts")
     all_code.append("\t\tENDIF")
 
     return "\n".join(all_code)
@@ -199,7 +283,7 @@ def generate_jump_table(routine_name, num_steps):
         "\t\t; Note: all pitch ratios are rounded to nearest rational",
         routine_name,
         "\tIF MXPLUGIN_PITCH=1",
-        "\tIF MXPLUGIN_NO_PITCH_LEVELS=1"
+        "\tIF MXPLUGIN_NO_PITCH_LEVELS=0",
         ".m68020_indicator\tSET MIXER_68020+MXPLUGIN_68020_ONLY",
         "\t\tmoveq\t#0,d6",
         "\t\tIF .m68020_indicator=2",

@@ -1,28 +1,34 @@
-; $VER: plugins.asm 1.1 (05.04.24)
+; $VER: plugins.asm 1.2 (19.05.25)
 ;
 ; plugins.asm
-; Audio mixer plugin routines
+; Audio mixer plugin routines (Outrun version)
 ;
 ; For plugin API, see plugins.i and the rest of the mixer documentation.
 ;
 ; Note: all plugin configuration is done via plugins_config.i.
 ; 
 ; Author: Jeroen Knoester
-; Version: 1.1
-; Revision: 20240205
+; Version: 1.2
+; Revision: 20250519
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; Includes (OS includes assume at least NDK 1.3) 
+; Includes (OS includes assume at least NDK 1.3)
+	include hardware/custom.i
+	include hardware/dmabits.i
+
 	include	mixer.i
 	include mixer_config.i
 	include plugins_config.i
 	include	plugins.i
 
-	IFD BUILD_MIXER_DEBUG
+	;IFD BUILD_MIXER_DEBUG
 		include debug.i
-	ENDIF
+	;ENDIF
+	
+; Constants
+mxcustombase		EQU	$dff000				; mx prefix to keep one namespace
 	
 ; Start of code
 		section code,code
@@ -262,7 +268,7 @@ MixPluginCopyLoop	MACRO
 ;*****************************************************************************
 PlgAllCode	MACRO	
 
-	
+
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
 ;-----------------------------------------------------------------------------
@@ -1034,7 +1040,7 @@ MixPluginPitchLevels\1
 	
 		; Deal with end of loop and potential looping of sample
 		MixPluginLoopEnd mpd_pit
-
+					
 		movem.l	(sp)+,d0/d2-d6/a0/a2-a4			; Stack
 		move.l	(sp)+,d7
 
@@ -1158,6 +1164,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_0(pc,d5.w)
 
 .jt_table_0
+	opt o2-
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
@@ -1190,12 +1197,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_0(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_0
 		rts
+
+.remainder_table_0
+		dc.b 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		dc.b 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+		cnop 0,2
 
 .pitch_level_1:
 		move.w	d2,d6
@@ -1255,6 +1270,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_1(pc,d5.w)
 
 .jt_table_1
+	opt o2-
 		move.b	1(a2),-(a0)
 		move.b	1(a2),-(a0)
 		move.b	1(a2),-(a0)
@@ -1287,12 +1303,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_1(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_1
 		rts
+
+.remainder_table_1
+		dc.b 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1
+		dc.b 1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2
+
+		cnop 0,2
 
 .pitch_level_2:
 		move.w	d2,d6
@@ -1352,6 +1376,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_2(pc,d5.w)
 
 .jt_table_2
+	opt o2-
 		move.b	2(a2),-(a0)
 		move.b	2(a2),-(a0)
 		move.b	2(a2),-(a0)
@@ -1384,12 +1409,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_2(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_2
 		rts
+
+.remainder_table_2
+		dc.b 0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1
+		dc.b 2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3
+
+		cnop 0,2
 
 .pitch_level_3:
 		move.w	d2,d6
@@ -1449,6 +1482,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_3(pc,d5.w)
 
 .jt_table_3
+	opt o2-
 		move.b	3(a2),-(a0)
 		move.b	3(a2),-(a0)
 		move.b	3(a2),-(a0)
@@ -1481,12 +1515,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_3(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_3
 		rts
+
+.remainder_table_3
+		dc.b 0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2
+		dc.b 2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4
+
+		cnop 0,2
 
 .pitch_level_4:
 		move.w	d2,d6
@@ -1546,6 +1588,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_4(pc,d5.w)
 
 .jt_table_4
+	opt o2-
 		move.b	4(a2),-(a0)
 		move.b	4(a2),-(a0)
 		move.b	4(a2),-(a0)
@@ -1578,12 +1621,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_4(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_4
 		rts
+
+.remainder_table_4
+		dc.b 0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2
+		dc.b 3,3,3,3,3,3,3,4,4,4,4,4,4,5,5,5
+
+		cnop 0,2
 
 .pitch_level_5:
 		move.w	d2,d6
@@ -1643,6 +1694,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_5(pc,d5.w)
 
 .jt_table_5
+	opt o2-
 		move.b	5(a2),-(a0)
 		move.b	5(a2),-(a0)
 		move.b	5(a2),-(a0)
@@ -1675,12 +1727,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_5(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_5
 		rts
+
+.remainder_table_5
+		dc.b 0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3
+		dc.b 3,3,3,4,4,4,4,4,5,5,5,5,5,6,6,6
+
+		cnop 0,2
 
 .pitch_level_6:
 		move.w	d2,d6
@@ -1740,6 +1800,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_6(pc,d5.w)
 
 .jt_table_6
+	opt o2-
 		move.b	6(a2),-(a0)
 		move.b	6(a2),-(a0)
 		move.b	6(a2),-(a0)
@@ -1772,12 +1833,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_6(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_6
 		rts
+
+.remainder_table_6
+		dc.b 0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3
+		dc.b 4,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7
+
+		cnop 0,2
 
 .pitch_level_7:
 		move.w	d2,d6
@@ -1837,6 +1906,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_7(pc,d5.w)
 
 .jt_table_7
+	opt o2-
 		move.b	7(a2),-(a0)
 		move.b	7(a2),-(a0)
 		move.b	7(a2),-(a0)
@@ -1869,12 +1939,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_7(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_7
 		rts
+
+.remainder_table_7
+		dc.b 0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4
+		dc.b 4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8
+
+		cnop 0,2
 
 .pitch_level_8:
 		move.w	d2,d6
@@ -1934,6 +2012,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_8(pc,d5.w)
 
 .jt_table_8
+	opt o2-
 		move.b	8(a2),-(a0)
 		move.b	8(a2),-(a0)
 		move.b	8(a2),-(a0)
@@ -1966,12 +2045,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_8(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_8
 		rts
+
+.remainder_table_8
+		dc.b 0,0,1,1,1,1,2,2,2,3,3,3,3,4,4,4
+		dc.b 5,5,5,5,6,6,6,7,7,7,7,8,8,8,9,9
+
+		cnop 0,2
 
 .pitch_level_9:
 		move.w	d2,d6
@@ -2031,6 +2118,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_9(pc,d5.w)
 
 .jt_table_9
+	opt o2-
 		move.b	9(a2),-(a0)
 		move.b	9(a2),-(a0)
 		move.b	9(a2),-(a0)
@@ -2063,12 +2151,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_9(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_9
 		rts
+
+.remainder_table_9
+		dc.b 0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5
+		dc.b 5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10
+
+		cnop 0,2
 
 .pitch_level_10:
 		move.w	d2,d6
@@ -2128,6 +2224,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_10(pc,d5.w)
 
 .jt_table_10
+	opt o2-
 		move.b	10(a2),-(a0)
 		move.b	10(a2),-(a0)
 		move.b	9(a2),-(a0)
@@ -2160,12 +2257,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_10(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_10
 		rts
+
+.remainder_table_10
+		dc.b 0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5
+		dc.b 6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11
+
+		cnop 0,2
 
 .pitch_level_11:
 		move.w	d2,d6
@@ -2225,6 +2330,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_11(pc,d5.w)
 
 .jt_table_11
+	opt o2-
 		move.b	11(a2),-(a0)
 		move.b	11(a2),-(a0)
 		move.b	10(a2),-(a0)
@@ -2257,12 +2363,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_11(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_11
 		rts
+
+.remainder_table_11
+		dc.b 0,1,1,1,2,2,2,3,3,4,4,4,5,5,5,6
+		dc.b 6,7,7,7,8,8,8,9,9,10,10,10,11,11,11,12
+
+		cnop 0,2
 
 .pitch_level_12:
 		move.w	d2,d6
@@ -2322,6 +2436,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_12(pc,d5.w)
 
 .jt_table_12
+	opt o2-
 		move.b	12(a2),-(a0)
 		move.b	12(a2),-(a0)
 		move.b	11(a2),-(a0)
@@ -2354,12 +2469,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_12(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_12
 		rts
+
+.remainder_table_12
+		dc.b 0,1,1,1,2,2,3,3,3,4,4,5,5,5,6,6
+		dc.b 7,7,7,8,8,9,9,9,10,10,11,11,11,12,12,13
+
+		cnop 0,2
 
 .pitch_level_13:
 		move.w	d2,d6
@@ -2419,6 +2542,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_13(pc,d5.w)
 
 .jt_table_13
+	opt o2-
 		move.b	13(a2),-(a0)
 		move.b	13(a2),-(a0)
 		move.b	12(a2),-(a0)
@@ -2451,12 +2575,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_13(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_13
 		rts
+
+.remainder_table_13
+		dc.b 0,1,1,1,2,2,3,3,4,4,4,5,5,6,6,7
+		dc.b 7,8,8,8,9,9,10,10,11,11,11,12,12,13,13,14
+
+		cnop 0,2
 
 .pitch_level_14:
 		move.w	d2,d6
@@ -2516,6 +2648,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_14(pc,d5.w)
 
 .jt_table_14
+	opt o2-
 		move.b	14(a2),-(a0)
 		move.b	14(a2),-(a0)
 		move.b	13(a2),-(a0)
@@ -2548,12 +2681,20 @@ MixPluginLevels_internal\1
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_14(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_14
 		rts
+
+.remainder_table_14
+		dc.b 0,1,1,1,2,2,3,3,4,4,5,5,6,6,7,7
+		dc.b 8,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15
+
+		cnop 0,2
 
 .pitch_level_15:
 		move.w	d2,d6
@@ -2613,6 +2754,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_15(pc,d5.w)
 
 .jt_table_15
+	opt o2-
 		move.b	15(a2),-(a0)
 		move.b	15(a2),-(a0)
 		move.b	14(a2),-(a0)
@@ -2645,12 +2787,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_15(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_15
 		rts
+
+.remainder_table_15
+		dc.b 0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8
+		dc.b 8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16
+
+		cnop 0,2
 
 .pitch_level_16:
 		move.w	d2,d6
@@ -2710,6 +2860,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_16(pc,d5.w)
 
 .jt_table_16
+	opt o2-
 		move.b	16(a2),-(a0)
 		move.b	15(a2),-(a0)
 		move.b	15(a2),-(a0)
@@ -2742,12 +2893,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_16(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_16
 		rts
+
+.remainder_table_16
+		dc.b 0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8
+		dc.b 9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,17
+
+		cnop 0,2
 
 .pitch_level_17:
 		move.w	d2,d6
@@ -2807,6 +2966,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_17(pc,d5.w)
 
 .jt_table_17
+	opt o2-
 		move.b	17(a2),-(a0)
 		move.b	16(a2),-(a0)
 		move.b	16(a2),-(a0)
@@ -2839,12 +2999,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_17(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_17
 		rts
+
+.remainder_table_17
+		dc.b 0,1,1,2,2,3,3,4,5,5,6,6,7,7,8,9
+		dc.b 9,10,10,11,11,12,12,13,14,14,15,15,16,16,17,18
+
+		cnop 0,2
 
 .pitch_level_18:
 		move.w	d2,d6
@@ -2904,6 +3072,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_18(pc,d5.w)
 
 .jt_table_18
+	opt o2-
 		move.b	18(a2),-(a0)
 		move.b	17(a2),-(a0)
 		move.b	17(a2),-(a0)
@@ -2936,12 +3105,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_18(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_18
 		rts
+
+.remainder_table_18
+		dc.b 0,1,1,2,2,3,4,4,5,5,6,7,7,8,8,9
+		dc.b 10,10,11,11,12,13,13,14,14,15,16,16,17,17,18,19
+
+		cnop 0,2
 
 .pitch_level_19:
 		move.w	d2,d6
@@ -3001,6 +3178,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_19(pc,d5.w)
 
 .jt_table_19
+	opt o2-
 		move.b	19(a2),-(a0)
 		move.b	18(a2),-(a0)
 		move.b	18(a2),-(a0)
@@ -3033,12 +3211,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_19(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_19
 		rts
+
+.remainder_table_19
+		dc.b 0,1,1,2,3,3,4,5,5,6,6,7,8,8,9,10
+		dc.b 10,11,11,12,13,13,14,15,15,16,16,17,18,18,19,20
+
+		cnop 0,2
 
 .pitch_level_20:
 		move.w	d2,d6
@@ -3098,6 +3284,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_20(pc,d5.w)
 
 .jt_table_20
+	opt o2-
 		move.b	20(a2),-(a0)
 		move.b	19(a2),-(a0)
 		move.b	19(a2),-(a0)
@@ -3130,12 +3317,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_20(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_20
 		rts
+
+.remainder_table_20
+		dc.b 0,1,1,2,3,3,4,5,5,6,7,7,8,9,9,10
+		dc.b 11,11,12,13,13,14,15,15,16,17,17,18,19,19,20,21
+
+		cnop 0,2
 
 .pitch_level_21:
 		move.w	d2,d6
@@ -3195,6 +3390,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_21(pc,d5.w)
 
 .jt_table_21
+	opt o2-
 		move.b	21(a2),-(a0)
 		move.b	20(a2),-(a0)
 		move.b	19(a2),-(a0)
@@ -3227,12 +3423,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_21(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_21
 		rts
+
+.remainder_table_21
+		dc.b 0,1,2,2,3,4,4,5,6,6,7,8,8,9,10,11
+		dc.b 11,12,13,13,14,15,15,16,17,17,18,19,19,20,21,22
+
+		cnop 0,2
 
 .pitch_level_22:
 		move.w	d2,d6
@@ -3292,6 +3496,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_22(pc,d5.w)
 
 .jt_table_22
+	opt o2-
 		move.b	22(a2),-(a0)
 		move.b	21(a2),-(a0)
 		move.b	20(a2),-(a0)
@@ -3324,12 +3529,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_22(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_22
 		rts
+
+.remainder_table_22
+		dc.b 0,1,2,2,3,4,5,5,6,7,7,8,9,10,10,11
+		dc.b 12,12,13,14,15,15,16,17,17,18,19,20,20,21,22,23
+
+		cnop 0,2
 
 .pitch_level_23:
 		move.w	d2,d6
@@ -3389,6 +3602,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_23(pc,d5.w)
 
 .jt_table_23
+	opt o2-
 		move.b	23(a2),-(a0)
 		move.b	22(a2),-(a0)
 		move.b	21(a2),-(a0)
@@ -3421,12 +3635,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_23(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_23
 		rts
+
+.remainder_table_23
+		dc.b 0,1,2,3,3,4,5,6,6,7,8,9,9,10,11,12
+		dc.b 12,13,14,15,15,16,17,18,18,19,20,21,21,22,23,24
+
+		cnop 0,2
 
 .pitch_level_24:
 		move.w	d2,d6
@@ -3486,6 +3708,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_24(pc,d5.w)
 
 .jt_table_24
+	opt o2-
 		move.b	24(a2),-(a0)
 		move.b	23(a2),-(a0)
 		move.b	22(a2),-(a0)
@@ -3518,12 +3741,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_24(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_24
 		rts
+
+.remainder_table_24
+		dc.b 0,1,2,3,3,4,5,6,7,7,8,9,10,10,11,12
+		dc.b 13,14,14,15,16,17,17,18,19,20,21,21,22,23,24,25
+
+		cnop 0,2
 
 .pitch_level_25:
 		move.w	d2,d6
@@ -3583,6 +3814,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_25(pc,d5.w)
 
 .jt_table_25
+	opt o2-
 		move.b	25(a2),-(a0)
 		move.b	24(a2),-(a0)
 		move.b	23(a2),-(a0)
@@ -3615,12 +3847,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_25(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_25
 		rts
+
+.remainder_table_25
+		dc.b 0,1,2,3,4,4,5,6,7,8,8,9,10,11,12,13
+		dc.b 13,14,15,16,17,17,18,19,20,21,21,22,23,24,25,26
+
+		cnop 0,2
 
 .pitch_level_26:
 		move.w	d2,d6
@@ -3680,6 +3920,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_26(pc,d5.w)
 
 .jt_table_26
+	opt o2-
 		move.b	26(a2),-(a0)
 		move.b	25(a2),-(a0)
 		move.b	24(a2),-(a0)
@@ -3712,12 +3953,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_26(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_26
 		rts
+
+.remainder_table_26
+		dc.b 0,1,2,3,4,5,5,6,7,8,9,10,10,11,12,13
+		dc.b 14,15,16,16,17,18,19,20,21,21,22,23,24,25,26,27
+
+		cnop 0,2
 
 .pitch_level_27:
 		move.w	d2,d6
@@ -3777,6 +4026,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_27(pc,d5.w)
 
 .jt_table_27
+	opt o2-
 		move.b	27(a2),-(a0)
 		move.b	26(a2),-(a0)
 		move.b	25(a2),-(a0)
@@ -3809,12 +4059,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_27(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_27
 		rts
+
+.remainder_table_27
+		dc.b 0,1,2,3,4,5,6,7,7,8,9,10,11,12,13,14
+		dc.b 14,15,16,17,18,19,20,21,21,22,23,24,25,26,27,28
+
+		cnop 0,2
 
 .pitch_level_28:
 		move.w	d2,d6
@@ -3874,6 +4132,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_28(pc,d5.w)
 
 .jt_table_28
+	opt o2-
 		move.b	28(a2),-(a0)
 		move.b	27(a2),-(a0)
 		move.b	26(a2),-(a0)
@@ -3906,12 +4165,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_28(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_28
 		rts
+
+.remainder_table_28
+		dc.b 0,1,2,3,4,5,6,7,8,9,9,10,11,12,13,14
+		dc.b 15,16,17,18,19,19,20,21,22,23,24,25,26,27,28,29
+
+		cnop 0,2
 
 .pitch_level_29:
 		move.w	d2,d6
@@ -3971,6 +4238,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_29(pc,d5.w)
 
 .jt_table_29
+	opt o2-
 		move.b	29(a2),-(a0)
 		move.b	28(a2),-(a0)
 		move.b	27(a2),-(a0)
@@ -4003,12 +4271,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_29(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_29
 		rts
+
+.remainder_table_29
+		dc.b 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+		dc.b 15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+
+		cnop 0,2
 
 .pitch_level_30:
 		move.w	d2,d6
@@ -4068,6 +4344,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_30(pc,d5.w)
 
 .jt_table_30
+	opt o2-
 		move.b	30(a2),-(a0)
 		move.b	29(a2),-(a0)
 		move.b	28(a2),-(a0)
@@ -4100,12 +4377,20 @@ MixPluginLevels_internal\1
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_30(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
 
 .lp_done_30
 		rts
+
+.remainder_table_30
+		dc.b 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+		dc.b 16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+
+		cnop 0,2
 
 .pitch_level_31:
 		move.w	d2,d6
@@ -4165,6 +4450,7 @@ MixPluginLevels_internal\1
 		jmp		.jt_table_31(pc,d5.w)
 
 .jt_table_31
+	opt o2-
 		move.b	31(a2),-(a0)
 		move.b	30(a2),-(a0)
 		move.b	29(a2),-(a0)
@@ -4197,6 +4483,8 @@ MixPluginLevels_internal\1
 		move.b	2(a2),-(a0)
 		move.b	1(a2),-(a0)
 		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_31(pc,d6.w),d6
 		add.w	d6,a2
 		add.l	d6,d4
 		lea.l	1(a0,d7.w),a0
@@ -4204,11 +4492,17 @@ MixPluginLevels_internal\1
 .lp_done_31
 		rts
 
+.remainder_table_31
+		dc.b 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+		dc.b 17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
+
+		cnop 0,2
+
 		ELSE
 			rts
 		ENDIF
 		ELSE
-			RTS
+			rts
 		ENDIF
 
 .end_pitch_routines\1
@@ -4345,7 +4639,6 @@ MixPluginVolumeShift\1
 		ELSE
 			movem.l	d0/d2-d6/a0/a2-a5,-(sp)		; Stack
 		ENDIF
-		
 		; Set up for start of loop
 		MixPluginLoopSetup mpd_vol
 		
@@ -4451,7 +4744,7 @@ MixPluginVolumeShift\1
 			movem.l	(sp)+,d0/d4-d6/a0/a2-a5		; Stack
 		ELSE
 			movem.l	(sp)+,d0/d2-d6/a0/a2-a5		; Stack
-		ENDIF
+		ENDIF	  
 		move.l	(sp)+,d7
 
 		rts
@@ -5396,6 +5689,8 @@ _MixPluginGetMultiplier\1			EQU MixPluginGetMultiplier\1
 _MixerPluginGetMaxInitDataSize\1	EQU MixerPluginGetMaxInitDataSize\1
 _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 
+_MixPluginSetPitch\1				EQU	MixPluginSetPitch\1
+
 	XDEF	_MixPluginInitDummy\1
 	XDEF	_MixPluginInitRepeat\1
 	XDEF	_MixPluginInitSync\1
@@ -5412,6 +5707,8 @@ _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 	XDEF	_MixerPluginGetMaxInitDataSize\1
 	XDEF	_MixerPluginGetMaxDataSize\1
 	XDEF	_MixPluginPitchRatioPrecalc\1
+	
+	XDEF	_MixPluginSetPitch\1
 
 		ENDIF
 	ENDM
