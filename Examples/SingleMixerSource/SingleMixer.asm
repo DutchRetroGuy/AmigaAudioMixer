@@ -30,6 +30,8 @@
 	include strings.i
 	include support.i
 
+	include debug.i
+
 ; Custom chips offsets
 custombase			EQU	$dff000
 
@@ -649,6 +651,7 @@ MixerAction
 		; Play on any free/lower priority/higher age channel
 		; A0 = Pointer to effect structure
 		bsr		MixerPlayFX
+		DBGPauseCol $f00
 		bra		.done
 
 .stop		
