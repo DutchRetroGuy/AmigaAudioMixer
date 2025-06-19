@@ -1,4 +1,4 @@
-#Release notes for the Audio Mixer
+# Release notes for the Audio Mixer
 ## v3.7.1
 - (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now return the correct channel value in D0.
 - (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now store the rounded sample length back to the MXEffect structure.
