@@ -1,4 +1,9 @@
 #Release notes for the Audio Mixer
+## v3.7.1
+- (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now return the correct channel value in D0.
+- (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now store the rounded sample length back to the MXEffect structure.
+- (BUGFIX) Tables used by MixPluginVolume have been corrected to take into account the non-signed nature of the register offset used.
+
 
 ## v3.7
 - (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.

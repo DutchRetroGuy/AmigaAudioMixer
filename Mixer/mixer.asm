@@ -2793,7 +2793,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
-				move.l	a1,-(sp)
+				movem.l	d0/a1,-(sp)
 			ENDIF
 			
 			lea.l	mixer_irqdma_vectors\1(pc),a1
@@ -2826,7 +2826,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
-				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/a1
 			ENDIF
 		ENDIF
 .irq_disabled
@@ -3277,11 +3277,15 @@ MixerPlayFX\1
 		ELSE
 			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
 		ENDIF
-		
-		IF MIXER_ENABLE_PLUGINS=1
-			or.w	d6,d0					; Set HW/Mixer channel in D0
+		IF mxslength_word=1
+			move.w	d1,mfx_length+2(a0)
+		ELSE
+			move.l	d1,mfx_length(a0)
 		ENDIF
 		
+		; Set HW/Mixer channel in D0
+		or.w	d6,d0					
+
 		bsr		MixerChannelWrite\1
 		tst.w	d0							; Set condition codes
 
@@ -3422,6 +3426,11 @@ MixerPlayChannelFX\1
 			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
 		ELSE
 			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
+		ENDIF
+		IF mxslength_word=1
+			move.w	d1,mfx_length+2(a0)
+		ELSE
+			move.l	d1,mfx_length(a0)
 		ENDIF
 		
 		IF MIXER_ENABLE_PLUGINS=1

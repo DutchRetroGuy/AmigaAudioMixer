@@ -238,7 +238,7 @@ void MixerVolume(UWORD volume)
 MIX_API void MixerVolume(MIX_REGARG(UWORD volume,"d0"));
 
 /* 
-ULONG MixerPlayFX(MXEffect *effect_structure,
+UWORD MixerPlayFX(MXEffect *effect_structure,
                   ULONG hardware_channel)
 	Adds the sample defined in the MXEffect pointed to by effect_structure on
 	the the hardware channel given in hardware_channel. If MIXER_SINGLE is set
@@ -252,11 +252,11 @@ ULONG MixerPlayFX(MXEffect *effect_structure,
 
 	Note: the MXEffect definition can be found at the top of this file.
 */
-MIX_API ULONG MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+MIX_API UWORD MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
 						  MIX_REGARG(ULONG hardware_channel,"d0"));
 
 /* 
-ULONG MixerPlayChannelFX(MXEffect *effect_structure,
+UWORD MixerPlayChannelFX(MXEffect *effect_structure,
                          ULONG mixer_channel)
 	Adds the sample defined in the MXEffect pointed to by effect_structure on
 	the the hardware and mixer channel given in mixer_channel. If MIXER_SINGLE
@@ -279,7 +279,7 @@ ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 	      maximum number of software channels available as defined in 
 	      mixer_config.i.
 */
-MIX_API ULONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+MIX_API UWORD MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
 								 MIX_REGARG(ULONG mixer_channel,"d0"));
 
 /*
@@ -434,7 +434,7 @@ MIX_API void MixerSetPluginDeferredPtr(MIX_REGARG(void (*deferred_function_ptr)(
 									   MIX_REGARG(void *mxchannel_ptr,"a2"));
 
 /*
-ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
+UWORD MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
                       WORD signed_priority,UWORD loop_indicator, 
 					  LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware channel given in
@@ -462,7 +462,7 @@ ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
 	
 	Note: this function is deprecated,use MixerPlayFX() instead.
 */
-MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
+MIX_API UWORD MixerPlaySample(MIX_REGARG(void *sample,"a0"),
 							  MIX_REGARG(ULONG hardware_channel,"d0"),
 							  MIX_REGARG(LONG length,"d1"),
 							  MIX_REGARG(WORD signed_priority,"d2"),
@@ -470,7 +470,7 @@ MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
 							  MIX_REGARG(LONG loop_offset,"d4"));
 
 /*
-ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
+UWORD MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
                              WORD signed_priority,UWORD loop_indicator, 
 							 LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware/mixer channel given
@@ -499,7 +499,7 @@ ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
 	Note: see MixerPlayChannelFX() for an explanation of mixer channels.
 	Note: this function is deprecated,use MixerPlayChannelFX() instead.
 */
-MIX_API ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
+MIX_API UWORD MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
 									 MIX_REGARG(ULONG hardware_channel,"d0"),
 									 MIX_REGARG(LONG length,"d1"),
 									 MIX_REGARG(WORD signed_priority,"d2"),

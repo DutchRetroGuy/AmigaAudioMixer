@@ -108,8 +108,26 @@ be limited to a much smaller maximum sample size than the total RAM size
 would seem to indicate.</p>
 <h3 id="release-notes">Release Notes</h3>
 <p>Release notes for the Audio Mixer</p>
+<h4 id="v371">v3.7.1</h4>
+<ul>
+<li>(BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and
+MixerPlayChannelSample now return the correct channel value in D0.</li>
+<li>(BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and
+MixerPlayChannelSample now store the rounded sample length back to the
+MXEffect structure.</li>
+<li>(BUGFIX) Tables used by MixPluginVolume have been corrected to take
+into account the non-signed nature of the register offset used.</li>
+</ul>
 <h4 id="v37">v3.7</h4>
 <ul>
+<li>(NEW) The mixer.h and plugins.h file now support Bartman GCC in
+addition to Bebbo and VBCC.</li>
+<li>(NEW) A new C based example has been added that showcases using the
+new external IRQ/DMA option to run the mixer using Amiga OS interrupt
+handlers. The example is called OSLegalExample.</li>
+<li>(NEW) A new example has been added that showcases the use of
+external IRQ/DMA callbacks to handle IRQ and DMA registers. The example
+is called ExternalIRQExample.</li>
 <li>(NEW) The mixer now optionally supports using callbacks to handle
 IRQ and DMA registers, rather than the mixer doing so natively. This
 option allows for, amongst other things, implementing an OS-legal
@@ -128,11 +146,16 @@ off by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
 <li>The vector for this routine can be set by calling
 MixerSetReturnVector().</li>
 </ul></li>
+<li>(BUGFIX) Performance test now correctly uses 68020 routines for
+68020 plugin tests.</li>
 <li>(BUGFIX) Fixed a potential issue with the include guard in
 mixer_config.i</li>
-<li>(MAINTENANCE) The makefile now automatically synchronises the mixer
-&amp; plugin files from the main Mixer &amp; Plugin directories to the
-various example Mixer &amp; Plugin directories.</li>
+<li>(MAINTENANCE) mixer.asm, mixer.i, mixer.h, plugins.asm, plugins.i.
+plugins.h are now kept in only one directory, their main ones. Any
+duplicates needed for building the examples are now temporarily placed
+in the example directories and cleaned updated afterwards.</li>
+<li>(MAINTENANCE) The makefile now uses batch based copy and delete
+operations where possible.</li>
 <li>(MAINTENANCE) The makefile is now platform agnostic and will work on
 both Windows based systems and Unix-like systems (including Linux, BSD
 &amp; Mac OS X).</li>
@@ -576,7 +599,9 @@ timer ticks the mixer interrupt took over the last 128 frames.</p></li>
 use.<br />
 NOTE: the routine <em>MixerCalcTicks()</em> and the values
 mixer_ticks_last/best/ worst/average are only available if this option
-is set to 1.</p>
+is set to 1. NOTE: this option should not be enabled if
+MIXER_EXTERNAL_IRQ_DMA is set with the goal of using Amiga OS interrupt
+handlers for the mixer interrupt.</p>
 <p>The option <em>MIXER_CIA_KBOARD_RES</em> is used to restore the
 keyboard for Amiga OS if <em>MIXER_CIA_TIMER</em> is set to one and
 <em>MixerRemoveHandler()</em> is called. If this option is not set, the
@@ -1161,6 +1186,12 @@ plugin, an example custom plugin that replaces the sample played back by
 a simple sine wave, the built-in repeat plugin, the built-in
 synchronisation plugin, the built-in volume plugin and the built-in
 pitch change plugin.</p></li>
+<li><h4 id="externalirqexample">ExternalIRQExample</h4>
+<p>An example program with external IRQ/DMA handling enabled and a
+minimum of extra features or support code. The purpose of the example is
+to show a simple case of using external IRQ/DMA handling with the mixer.
+Note that this example does not disable the OS, assumes the VBR is at
+address 0 and that the code is running on a PAL Amiga.</p></li>
 <li><h4 id="cmixerexample">CMixerExample</h4>
 <p>An example program that shows the ability of the mixer to be
 integrated in C programs. Like the MinimalMixerExample, the example is
@@ -1170,6 +1201,9 @@ PAL Amiga.</p>
 <p>Unlike the MinimalMixerExample however, it also shows the use of
 plugins and callback routines. The plugin used to showcase plugin use is
 the pitch change plugin.</p></li>
+<li><h4 id="oslegalexample">OSLegalExample</h4>
+<p>An example program in C that shows how to use the mixer in an OS
+legal way.</p></li>
 </ul>
 <h3 id="tools">Tools</h3>
 <p>Alongside the mixer, two tools have been included. These tools
@@ -1438,7 +1472,7 @@ information.</p></li>
 Gives the length of the structure in bytes</p></li>
 </ul></li>
 <li><p>MXIRQDMACallbacks This structure is only available if
-<em>MIXER_EXTERNAL_DMA_IRQ</em> is set to 1 and is used by the function
+<em>MIXER_EXTERNAL_IRQ_DMA</em> is set to 1 and is used by the function
 MixerSetIRQDMACallbacks() to set the callback function pointers it
 requires.</p>
 <p>The structure elements are as follows:</p>
@@ -2570,10 +2604,11 @@ followed:</p>
 mixer</p></li>
 <li><p>mixer.h must be included into the C program which is to use the
 mixer</p>
-<p>Note: mixer.h is designed for VBCC &amp; Bebbo's GCC compiler. Other
-compilers will need a different method for calling the functions. It
-should be possible to make the mixer work with other compilers, but only
-VBCC and Bebbo's GCC compiler are officially supported.</p></li>
+<p>Note: mixer.h is designed for VBCC, Bebbo's GCC compiler and
+Bartman's GCC compiler. Other compilers will need a different method for
+calling the functions. It should be possible to make the mixer work with
+other compilers, but only VBCC, Bebbo and Bartman are officially
+supported.</p></li>
 </ul>
 <p>If the above is done, the mixer API (as described in <a
 href="#mixer-api">"Mixer API"</a>) becomes available to the C program.
@@ -2583,9 +2618,9 @@ href="#using-the-mixer">"Using the mixer"</a> to enable mixing.</p>
 be found in mixer.h (note that this is the same set of routines that are
 offered through mixer.i for assembly programs).</p>
 <p>As pointed out above, the supplied mixer.h file is designed for use
-with VBCC and Bebbo's version of the GCC compiler. To use the mixer
-using other GCC based compilers, a set of calling routines needs to be
-constructed. (these are not provided in this package)</p>
+with VBCC, Bebbo and Bartman. To use the mixer using other GCC based
+compilers, a set of calling routines needs to be constructed. (these are
+not provided in this package)</p>
 <h4 id="two-examples-of-how-to-make-these-routines-follows">Two examples
 of how to make these routines follows:</h4>
 <pre><code>  // Assumes exec/types.h is available.
