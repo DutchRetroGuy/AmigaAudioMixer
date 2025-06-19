@@ -3277,6 +3277,11 @@ MixerPlayFX\1
 		ELSE
 			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
 		ENDIF
+		IF mxslength_word=1
+			move.w	d1,mfx_length+2(a0)
+		ELSE
+			move.l	d1,mfx_length(a0)
+		ENDIF
 		
 		IF MIXER_ENABLE_PLUGINS=1
 			or.w	d6,d0					; Set HW/Mixer channel in D0
@@ -3422,6 +3427,11 @@ MixerPlayChannelFX\1
 			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
 		ELSE
 			and.w	#$fffc,d1				; Limit to multiple of  4 bytes
+		ENDIF
+		IF mxslength_word=1
+			move.w	d1,mfx_length+2(a0)
+		ELSE
+			move.l	d1,mfx_length(a0)
 		ENDIF
 		
 		IF MIXER_ENABLE_PLUGINS=1
