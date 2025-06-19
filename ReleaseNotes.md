@@ -1,4 +1,4 @@
-#Release notes for the Audio Mixer
+# Release notes for the Audio Mixer
 
 ## v3.7
 - (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.
