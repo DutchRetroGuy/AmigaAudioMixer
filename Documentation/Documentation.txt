@@ -96,6 +96,11 @@ Release Notes
 
 Release notes for the Audio Mixer
 
+v3.7.2
+
+- (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is
+  set
+
 v3.7.1
 
 - (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and

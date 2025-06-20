@@ -63,6 +63,9 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 ### Release Notes
 
 Release notes for the Audio Mixer
+#### v3.7.2
+- (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
+
 #### v3.7.1
 - (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now return the correct channel value in D0.
 - (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now store the rounded sample length back to the MXEffect structure.
