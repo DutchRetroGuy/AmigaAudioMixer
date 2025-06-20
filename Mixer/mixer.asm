@@ -3243,8 +3243,6 @@ MixerPlayFX\1
 			addq.w	#1,d7					; Next channel
 			swap	d7						; Loop counter
 			dbra	d7,.chlp
-			
-			swap	d0						; Swap back HW channel
 		ELSE
 			MixChkChan 0					; Check MIX_CH0
 			IF mixer_sw_channels>=2
@@ -3272,6 +3270,9 @@ MixerPlayFX\1
 
 .found
 		; Found a free channel, add the sample
+		IF MIXER_68020=1
+			swap	d0						; Swap back HW channel
+		ENDIF
 		IF mxsize_x32=1
 			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
 		ELSE
