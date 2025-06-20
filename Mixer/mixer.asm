@@ -2969,7 +2969,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
-				move.l	a1,-(sp)
+				movem.l	d0/a1,-(sp)
 			ENDIF
 			
 			lea.l	mixer_irqdma_vectors\1(pc),a1
@@ -2999,7 +2999,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
-				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/a1
 			ENDIF
 		ENDIF
 .irq_enabled
