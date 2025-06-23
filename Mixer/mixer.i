@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.7 (21.01.25)
+; $VER: mixer.i 3.8 (23.06.25)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -90,6 +90,41 @@
 ;	* mpl_init_data_ptr	- Pointer to the plugin initialisation data to use.
 ;						  For more information about plugin initialisation
 ;						  data, see  the plugins API in plugins.i.
+;
+; MXE8xSample
+;	This structure defines a sample to be used by E8x sample playback support.
+;	E8x sample playback support is only available if MIXER_ENABLE_PTPLAYER_E8X
+;	is set to 1 and Frank Wille's PTPlayer is used for MOD playback. Samples 
+;	played back this way have to follow all requirements all mixer samples 
+;	need to follow.
+;
+;	For more information see routine documentation for MixerSetupE8xSamples. 
+;
+;	The MXE8xSample structure has the following members:
+;	* me8x_length		- the length of the sample to play in bytes. Must be
+;						  passed as a longword even if MIXER_WORDSIZED is set
+;						  to 1.
+;	* me8x_sample_ptr	- Pointer to the sample to play. Samples can be placed
+;						  in any type of memory. Longword alignment is 
+;						  preferred on 68020+ systems for performance reasons.
+;	* me8x_priority		- Determines the priority of the sample to play. 
+;						  Samples of higher priority can overwrite already 
+;						  playing, non-looping, samples of lower priority.
+;
+; MXE8xSamples
+;	This structure contains all sample definitions used by E8x sample playback
+;	support. In total, 15 samples can be defined at any time. E8x sample 
+;	playback is only available if MIXER_ENABLE_PTPLAYER_E8X is set to 1 and
+;	Frank Wille's PTPlayer is used for MOD playback.
+;
+;	For more information see routine documentation for MixerSetupE8xSamples.
+;
+;	The MXE8xSamples structure has the following members:
+;	* me8x_index		- An array of 15 pointers to each sample definition,
+;	                      stored consequitively in memory.
+;	* me8x_samples		- An array of 15 sample definitions (MXE8xSample),
+;	                      stored consequitively in memory.
+;
 ;
 ; Routines
 ; --------
@@ -420,6 +455,17 @@
 ;   Note: see plugins.i for more details on deferred functions
 ;
 ;
+; If MIXER_ENABLE_PTPLAYER_E8X is set to 1, additional routines are available:
+;
+; MixerSetupE8xSamples	
+; MixerEnableE8xSamples
+; MixerDisableE8xSamples
+; <<TODO>>
+
+
+
+;
+;
 ; If MIXER_CIA_TIMER is set to 1, an additional routine is available:
 ;
 ; MixerCalcTicks()
@@ -438,8 +484,8 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.7
-; Revision: 20250125
+; Version: 3.8
+; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -494,6 +540,10 @@ EXREF	MACRO
 	
 	EXREF	MixerGetPluginsBufferSize
 	EXREF	MixerSetPluginDeferredPtr
+
+	EXREF	MixerSetupE8xSamples	
+	EXREF	MixerEnableE8xSamples
+	EXREF	MixerDisableE8xSamples
 
 	IF MIXER_CIA_TIMER=1
 		EXREF	MixerCalcTicks
@@ -641,6 +691,18 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	APTR	mxicb_acknowledge_irq
 	APTR	mxicb_set_dmacon
 	LABEL	mxicb_SIZEOF
+	
+ STRUCTURE MXE8xSample,0
+	LONG	me8x_length						; Note: always use a longword 
+											; for this value, even when 
+											; MIXER_WORDSIZED is set to 1
+	APTR	me8x_sample_ptr
+	UWORD	me8x_priority
+	LABEL	me8x_SIZEOF
+	
+ STRUCTURE MXE8xSamples,0
+	STRUCT	me8x_index,15*4
+	STRUCT	me8x_samples,15*me8x_SIZEOF
 
 ; Internal (private) structures
  STRUCTURE MXChannel,0
@@ -738,6 +800,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	ENDIF
 	ENDIF
 	APTR	mx_counter_ptr
+	APTR	mx_e8x_samples_ptr
+	APTR	mx_e8x_trigger_ptr
 	UWORD	mx_buffer_size
 	UWORD	mx_buffer_size_w
 	UWORD	mx_irq_bits
@@ -746,6 +810,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_volume
 	UWORD	mx_status
 	UWORD	mx_vidsys
+	UWORD	mx_e8x_enabled
+	UWORD	mx_e8x_channel
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mx_counter
 	ELSE

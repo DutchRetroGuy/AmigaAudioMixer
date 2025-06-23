@@ -1,4 +1,4 @@
-; $VER: mixer_config.i 3.7 (28.01.25)
+; $VER: mixer_config.i 3.8 (23.06.25)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -12,8 +12,8 @@
 ;       signed limits or overflow from positive to negative (or vice versa).
 ; 
 ; Author: Jeroen Knoester
-; Version: 3.7
-; Revision: 20250128
+; Version: 3.8
+; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -223,6 +223,15 @@ MIXER_ENABLE_PLUGINS	EQU 0
 ; Note: enabling the return vector slightly increases CPU overhead during
 ;       interrupt processing.
 MIXER_ENABLE_RETURN_VECTOR	EQU 0
+
+; Set define below to enable E8x sample playback when using Frank Wille's
+; PTPlayer. This causes the mixer to be able to monitor and automatically play
+; back a sample when PTPlayer sets _mt_E8Trigger to a non-zero value.
+;
+; Note: enabling this feature adds three new routines to the mixer, which can
+;       be used to correctly set up and enable/disable E8x sample playback.
+; Note: enabling this feature slightly increases CPU costs of the mixer.
+MIXER_ENABLE_PTPLAYER_E8X	EQU 0
 
 ; Set define below to 1 to change the mixer such that it no longer uses its
 ; built-in interrupt handler and DMACON handling, but rather uses callbacks to
