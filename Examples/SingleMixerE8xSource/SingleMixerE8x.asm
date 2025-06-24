@@ -1,0 +1,937 @@
+; $VER: SingleMixer.asm 1.0 (16.03.23)
+;
+; SingleMixer.asm
+; Example showing the audio mixer in MIXER_SINGLE mode.
+; 
+;
+; Author: Jeroen Knoester
+; Version: 1.0
+; Revision: 20230316
+;
+; Assembled using VASM in Amiga-link mode.
+; TAB size = 4 spaces
+
+; Includes (OS includes assume at least NDK 1.3) 
+	include exec/types.i
+	include	exec/exec.i
+	include hardware/custom.i
+	include hardware/dmabits.i
+	include hardware/intbits.i
+	include hardware/cia.i
+
+	include displaybuffers.i
+	include blitter.i
+	include copperlists.i
+	include font.i
+	include converter.i
+	include mixer.i
+	include samples.i
+	include samples_e8x.i
+	include SingleMixerE8x.i
+	include strings.i
+	include support.i
+
+; Custom chips offsets
+custombase			EQU	$dff000
+
+; External references
+	XREF	WaitEOF
+	XREF	WaitRaster
+	
+	XDEF	clist_ptrs
+	XDEF	palette
+	XDEF	subpal
+	
+; Start of code
+		section code,code
+		
+		; Main code starts here
+_main	move.l	$4.w,a6				; Fetch sysbase
+		move.l	a4,vbr_ptr			; Save VBR pointer
+
+		; Allocate all memory
+		bsr		AllocAll
+		bne		.error
+		
+;-----------------------------------------
+; Set up initial screen
+;-----------------------------------------
+		
+		; Set custombase here
+		lea.l	custombase,a6
+		
+		; Activate blitter DMA
+DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_BLITTER
+		move.w	#DMAVal,dmacon(a6)
+
+		; Wait on blitter
+		BlitWait a6
+		move.l	#$ffffffff,bltafwm(a6)	; Preset blitter mask value
+		
+		; Setup Copperlist
+		move.l	#clist1,clist_ptrs
+		moveq	#0,d1
+		moveq	#0,d2
+		moveq	#2,d3
+		bsr		SetFGPtrs	; Set bitplane pointers for foreground		
+		bsr		SetSBPtrs	; Set up bitplane pointers for subbuffer
+		bsr		SetFGPal	; Set up foreground palette
+		bsr		SetSBPal	; Set up subbuffer palette
+		
+		; Check if Copperlist needs to be altered for NTSC display
+		cmp.b	#50,VidFreq
+		beq		.clear_fg
+
+		; Update Copperlist for NTSC if needed
+		lea.l	clist1,a0
+		move.w	#$1492,6(a0)				; DIWSTRT
+		move.w	#$05b1,10(a0)				; DIWSTOP
+		lea.l	pal1,a0
+		move.w	#$1201,-4(a0)				; VWait 1
+		lea.l	shifts,a0
+		move.w	#$01fe,4(a0)				; PAL wait
+		move.w	#$f401,8(a0)				; VWait 2
+		move.w	#$f4c5,16(a0)				; VWait 3
+	
+.clear_fg		
+		; Clear foreground
+		; Blitsize vcount has been halved and hcount doubled to fit
+		move.w	#(buffer_scroll_hgt*2)<<6|((display_width+(32*2))/8),d0
+		move.l	fg_buf1,a0
+		jsr		BlitClearScreen
+
+		; Fill starting data for subbuffer
+		jsr		DrawSubBuffer
+
+		; Wait on blitter
+		BlitWait a6
+		
+		; Add prepare sample screen text
+		moveq	#0,d4
+		lea.l	palhtxt,a3
+		cmp.b	#50,VidFreq
+		beq.s	.printh1
+		
+		lea.l	ntschtxt,a3
+
+.printh1
+		bsr		PrintFG
+		lea.l	preptxt,a3
+		jsr		PrintFG
+		
+		; Add subbuffer text
+		moveq	#0,d4
+		lea.l	subpreptxt,a3
+		bsr		PrintSubbuffer
+		
+		; Enable DMA
+DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
+		move.w	#DMAVal,dmacon(a6)
+
+		; Activate copper list
+		lea.l	clist1,a0
+		move.l	a0,cop1lc(a6)
+		move.w	#1,copjmp1(a6)
+
+;-----------------------------------------
+; Set up Mixer/samples
+;-----------------------------------------
+		move.b	$bfe001,d0					; Fetch CIAA PRA
+		and.b	#$2,d0
+		move.b	d0,led_status
+		or.b	#$2,d0
+		move.b	d0,$bfe001					; Disable audio filter
+
+		; Prepare sample data
+		IF MIXER_HQ_MODE=1
+			moveq	#1,d1
+		ELSE
+			moveq	#mixer_sw_channels,d1
+		ENDIF
+		bsr		PrepSamples
+		
+		; Prepare E8x sample data
+		IF MIXER_HQ_MODE=1
+			moveq	#1,d1
+		ELSE
+			moveq	#mixer_sw_channels,d1
+		ENDIF
+		move.l	a2,-(sp)					; Stack
+		lea.l	sample_e8x_info,a2
+		bsr		PrepSamplesE8x
+		move.l	(sp)+,a2					; Stack
+		
+		; Set up the mixer
+		lea.l	mixer_buffer,a0
+		move.w	#MIX_PAL,d0
+		cmp.b	#50,VidFreq					; Check if this is a PAL system
+		beq.s	.mixer_setup
+		
+		move.w	#MIX_NTSC,d0
+		
+.mixer_setup
+		bsr		MixerSetup
+		
+		; Set up E8X sample handling
+		lea.l	samples_e8x,a0
+		lea.l	_mt_E8Trigger,a1
+		move.w	#DMAF_AUD2|MIX_CH3,d0
+		bsr		MixerSetupE8xSamples
+		bsr		MixerEnableE8xSamples
+
+		; Set up the mixer interrupt handler (initially to standard mix)
+		move.l	vbr_ptr,a0
+		moveq	#0,d0
+		bsr		MixerInstallHandler
+		
+		; Start the mixer
+		bsr		MixerStart
+		
+;-----------------------------------------
+; Display title screen
+;-----------------------------------------
+		; Clear foreground
+		; Blitsize vcount has been halved and hcount doubled to fit
+		move.w	#(buffer_scroll_hgt*2)<<6|((display_width+(32*2))/8),d0
+		move.l	fg_buf1,a0
+		jsr		BlitClearScreen
+		
+		; Wait on blitter
+		BlitWait a6
+		
+		; Add title text
+		moveq	#0,d4
+		cmp.b	#50,VidFreq
+		bne.s	.printntsc_title
+
+		lea.l	palhtxt,a3
+		bsr		PrintFG
+		bra		.print_title
+		
+.printntsc_title
+		lea.l	ntschtxt,a3
+		bsr		PrintFG
+
+.print_title
+		lea.l	titletxt,a3
+		jsr		PrintFG
+
+		; Display subbuffer status text
+		moveq	#0,d4
+		lea.l	substarttxt,a3
+		bsr		PrintSubbuffer
+		
+		; Wait on fire button
+.title_lp
+		movem.l	d0/d1,-(sp)
+		move.w	#$2c,d0
+		jsr		WaitRaster
+		movem.l	(sp)+,d0/d1
+
+		; Fetch input
+		bsr		ReadInput
+		
+		; Compare with previous input		
+		cmp.w	input_result,d7
+		beq		.title_lp					; Wait until input changes
+		
+		; Store current input result to prevent repeats
+		move.w	d7,input_result
+		
+		; Test for the different options:
+		; *) fire button moves to the main program
+.tst_jfire
+		; Test fire button
+		btst	#8,d7
+		beq		.title_lp
+
+		; Fire button was pressed, continue
+
+;-----------------------------------------
+; Show main screen
+;-----------------------------------------
+.show_main	
+		; Clear foreground
+		; Blitsize vcount has been halved and hcount doubled to fit
+		move.w	#(buffer_scroll_hgt*2)<<6|((display_width+(32*2))/8),d0
+		move.l	fg_buf1,a0
+		jsr		BlitClearScreen
+		
+		; Wait on blitter
+		BlitWait a6
+		
+		; Add title text
+		moveq	#0,d4
+		cmp.b	#50,VidFreq
+		bne.s	.printntsc_main
+
+		lea.l	palhtxt,a3
+		bsr		PrintFG
+		lea.l	palpertxt,a3
+		bsr		PrintFG
+		bra		.print_main
+		
+.printntsc_main
+		lea.l	ntschtxt,a3
+		bsr		PrintFG
+		lea.l	ntscpertxt,a3
+		bsr		PrintFG		
+
+.print_main
+		lea.l	maintxt,a3
+		jsr		PrintFG
+
+		; Display subbuffer status text
+		moveq	#0,d4
+		lea.l	subtxt,a3
+		bsr		PrintSubbuffer
+		
+;-----------------------------------------
+; Main loop setup
+;-----------------------------------------
+		
+		; Clear frame counter / done flag / current sample
+		clr.w	frame_cnt
+		clr.w	main_done
+		clr.w	current_sample
+		clr.w	pt_lsp
+		clr.w	pt_changed
+		
+		; Set cursor position to default
+		move.w	#1<<2,cursor_position
+
+		; Set channel/action/module positions to defaults
+		move.w	#0,chan_position
+		move.w	#0,act_position
+		move.w	#0,pt_position		
+	
+;-----------------------------------------
+; Main loop
+;-----------------------------------------	
+.main_lp
+		movem.l	d0/d1,-(sp)
+		move.w	#$2c,d0
+		jsr		WaitRaster
+		movem.l	(sp)+,d0/d1
+		
+		; Fetch input
+		bsr		ReadInput
+		
+		; Handle input
+		bsr		HandleInput
+
+		; Update cursor display
+		bsr		UpdateCursor
+		
+		; Deal with ProTracker changes (if any)
+		tst.w	pt_changed
+		beq		.no_pt_change
+		
+		; The ProTracker menu option changed this frame.
+		move.w	#0,pt_changed
+		bsr		PTAction
+		
+.no_pt_change
+		; Update frame counter
+		add.w	#1,frame_cnt
+		tst.w	main_done
+		beq		.main_lp
+
+;-----------------------------------------
+; Program exit
+;-----------------------------------------
+
+		; Wait on Blitter
+		BlitWait a6
+
+		; Fetch VBR
+		move.l	vbr_ptr,a0
+
+		; Disable audio mixer
+		bsr		MixerStop
+
+		; Stop ProTracker player if running
+		move.w	pt_position,d0
+		jmp		.ptend_table(pc,d0.w)
+		
+.ptend_table
+		jmp		.restore_led(pc)
+		jmp		.stop_ptplayer(pc)
+		jmp		.stop_lsp(pc)
+		
+.stop_ptplayer
+		jsr		_mt_end
+		jsr		_mt_remove_cia
+		bra		.restore_led
+		
+.stop_lsp
+		jsr		LSP_MusicDriver_CIA_Stop
+		move.l	vbr_ptr,a0
+		move.l	saved_vector,$78(a0)		; Restore level 6 vector
+
+.restore_led
+		; Restore led status
+		move.b	$bfe001,d0					; Fetch CIAA PRA
+		or.b	led_status,d0
+		move.b	d0,$bfe001					; Disable audio filter
+		
+DMAVal	SET		DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
+		move.w	#DMAVal,dmacon(a6)
+		
+		; Deallocate memory
+		move.l	$4.w,a6
+		bsr		FreeAll
+		
+		; Remove Mixer interrupt handler
+		bsr		MixerRemoveHandler
+		
+		; Exit program
+.error	lea.l	custombase,a6
+		rts
+		
+;-----------------------------------------
+; Main loop support routines
+;-----------------------------------------
+PostIRQHandler
+		rts
+
+		; Routine: HandleInput
+		; This routine handles the user input to the example program.
+		;
+		; D7 - input value from ReadInput
+HandleInput
+		; Compare with previous input		
+		cmp.w	input_result,d7
+		beq		.done						; Wait until input changes
+		
+		; Store current input result to prevent repeats
+		move.w	d7,input_result
+		
+		; Test for the different options:
+		; *) left mouse button exits program
+		; *) fire button plays or stops sample
+		; *) left/right joystick moves selection cursor
+		; *) up/down change selected option
+		
+		; Test left mouse button
+.tst_mlft
+		btst	#10,d7
+		beq		.tst_jfire
+		
+		; Exit program
+		move.w	#1,main_done
+		bra		.done
+		
+.tst_jfire
+		; Test fire button
+		btst	#8,d7
+		beq		.tst_jleft
+		
+		; Play/stop sample
+		bsr		MixerAction
+		bra		.done
+		
+.tst_jleft
+		; Test left
+		btst	#2,d7
+		beq		.tst_jright
+		
+		; Move cursor left
+		move.w	cursor_position,d0
+		btst	#2,d0						; Check for left-most position
+		bne		.done
+		
+		asl.w	#1,d0
+		move.w	d0,cursor_position
+		bra		.done
+		
+.tst_jright
+		; Test right
+		btst	#3,d7
+		beq		.tst_jup
+		
+		; Move cursor right
+		move.w	cursor_position,d0
+		btst	#0,d0						; Check for right-most position
+		bne		.done
+		
+		asr.w	#1,d0
+		move.w	d0,cursor_position
+		bra		.done
+		
+.tst_jup
+		; Test up
+		btst	#0,d7
+		beq		.tst_jdown
+		
+		move.w	cursor_position,d0
+		subq.w	#1,d0
+		add.w	d0,d0
+		add.w	d0,d0
+		jmp		.jptable_up(pc,d0.w)
+		
+.jptable_up
+		jmp		.pt_up(pc)
+		jmp		.act_up(pc)
+		dc.l	0
+		jmp		.chan_up(pc)
+
+.chan_up
+		; Change channel value up
+		move.w	chan_position,d0
+		beq		.done
+		
+		subq.w	#4,d0
+		move.w	d0,chan_position
+		bra		.done
+		
+.act_up
+		; Change action value up
+		move.w	act_position,d0
+		beq		.done
+		
+		subq.w	#4,d0
+		move.w	d0,act_position
+		bra		.done
+
+.pt_up
+		; Change Protracker value up
+		move.w	pt_position,d0
+		beq		.done
+		
+		subq.w	#4,d0
+		move.w	d0,pt_position
+		move.w	#1,pt_changed
+		bra		.done
+		
+.tst_jdown
+		; Test down
+		btst	#1,d7
+		beq		.done
+		
+		move.w	cursor_position,d0
+		subq.w	#1,d0
+		add.w	d0,d0
+		add.w	d0,d0
+		jmp		.jptable_down(pc,d0.w)
+		
+.jptable_down
+		jmp		.pt_down(pc)
+		jmp		.act_down(pc)
+		dc.l	0
+		jmp		.chan_down(pc)
+
+.chan_down
+		; Change channel value down
+		move.w	chan_position,d0
+		cmp.w	#16,d0
+		beq		.done
+		
+		addq.w	#4,d0
+		move.w	d0,chan_position
+		bra		.done
+		
+.act_down
+		; Change action value down
+		move.w	act_position,d0
+		cmp.w	#12,d0
+		beq		.done
+		
+		addq.w	#4,d0
+		move.w	d0,act_position
+		bra		.done
+
+.pt_down
+		; Change Protracker value down
+		move.w	pt_position,d0
+		cmp.w	#8,d0
+		beq		.done
+		
+		addq.w	#4,d0
+		move.w	d0,pt_position
+		move.w	#1,pt_changed
+
+		; End of input handling
+.done
+		rts
+		
+		; Routine: UpdateCursor
+		; This routine updates the cursor display
+UpdateCursor
+		move.w	cursor_position,d0
+		asl.b	#5,d0
+		
+		moveq	#0,d4
+		asl.b	#1,d0
+		addx.b	d4,d4
+		lea.l	chantxt_ptrs,a3
+		move.w	chan_position,d1
+		move.l	0(a3,d1.w),a3
+		bsr		PrintSubbuffer
+		
+		moveq	#0,d4
+		asl.b	#1,d0
+		addx.b	d4,d4
+		lea.l	acttxt_ptrs,a3
+		move.w	act_position,d1
+		move.l	0(a3,d1.w),a3
+		bsr		PrintSubbuffer
+		
+		moveq	#0,d4
+		asl.b	#1,d0
+		addx.b	d4,d4
+		lea.l	modtxt_ptrs,a3
+		move.w	pt_position,d1
+		move.l	0(a3,d1.w),a3
+		bsr		PrintSubbuffer
+		rts
+
+		; Routine: MixerAction
+		; This routine is called when the fire button is pressed and takes the
+		; required action based on the current settings for action/channel.
+MixerAction
+		movem.l	d0-d7/a0-a6,-(sp)			; Stack
+		
+		; Fetch correct action
+		move.w	act_position,d0
+		jmp		.act_jptable(pc,d0.w)
+		
+.act_jptable
+		jmp		.play(pc)
+		jmp		.play(pc)
+		jmp		.play(pc)
+		jmp		.stop(pc)
+		
+.play
+		lea.l	effect_struct,a0
+		move.w	#MIX_FX_ONCE,d1
+		tst.w	d0
+		beq.s	.write_lp_indicator
+		
+		cmp.w	#8,d0
+		beq.s	.loop_offset
+
+		move.w	#MIX_FX_LOOP,d1
+		bra.s	.write_lp_indicator
+
+.loop_offset
+		move.w	#MIX_FX_LOOP_OFFSET,d1
+		
+.write_lp_indicator
+		; Write loop indicator & priority
+		move.w	d1,mfx_loop(a0)
+		move.w	#1,mfx_priority(a0)
+	
+		; Fetch sample data
+		lea.l	sample_info,a1
+		move.w	(a1),d1						; Sample count
+		lea.l	si_STRT_o(a1),a1
+		move.w	current_sample,d0
+		move.w	d0,d2
+		mulu	#si_SIZEOF,d2				; Offset to current sample
+
+		; Fill remaining part of the FX structure
+		move.l	4(a1,d2.w),a2
+		move.l	(a2),a2
+		move.l	a2,mfx_sample_ptr(a0)
+		move.l	8(a1,d2.w),mfx_length(a0)
+		move.l	12(a1,d2.w),mfx_loop_offset(a0)
+		
+		clr.l	mfx_plugin_ptr(a0)
+		
+		; Update current sample
+		addq.w	#1,d0
+		cmp.w	d1,d0
+		blt.s	.write_current_sample
+		
+		moveq	#0,d0
+		
+.write_current_sample
+		move.w	d0,current_sample		
+		
+		; Select channel to use
+		moveq	#0,d0						; MIXER_SINGLE does not need HW
+											; channel set.
+		move.w	chan_position,d1
+		beq.s	.auto_channel
+		asr.w	#2,d1
+		addq.w	#3,d1						; Correct bit
+		bset	d1,d0						; D0 = MIX_CHx
+
+		; Play on the requested mixer channel
+		; A0 = Pointer to effect structure
+		; D0 = Mixer channel requested (MIX_CH0..MIX_CH3)
+		bsr		MixerPlayChannelFX
+		bra		.done
+		
+.auto_channel
+		; Play on any free/lower priority/higher age channel
+		; A0 = Pointer to effect structure
+		bsr		MixerPlayFX
+		bra		.done
+
+.stop		
+		; Select channel to stop
+		moveq	#0,d0						; MIXER_SINGLE does not need HW
+											; channel set.
+		move.w	chan_position,d1
+		beq.s	.stop_all
+		asr.w	#2,d1
+		addq.w	#3,d1						; Correct bit
+		bset	d1,d0						; D0 = MIX_CHx
+		
+.stop_ch
+		; Stop the selected channel
+		bsr		MixerStopFX
+		bra		.done
+		
+.stop_all
+		move.w	#MIX_CH0+MIX_CH1+MIX_CH2+MIX_CH3,d0
+		bsr		MixerStopFX
+
+.done
+		movem.l	(sp)+,d0-d7/a0-a6			; Stack
+		rts
+		
+		; Routine: PTAction
+		; This routine is called when the ProTracker playback value is changed
+		; and takes the required action (stopping playback, starting PTPlayer,
+		; starting LSP).
+PTAction
+		; Stack
+		
+		move.w	pt_position,d0				; Fetch PT position
+		jmp		.pttable(pc,d0.w)
+		
+.pttable
+		jmp		.stop_playback(pc)
+		jmp		.start_ptplayer(pc)
+		jmp		.start_lsp(pc)
+		
+.stop_playback
+		; Stop the mixer
+		bsr		MixerStop
+		bsr		MixerRemoveHandler
+
+		; Stop PT Player playback (due to menu order, this is only called
+		; when PT Player is running).
+		clr.b	_mt_Enable
+		jsr		_mt_end
+		jsr		_mt_remove_cia
+		
+		; Restart the mixer
+		move.l	vbr_ptr,a0
+		moveq	#0,d0
+		bsr		MixerInstallHandler
+		bsr		MixerStart
+		
+		; Clear PT lsp value
+		clr.w	pt_lsp
+		bra		.done
+
+.start_ptplayer
+		; Stop the mixer
+		bsr		MixerStop
+		bsr		MixerRemoveHandler
+
+		; Stop LSP player if it's playing back (due to menu order, it's
+		; possible for LSP to be either playing or not playing).
+		tst.w	pt_lsp
+		beq.s	.lsp_done
+		
+		jsr		LSP_MusicDriver_CIA_Stop
+		move.l	vbr_ptr,a0
+		move.l	saved_vector,$78(a0)		; Restore level 6 vector
+
+.lsp_done
+		; Start PT Player playback.
+		moveq	#1,d0						; PAL/NTSC flag
+		cmp.b	#50,VidFreq					; Check if this is a PAL system
+		beq.s	.install_cia
+
+		moveq	#0,d0
+		
+.install_cia
+		move.l	vbr_ptr,a0
+		jsr 	_mt_install_cia
+		
+		; Initialize PT module using PTPlayer
+		lea.l	module,a0
+		moveq	#0,d0						; Song position
+		move.l	d0,a1
+		jsr		_mt_init
+		
+		; Set PT volume to standard mixing level
+		moveq	#mod_volume_std,d0
+		jsr		_mt_mastervol
+		
+		; Set correct music channel to be muted
+		moveq	#$b,d0
+		jsr		_mt_channelmask
+		
+		; Start playback
+		st		_mt_Enable
+		
+		; Restart the mixer
+		move.l	vbr_ptr,a0
+		moveq	#0,d0
+		bsr		MixerInstallHandler
+		bsr		MixerStart
+		
+		; Clear PT lsp value
+		clr.w	pt_lsp
+		bra		.done
+
+.start_lsp
+		; Stop the mixer
+		bsr		MixerStop
+		bsr		MixerRemoveHandler
+
+		; Stop PT Player playback (due to menu order, this is only called
+		; when PT Player is running).
+		clr.b	_mt_Enable
+		jsr		_mt_end
+		jsr		_mt_remove_cia
+		
+		; Start LSP playback
+		move.l	vbr_ptr,a2
+		move.l	$78(a2),saved_vector		; Save level 6 vector
+		moveq	#0,d0						; PAL/NTSC flag
+		cmp.b	#50,VidFreq					; Check if this is a PAL system
+		beq.s	.install_lsp
+
+		moveq	#1,d0
+		
+.install_lsp
+		; LSP setup
+		lea.l	lspdat,a0
+		lea.l	lspsam,a1
+		jsr		LSP_MusicDriver_CIA_Start
+		move.w	#$c000,intena(a6)			; Enable the level 6 IRQ
+		
+		; Restart the mixer
+		move.l	vbr_ptr,a0
+		moveq	#0,d0
+		bsr		MixerInstallHandler
+		bsr		MixerStart
+		
+		; Set PT lsp value
+		st		pt_lsp
+
+.done	
+		; Stack
+		rts
+
+;------------------------------------
+; Data follows
+;------------------------------------
+		
+		section data,data
+		cnop	0,2
+		
+		; Palette entries for main screen
+		; Background colour	0
+		; Foreground layer	1-15 		(from plane 1,3,5)
+		; Transparancy col. 16					(for sprites)
+		; Sprites			17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+palette		dc.w	$000									; Background colour
+			dc.w	$223,$008,$500,$000,$445,$a21,$382		; FG col  (#1-15)
+			dc.w	$778,$e50,$aab,$fa3,$5db,$fff,$0f8,$bbb
+			dc.w	$000									; Transp. (#16)
+			dc.w	$22b,$444,$ddd,$000,$22b,$444,$ddd		; SPR col (#17-31)
+			dc.w	$000,$22b,$444,$ddd,$000,$22b,$444,$ddd
+
+
+		; Palette entries for subscreen (8 colours)
+subpal		dc.w	$000,$440,$660,$880,$aa0,$cc0,$ee0,$000
+
+		; Foreground main buffer
+		; Buffer size for FGM: 
+		;	304x224x4
+fg_buf1			dc.l	0
+
+		; Sub buffer
+		; Buffer size for FGS: 288x16x3
+sb_buf			dc.l	0
+sb_buf_o		EQU	sb_buf-fg_buf1
+
+		; Variables - copper list pointer
+clist_ptrs		dc.l	0
+clist_ptrs_o	EQU	clist_ptrs-fg_buf1
+
+		; Variables - other
+vbr_ptr			dc.l	0
+saved_vector	dc.l	0
+led_status		dc.w	0
+main_done		dc.w	0
+frame_cnt		dc.w	0
+input_result	dc.w	0
+
+cursor_position	dc.w	0
+chan_position	dc.w	0
+act_position	dc.w	0
+pt_position		dc.w	0
+pt_changed		dc.w	0
+pt_lsp			dc.w	0
+
+current_sample	dc.w	0
+
+		cnop 0,4
+effect_struct	blk.b	mfx_SIZEOF
+
+		cnop 0,4
+samples_e8x		dc.l	e8x_sample1,e8x_sample2,e8x_sample3,e8x_sample4
+				dc.l	e8x_sample5,e8x_sample6,e8x_sample7,e8x_sample8
+				dc.l	e8x_sample9,e8x_sample10,e8x_sample11,e8x_sample12
+				dc.l	e8x_sample13,e8x_sample14,e8x_sample15
+e8x_sample1		dc.l	sample1_e8x_size	; Length
+				dc.l	sample1_e8x			; Pointer
+				dc.w	1					; Priority
+e8x_sample2		dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample3		dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample4		dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample5		dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample6		dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample7		dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample8		dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample9		dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample10	dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample11	dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample12	dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample13	dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+e8x_sample14	dc.l	sample2_e8x_size
+				dc.l	sample2_e8x
+				dc.w	1
+e8x_sample15	dc.l	sample1_e8x_size
+				dc.l	sample1_e8x
+				dc.w	1
+
+		section audio,data_c
+		cnop 0,4
+mixer_buffer	blk.b	mixer_buffer_size
+
+; End of File

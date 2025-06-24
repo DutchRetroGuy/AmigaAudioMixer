@@ -38,6 +38,7 @@ EXREF	MACRO
 	EXREF	AllocAll
 	EXREF	FreeAll
 	EXREF	PrepSamples
+	EXREF	PrepSamplesE8x
 	EXREF	InitLFSR
 	EXREF	GetRandom
 	

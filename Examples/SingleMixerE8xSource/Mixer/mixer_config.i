@@ -1,4 +1,4 @@
-; $VER: mixer_config.i 3.7 (28.01.25)
+; $VER: mixer_config.i 3.8 (23.06.25)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -12,8 +12,8 @@
 ;       signed limits or overflow from positive to negative (or vice versa).
 ; 
 ; Author: Jeroen Knoester
-; Version: 3.7
-; Revision: 20250128
+; Version: 3.8
+; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -52,6 +52,7 @@ MIXER_CONFIG_I	SET	1
 MIXER_SINGLE			EQU 1
 MIXER_MULTI				EQU	0
 MIXER_MULTI_PAIRED		EQU 0
+
 
 ;-----------------------------------------------------------------------------
 ; Mixer mode selection
@@ -158,6 +159,8 @@ MIXER_SIZEX32			EQU 0
 ;       mostly make MIXER_SIZEX32 irrelevant. However, in some edge cases,
 ;       it can still create a slight increase in performance over just using
 ;       MIXER_SIZEXBUF.
+; Note: if this option is set to one, the setting for MIXER_HQ_MODE is 
+;       ignored.
 MIXER_SIZEXBUF			EQU 0
 
 
@@ -228,7 +231,7 @@ MIXER_ENABLE_RETURN_VECTOR	EQU 0
 ; Note: enabling this feature adds three new routines to the mixer, which can
 ;       be used to correctly set up and enable/disable E8x sample playback.
 ; Note: enabling this feature slightly increases CPU costs of the mixer.
-MIXER_ENABLE_PTPLAYER_E8X	EQU 0
+MIXER_ENABLE_PTPLAYER_E8X	EQU 1
 
 ; Set define below to 1 to change the mixer such that it no longer uses its
 ; built-in interrupt handler and DMACON handling, but rather uses callbacks to
@@ -245,7 +248,7 @@ MIXER_ENABLE_PTPLAYER_E8X	EQU 0
 ;       interrupt on enabled channels.
 ; Note: enabling this feature disables the MIXER_CIA_TIMER setting.
 ; Note: enabling callback functions slightly increases CPU cost of the mixer.
-MIXER_EXTERNAL_IRQ_DMA	EQU 1
+MIXER_EXTERNAL_IRQ_DMA	EQU 0
 
 ; Set define below to 1 to change the mixer such that calls to the external
 ; interrupt and DMA handling routines calls these once per bit to be set, 
@@ -269,7 +272,7 @@ MIXER_SECTION			EQU	1
 ; Set define below to 1 if the assembler used does not support the "echo"
 ; command. This blocks mixer.asm displaying messages during assembly.
 MIXER_NO_ECHO			EQU 0
-	
+
 ; Set define below to 1 to include C style function definition aliases in
 ; addition to the standard function definitions. This effectively creates
 ; a number of XDEF _<FunctionName> symbols for use in linking against C based

@@ -564,31 +564,43 @@ MixCheckE8Sample	MACRO
 		
 		movem.l	d0/a0,-(sp)					; Stack
 		
-		; Fetch mixer and check if _mt_E8Trigger is non-zero
+		; Fetch mixer and fetch/reset _mt_E8Trigger
 		lea.l	mixer\1(pc),a3
 		move.l	mx_e8x_trigger_ptr(a3),a4
 		moveq	#0,d0
-		move.b	(a4),d0
+		
+		move.b	(a4),d0						; D0 = _mt_E8Trigger
+		clr.b	(a4)						; Reset _mt_E8Trigger
+		
+		; Check if _mt_E8Trigger is equal to previous value
+		cmp.w	mx_e8x_last_trigger(a3),d0
+		bne.s	.e8x_not_equal
+		
+		; Trigger value is the same, exit
+		bra		.e8x_restore_stack
+		
+.e8x_not_equal
+		; Store _mt_E8Trigger value
+		move.w	d0,mx_e8x_last_trigger(a3)
+
+		; Check if _mt_E8Trigger is non-zero
 		tst.b	d0
 		beq		.e8x_restore_stack
 
-		; Reset _mt_E8Trigger
-		clr.b	(a4)
-		
 		; Convert _mt_E8Trigger to sample to use
 		move.l	mx_e8x_samples_ptr(a3),a4
 		subq.b	#1,d0
 		add.b	d0,d0
 		add.b	d0,d0
-		move.l	me8_index(a4,d0.w),a4
+		move.l	me8x_index(a4,d0.w),a4
 
 		; Set up and play back sample
 		move.w	mx_e8x_channel(a3),d0
 		lea.l	mixer_fx_struct\1(pc),a0
 		
-		move.l	me8x_length(a4),mfx_length(a0)
-		move.l	me8x_sample_ptr(a4),mfx_sample_ptr(a0)
-		move.w	me8x_priority(a4),mfx_priority(a0)
+		move.l	me8xs_length(a4),mfx_length(a0)
+		move.l	me8xs_sample_ptr(a4),mfx_sample_ptr(a0)
+		move.w	me8xs_priority(a4),mfx_priority(a0)
 		move.w	#MIX_FX_ONCE,mfx_loop(a0)
 		
 		moveq	#0,d1
@@ -2076,6 +2088,9 @@ MixerSetup\1
 		move.w	d3,mx_hw_period(a3)
 		move.w	#mixer_output_channels,d6
 		move.w	d6,mx_hw_channels(a3)
+		move.w	d4,mx_e8x_enabled(a3)
+		move.w	d4,mx_e8x_channel(a3)
+		move.w	d4,mx_e8x_last_trigger(a3)
 		IF MIXER_ENABLE_CALLBACK=1
 			move.l	d4,mx_callback_ptr(a3)
 		ENDIF
@@ -4011,11 +4026,22 @@ MixerDisableCallback\1
 
 		; Routine: MixerSetupE8xSamples
 		; This routine sets up the mixer to be able to play back samples when
-		; ptplayer triggers an _mt_E8Trigger.
+		; ptplayer triggers an _mt_E8Trigger update. This occurs each time
+		; when ptplayer reads a channel command in the of range E81 to E8F.
+		; See ptplayer.readme for more information. 
 		;
-		; Note: this routine defaults to having E8x
+		; It requires a pointer to a filled MXE8xSamples structure in A0, a
+		; pointer to the _mt_E8Trigger variable from ptplayer.asm in A1 and
+		; the hardware and mixer channel to use in D0.
 		;
-		; A0 - pointer to MXE8Samples structure
+		; Note: MixerSetup has to be called prior to calling this routine.
+		; Note: this routine defaults to disabling E8x playback to prevent
+		;       potential unwanted samples from earlier modules playing back,
+		;       use MixerEnableE8xSamples to start E8x playback.
+		; Note: E8x sample playback is currently only supported if Frank
+		;       Wille's PTPlayer is used for MOD playback.
+		;
+		; A0 - pointer to MXE8xSamples structure
 		; A1 - pointer to _mt_E8Trigger
 		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
 		;      Supports setting exactly one mixer channel.
@@ -4042,14 +4068,40 @@ MixerSetupE8xSamples\1
 			move.l	a1,mx_e8x_trigger_ptr(a2)
 			move.w	d0,mx_e8x_channel(a2)
 			clr.w	mx_e8x_enabled(a2)
+			clr.w	mx_e8x_last_trigger(a2)
 
 			movem.l	(sp)+,d0/d2/a2				; Stack
 		ENDIF
 		rts
+		
+		; Routine: MixerUpdateE8xSamples
+		; This routine updates the set of samples to use for E8x sample
+		; playback. It requires a pointer to a filled MXE8xSamples structure
+		; in A0.
+		;
+		; Note: MixerSetupE8xSamples has to be called prior to calling this
+		;       function.
+		;
+		; A0 - pointer to MXE8xSamples structure
+MixerUpdateE8xSamples\1
+		IF MIXER_ENABLE_PTPLAYER_E8X=1
+			movem.l	a1,-(sp)					; Stack
+			
+			lea.l	mixer\1(pc),a1
+			
+			; Fill mixer structure member
+			move.l	a0,mx_e8x_samples_ptr(a1)
+
+			movem.l	(sp)+,a1					; Stack
+		ENDIF
+		rts		
 	
 		; Routine: MixerEnableE8xSamples
 		; This routine enables playback of samples when ptplayer triggers an 
-		; _mt_E8Trigger.
+		; _mt_E8Trigger update.
+		;
+		; Note: MixerSetupE8xSamples has to be called prior to calling this
+		;       function.
 MixerEnableE8xSamples\1
 		IF MIXER_ENABLE_PTPLAYER_E8X=1
 			move.l	a0,-(sp)					; Stack
@@ -4061,9 +4113,12 @@ MixerEnableE8xSamples\1
 		ENDIF
 		rts
 
-		; Routine: MixerDisablesE8xSamples
+		; Routine: MixerDisableE8xSamples
 		; This routine disables playback of samples when ptplayer triggers an
-		; _mt_E8Trigger.
+		; _mt_E8Trigger update.
+		;
+		; Note: MixerSetupE8xSamples has to be called prior to calling this
+		;       function.
 MixerDisableE8xSamples\1
 		IF MIXER_ENABLE_PTPLAYER_E8X=1
 			move.l	a0,-(sp)					; Stack
@@ -4300,6 +4355,7 @@ _MixerGetChannelStatus\1		EQU	MixerGetChannelStatus\1
 _MixerEnableCallback\1			EQU MixerEnableCallback\1
 _MixerDisableCallback\1			EQU	MixerDisableCallback\1
 _MixerSetupE8xSamples\1			EQU MixerSetupE8xSamples\1
+_MixerUpdateE8xSamples\1		EQU	MixerUpdateE8xSamples\1
 _MixerEnableE8xSamples\1		EQU MixerEnableE8xSamples\1
 _MixerDisableE8xSamples\1		EQU MixerDisableE8xSamples\1
 _MixerGetPluginsBufferSize\1	EQU MixerGetPluginsBufferSize\1
@@ -4329,6 +4385,7 @@ _MixerSetIRQDMACallbacks\1		EQU	MixerSetIRQDMACallbacks
 	XDEF	_MixerEnableCallback\1
 	XDEF	_MixerDisableCallback\1
 	XDEF	_MixerSetupE8xSamples\1
+	XDEF	_MixerUpdateE8xSamples\1
 	XDEF	_MixerEnableE8xSamples\1
 	XDEF	_MixerDisableE8xSamples\1
 	XDEF	_MixerGetPluginsBufferSize\1

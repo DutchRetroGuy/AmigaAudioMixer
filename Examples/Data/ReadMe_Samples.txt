@@ -91,7 +91,7 @@ Original name - Dog Bark
 License - cc-0 @ freesound.org
 License URL - https://creativecommons.org/share-your-work/public-domain/cc0/
 
-Alterations - & 11KHz 8 bit mono resampling
+Alterations - Trimming & 11KHz 8 bit mono resampling
 
 8.
 cat.raw:
@@ -104,4 +104,30 @@ Original name - cat meow short
 License - cc-0 @ freesound.org
 License URL - https://creativecommons.org/share-your-work/public-domain/cc0/
 
-Alterations - & 11KHz 8 bit mono resampling
+Alterations - Trimming & 11KHz 8 bit mono resampling
+
+9.
+snap_1.raw:
+-------
+Source - Freesound
+Source URL - https://freesound.org/people/Unicornaphobist/sounds/272174/
+Source file - 272174__unicornaphobist__clear-finger-snap.wav
+Author(s) - Unicornaphobist
+Original name - Clear Finger Snap
+License - cc-0 @ freesound.org
+License URL - https://creativecommons.org/share-your-work/public-domain/cc0/
+
+Alterations - Trimming & 11KHz 8 bit mono resampling
+
+10.
+snap_2.raw:
+-------
+Source - Freesound
+Source URL - https://freesound.org/people/OwlStorm/sounds/151214/
+Source file - 151214__owlstorm__click-finger-snap.wav
+Author(s) - OwlStorm
+Original name - Click / Finger Snap
+License - cc-0 @ freesound.org
+License URL - https://creativecommons.org/share-your-work/public-domain/cc0/
+
+Alterations - Trimming & 11KHz 8 bit mono resampling
