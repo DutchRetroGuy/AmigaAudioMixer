@@ -573,15 +573,15 @@ MixCheckE8Sample	MACRO
 		clr.b	(a4)						; Reset _mt_E8Trigger
 		
 		; Check if _mt_E8Trigger is equal to previous value
-		cmp.w	mx_e8x_last_trigger(a3),d0
-		bne.s	.e8x_not_equal
+		;cmp.w	mx_e8x_last_trigger(a3),d0
+		;bne.s	.e8x_not_equal
 		
 		; Trigger value is the same, exit
-		bra		.e8x_restore_stack
+		;bra		.e8x_restore_stack
 		
-.e8x_not_equal
+;.e8x_not_equal
 		; Store _mt_E8Trigger value
-		move.w	d0,mx_e8x_last_trigger(a3)
+		;move.w	d0,mx_e8x_last_trigger(a3)
 
 		; Check if _mt_E8Trigger is non-zero
 		tst.b	d0
