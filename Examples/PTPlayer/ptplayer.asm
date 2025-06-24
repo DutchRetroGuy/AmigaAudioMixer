@@ -1822,6 +1822,8 @@ mt_music:
 ; a6 = CUSTOM
 
 	moveq	#0,d7			; d7 is always zero
+	
+	sf		mt_E8Trigger_step(a4)	; Clear step indicator
 
 	lea	mt_dmaon+1(pc),a0
 	move.b	d7,(a0)
@@ -1833,6 +1835,7 @@ mt_music:
 	blo	no_new_note
 
 	; handle a new note
+	st		mt_E8Trigger_step(a4)	; Set step indicator
 	move.b	d7,mt_Counter(a4)
 	tst.b	mt_PattDelTime2(a4)
 	beq	get_new_note
@@ -2152,6 +2155,8 @@ fx_tab:
 mt_pernop:
 ; just set the current period
 
+	tst.b	n_enable(a2)
+	beq		mt_nop
 	move.w	n_period(a2),AUDPER(a5)
 mt_nop:
 	rts
@@ -2192,6 +2197,8 @@ mt_playvoice:
 
 .2:	tst.l	(a2)			; n_note/cmd: any note or cmd set?
 	bne	.3
+	tst.b	n_enable(a2)
+	beq	.3
 	move.w	n_period(a2),AUDPER(a5)
 .3:	move.l	d6,(a2)
 
@@ -2294,7 +2301,10 @@ set_len_start:
 	move.b	(a0,d1.w),d1
 	and.b	n_enable(a2),d1
 	endc
+	tst.b	n_enable(a2)
+	beq		.1
 	move.w	d1,AUDVOL(a5)
+.1
 
 	; remember if sample is looped
 	; @@@ FIXME: also need to check if n_loopstart equals n_start
@@ -3032,7 +3042,11 @@ mt_e8:
 ; cmd E 8 x (x = trigger value)
 ; d0 = x
 
+	tst.b	mt_E8Trigger_step(a4)
+	beq	.1
+
 	move.b	d0,mt_E8Trigger(a4)
+.1
 	rts
 
 
@@ -3907,6 +3921,8 @@ mt_Enable:
 _mt_E8Trigger:
 mt_E8Trigger:
 	ds.b	1
+mt_E8Trigger_step:
+	ds.b	1
 
 	ifeq	MINIMAL
 	xdef	_mt_MusicChannels
@@ -3949,6 +3965,7 @@ mt_MasterVolTab	rs.l	1
 	endc
 mt_Enable	rs.b	1		; exported as _mt_Enable
 mt_E8Trigger	rs.b	1		; exported as _mt_E8Trigger
+mt_E8Trigger_step	rs.b	1
 mt_MusicChannels rs.b	1		; exported as _mt_MusicChannels
 mt_SongEnd	rs.b	1		; exported as _mt_SongEnd
 
