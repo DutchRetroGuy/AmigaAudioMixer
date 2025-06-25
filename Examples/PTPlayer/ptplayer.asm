@@ -2,8 +2,8 @@
 ;*    ----- Protracker V2.3B Playroutine -----	  *
 ;**************************************************
 ;
-; Version 6.4
-; Written by Frank Wille in 2013, 2016-2024.
+; Version 6.5
+; Written by Frank Wille in 2013, 2016-2025.
 ;
 ; I, the copyright holder of this work, hereby release it into the
 ; public domain. This applies worldwide.
@@ -1264,7 +1264,8 @@ _mt_playfx:
 ; fixed channel or on the most unused one.
 ; A negative channel specification means to use the best one.
 ; The priority is unsigned and should be greater than zero.
-; This channel will be blocked for music until the effect has finished.
+; The selected channel will be blocked for music until the effect has
+; finished.
 ; a6 = CUSTOM
 ; a0 = sfx-structure pointer with the following layout:
 ;      0: ptr, 4: len.w, 6: period.w, 8: vol.w, 10: channel.b, 11: priority.b
@@ -1394,7 +1395,7 @@ freecnt_valid:
 	bmi	.overwrite		; all channels reserved/playing effects
 
 	; We will prefer a music channel which had an audio interrupt,
-	; because that means the last instrument sample has been played
+	; because this means the last instrument sample has been played
 	; completely, and the channel is now in an idle loop.
 	; Also exclude channels which have set a repeat loop.
 	; Try not to break them!
@@ -1822,8 +1823,6 @@ mt_music:
 ; a6 = CUSTOM
 
 	moveq	#0,d7			; d7 is always zero
-	
-	sf		mt_E8Trigger_step(a4)	; Clear step indicator
 
 	lea	mt_dmaon+1(pc),a0
 	move.b	d7,(a0)
@@ -1835,7 +1834,6 @@ mt_music:
 	blo	no_new_note
 
 	; handle a new note
-	st		mt_E8Trigger_step(a4)	; Set step indicator
 	move.b	d7,mt_Counter(a4)
 	tst.b	mt_PattDelTime2(a4)
 	beq	get_new_note
@@ -2156,7 +2154,7 @@ mt_pernop:
 ; just set the current period
 
 	tst.b	n_enable(a2)
-	beq		mt_nop
+	beq	mt_nop
 	move.w	n_period(a2),AUDPER(a5)
 mt_nop:
 	rts
@@ -2296,19 +2294,17 @@ set_len_start:
 	move.l	d2,n_loopstart(a2)
 	move.l	d2,n_wavestart(a2)
 
+	tst.b	n_enable(a2)
+	beq	.1
 	ifeq	MINIMAL
 	move.l	mt_MasterVolTab(a4),a0
 	move.b	(a0,d1.w),d1
-	and.b	n_enable(a2),d1
 	endc
-	tst.b	n_enable(a2)
-	beq		.1
 	move.w	d1,AUDVOL(a5)
-.1
 
 	; remember if sample is looped
 	; @@@ FIXME: also need to check if n_loopstart equals n_start
-	subq.w	#1,d3
+.1:	subq.w	#1,d3
 	sne	n_looped(a2)
 
 set_regs:
@@ -2699,7 +2695,7 @@ mt_tonevolslide:
 ; cmd 5 x y (x = volume-up, y = volume-down)
 ; d4 = xy
 
-	pea	mt_volumeslide(pc)
+	pea	volumeslide(pc)
 	bra	mt_toneporta_nc
 
 
@@ -2713,7 +2709,7 @@ mt_vibrvolslide:
 	bsr	mt_vibrato_nc
 
 	move.w	d3,d4
-	bra	mt_volumeslide
+	bra	volumeslide
 
 
 mt_tremolo:
@@ -2788,6 +2784,8 @@ mt_volumeslide:
 ; cmd A x y (x = volume-up, y = volume-down)
 ; d4 = xy
 
+	move.w	n_period(a2),AUDPER(a5)
+volumeslide:
 	move.w	n_volume(a2),d0
 	moveq	#$0f,d1
 	and.b	d4,d1
@@ -2798,18 +2796,16 @@ mt_volumeslide:
 	add.b	d4,d0
 vol_slide_up:
 	cmp.b	#64,d0
-	bls	set_pervol
+	bls	set_vol
 	moveq	#64,d0
-	bra	set_pervol
+	bra	set_vol
 
 	; slide down, until 0
 vol_slide_down:
 	sub.b	d1,d0
-	bpl	set_pervol
+	bpl	set_vol
 	moveq	#0,d0
 
-set_pervol:
-	move.w	n_period(a2),AUDPER(a5)
 set_vol:
 	move.w	d0,n_volume(a2)
 	ifeq	MINIMAL
@@ -3042,12 +3038,10 @@ mt_e8:
 ; cmd E 8 x (x = trigger value)
 ; d0 = x
 
-	tst.b	mt_E8Trigger_step(a4)
-	beq	.1
-
+	tst.b	mt_Counter(a4)
+	bne	.1
 	move.b	d0,mt_E8Trigger(a4)
-.1
-	rts
+.1:	rts
 
 
 mt_retrignote:
@@ -3921,8 +3915,6 @@ mt_Enable:
 _mt_E8Trigger:
 mt_E8Trigger:
 	ds.b	1
-mt_E8Trigger_step:
-	ds.b	1
 
 	ifeq	MINIMAL
 	xdef	_mt_MusicChannels
@@ -3965,7 +3957,6 @@ mt_MasterVolTab	rs.l	1
 	endc
 mt_Enable	rs.b	1		; exported as _mt_Enable
 mt_E8Trigger	rs.b	1		; exported as _mt_E8Trigger
-mt_E8Trigger_step	rs.b	1
 mt_MusicChannels rs.b	1		; exported as _mt_MusicChannels
 mt_SongEnd	rs.b	1		; exported as _mt_SongEnd
 
@@ -3987,5 +3978,3 @@ _mt_SongEnd:
 	endc	; !MINIMAL
 
 	endc	; SDATA/!SDATA
-
-	end
