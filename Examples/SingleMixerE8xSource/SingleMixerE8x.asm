@@ -767,7 +767,7 @@ PTAction
 		
 		; Set correct music channel to be muted
 		moveq	#$b,d0
-		jsr		_mt_channelmask
+		jsr		_mt_enablemask
 		
 		; Start playback
 		st		_mt_Enable

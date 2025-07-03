@@ -54,6 +54,12 @@
 ; _mt_end(a6=CUSTOM)
 ;   Stop playing current module and sound effects.
 ;
+; _mt_enablemask(a6=CUSTOM, d0=ChannelMask.b)
+;   Mask defines which channels are enabled for music. Disabled music channels
+;   will be ignored and their audio hardware registers are free for other use.
+;   Set bit 0 for channel 0, ..., bit 3 for channel 3.
+;   After _mt_init and _mt_end all channels will be enabled!
+;
 ; _mt_soundfx(a6=CUSTOM, a0=SamplePointer,
 ;             d0=SampleLength.w, d1=SamplePeriod.w, d2=SampleVolume.w)
 ;   Request playing of an external sound effect on the most unused channel.
@@ -256,6 +262,7 @@ AUDLC		equ	0
 AUDLEN		equ	4
 AUDPER		equ	6
 AUDVOL		equ	8
+AUDDAT		equ	10
 
 ; CIA registers
 CIAA		equ	$bfe001
@@ -288,7 +295,8 @@ n_cmd		rs.b	1
 n_cmdlo 	rs.b	1
 n_index		rs.b	1
 n_sfxpri	rs.b	1
-n_reserved1	rs.b	2
+n_enable	rs.b	1
+n_disable	rs.b	1		; negated n_enable
 n_start 	rs.l	1
 n_loopstart	rs.l	1
 n_length	rs.w	1
@@ -327,7 +335,7 @@ n_retrigcount	rs.b	1
 	ifeq	MINIMAL
 n_freecnt	rs.b	1
 n_musiconly	rs.b	1
-n_enable	rs.b	1
+n_notmuted	rs.b	1
 	else
 n_reserved2	rs.b	3
 	endc
@@ -683,17 +691,6 @@ mt_TimerBsetrep:
 	move.w	d0,(a0)
 
 	; set repeat sample pointers and lengths
-	ifne	MINIMAL
-	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
-	move.w	mt_chan1+n_replen(a4),AUD0LEN-INTREQ(a0)
-	move.l	mt_chan2+n_loopstart(a4),AUD1LC-INTREQ(a0)
-	move.w	mt_chan2+n_replen(a4),AUD1LEN-INTREQ(a0)
-	move.l	mt_chan3+n_loopstart(a4),AUD2LC-INTREQ(a0)
-	move.w	mt_chan3+n_replen(a4),AUD2LEN-INTREQ(a0)
-	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
-	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-
-	else	; !MINIMAL
 	tst.b	mt_chan1+n_enable(a4)
 	beq	.1
 	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
@@ -710,10 +707,8 @@ mt_TimerBsetrep:
 	beq	.4
 	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
 	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-.4:
-	endc
 
-	move.l	(sp)+,a4
+.4:	move.l	(sp)+,a4
 	rts
 	endc	; !NO_TIMERS
 
@@ -943,17 +938,6 @@ mt_TimerBsetrep:
 	endc
 
 	; set repeat sample pointers and lengths
-	ifne	MINIMAL
-	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
-	move.w	mt_chan1+n_replen(a4),AUD0LEN-INTREQ(a0)
-	move.l	mt_chan2+n_loopstart(a4),AUD1LC-INTREQ(a0)
-	move.w	mt_chan2+n_replen(a4),AUD1LEN-INTREQ(a0)
-	move.l	mt_chan3+n_loopstart(a4),AUD2LC-INTREQ(a0)
-	move.w	mt_chan3+n_replen(a4),AUD2LEN-INTREQ(a0)
-	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
-	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-
-	else	; !MINIMAL
 	tst.b	mt_chan1+n_enable(a4)
 	beq	.1
 	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
@@ -970,10 +954,8 @@ mt_TimerBsetrep:
 	beq	.4
 	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
 	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-.4:
-	endc
 
-	move.l	(sp)+,a4
+.4:	move.l	(sp)+,a4
 	move.l	(sp)+,a0
 	nop
 	rte
@@ -1018,17 +1000,6 @@ _mt_setrep:
 	endc
 
 	; set repeat sample pointers and lengths
-	ifne	MINIMAL
-	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
-	move.w	mt_chan1+n_replen(a4),AUD0LEN-INTREQ(a0)
-	move.l	mt_chan2+n_loopstart(a4),AUD1LC-INTREQ(a0)
-	move.w	mt_chan2+n_replen(a4),AUD1LEN-INTREQ(a0)
-	move.l	mt_chan3+n_loopstart(a4),AUD2LC-INTREQ(a0)
-	move.w	mt_chan3+n_replen(a4),AUD2LEN-INTREQ(a0)
-	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
-	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-
-	else	; !MINIMAL
 	tst.b	mt_chan1+n_enable(a4)
 	beq	.1
 	move.l	mt_chan1+n_loopstart(a4),AUD0LC-INTREQ(a0)
@@ -1045,10 +1016,8 @@ _mt_setrep:
 	beq	.4
 	move.l	mt_chan4+n_loopstart(a4),AUD3LC-INTREQ(a0)
 	move.w	mt_chan4+n_replen(a4),AUD3LEN-INTREQ(a0)
-.4:
-	endc
 
-	movem.l	(sp)+,a0/a4
+.4:	movem.l	(sp)+,a0/a4
 	rts
 	endc	; NO_TIMERS
 
@@ -1184,42 +1153,49 @@ _mt_end:
 ; a6 = CUSTOM
 
 	DISABLE
+
 	ifd	SDATA
 	clr.b	mt_Enable(a4)
 	lea	mt_chan1(a4),a0
+	lea	AUD0LC(a6),a1
 	bsr	resetch
 	lea	mt_chan2(a4),a0
+	lea	AUD1LC(a6),a1
 	bsr	resetch
 	lea	mt_chan3(a4),a0
+	lea	AUD2LC(a6),a1
 	bsr	resetch
 	lea	mt_chan4(a4),a0
+	lea	AUD3LC(a6),a1
 	bsr	resetch
 	else
-	lea	mt_data(pc),a1
-	clr.b	mt_Enable(a1)
-	lea	mt_chan1(a1),a0
+	lea	mt_data+mt_Enable(pc),a0
+	clr.b	(a0)
+	lea	mt_data+mt_chan1(pc),a0
+	lea	AUD0LC(a6),a1
 	bsr	resetch
-	lea	mt_chan2(a1),a0
+	lea	mt_data+mt_chan2(pc),a0
+	lea	AUD1LC(a6),a1
 	bsr	resetch
-	lea	mt_chan3(a1),a0
+	lea	mt_data+mt_chan3(pc),a0
+	lea	AUD2LC(a6),a1
 	bsr	resetch
-	lea	mt_chan4(a1),a0
+	lea	mt_data+mt_chan4(pc),a0
+	lea	AUD3LC(a6),a1
 	bsr	resetch
 	endc
-	moveq	#0,d0
-	move.w	d0,AUD0VOL(a6)
-	move.w	d0,AUD1VOL(a6)
-	move.w	d0,AUD2VOL(a6)
-	move.w	d0,AUD3VOL(a6)
-	move.w	#$000f,DMACON(a6)
+
 	ENABLE
 	rts
 
-
 resetch:
 ; a0 = channel status
-; All registers are preserved!
+; a1 = channel audio hardware registers
+; a6 = CUSTOM
+; All registers except d1 are preserved!
 
+	st	n_enable(a0)
+	clr.b	n_disable(a0)
 	move.w	#320,n_period(a0)	; make sure period is not illegal
 	clr.w	n_volume(a0)
 	clr.w	n_sfxlen(a0)
@@ -1229,7 +1205,67 @@ resetch:
 	clr.b	n_gliss(a0)
 	ifeq	MINIMAL
 	clr.b	n_musiconly(a0)
-	st	n_enable(a0)
+	st	n_notmuted(a0)
+	endc
+
+channel_off:
+	; disable audio-channel's DMA and reset output and volume to zero.
+	move.w	n_dmabit(a0),DMACON(a6)
+	moveq	#0,d1
+	move.w	d1,AUDVOL(a1)
+	move.w	d1,AUDDAT(a1)
+	rts
+
+
+;---------------------------------------------------------------------------
+	xdef	_mt_enablemask
+_mt_enablemask:
+; Mask defines which channels are enabled for music. Disabled music channels
+; will be ignored and their audio hardware registers are free for other use.
+; After _mt_init and _mt_end all channels will be enabled!
+; a6 = CUSTOM
+; d0.b = enable-mask (bit 0 for channel 0, ..., bit 3 for channel 3)
+
+	ifnd	SDATA
+	move.l	a4,-(sp)
+	lea	mt_data(pc),a4
+	endc
+
+	DISABLE
+
+	lsl.b	#5,d0
+	scs	mt_chan4+n_enable(a4)
+	scc	mt_chan4+n_disable(a4)
+	bcs	.1
+	lea	mt_chan4(a4),a0
+	lea	AUD3LC(a6),a1
+	bsr	channel_off
+.1:	add.b	d0,d0
+	scs	mt_chan3+n_enable(a4)
+	scc	mt_chan3+n_disable(a4)
+	bcs	.2
+	lea	mt_chan3(a4),a0
+	lea	AUD2LC(a6),a1
+	bsr	channel_off
+.2:	add.b	d0,d0
+	scs	mt_chan2+n_enable(a4)
+	scc	mt_chan2+n_disable(a4)
+	bcs	.3
+	lea	mt_chan2(a4),a0
+	lea	AUD1LC(a6),a1
+	bsr	channel_off
+.3:	add.b	d0,d0
+	scs	mt_chan1+n_enable(a4)
+	scc	mt_chan1+n_disable(a4)
+	bcs	.4
+	lea	mt_chan1(a4),a0
+	lea	AUD0LC(a6),a1
+	bsr	channel_off
+.4:
+	ENABLE
+
+	ifnd	SDATA
+	move.l	(sp)+,a4
 	endc
 	rts
 
@@ -1376,20 +1412,25 @@ freecnt_valid:
 	; replace sound effect channels by higher priority.
 	moveq	#3,d0
 	sub.b	mt_MusicChannels(a4),d0
+
 	move.b	mt_chan1+n_sfxpri(a4),d4
 	or.b	mt_chan1+n_musiconly(a4),d4
+	or.b	mt_chan1+n_disable(a4),d4
 	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan2+n_sfxpri(a4),d5
 	or.b	mt_chan2+n_musiconly(a4),d5
+	or.b	mt_chan2+n_disable(a4),d5
 	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan3+n_sfxpri(a4),d6
 	or.b	mt_chan3+n_musiconly(a4),d6
+	or.b	mt_chan3+n_disable(a4),d6
 	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan4+n_sfxpri(a4),d7
 	or.b	mt_chan4+n_musiconly(a4),d7
+	or.b	mt_chan4+n_disable(a4),d7
 	sne	d1
 	add.b	d1,d0
 	bmi	.overwrite		; all channels reserved/playing effects
@@ -1705,13 +1746,13 @@ _mt_channelmask:
 	DISABLE
 
 	lsl.b	#5,d0
-	scs	mt_chan4+n_enable(a4)
+	scs	mt_chan4+n_notmuted(a4)
 	add.b	d0,d0
-	scs	mt_chan3+n_enable(a4)
+	scs	mt_chan3+n_notmuted(a4)
 	add.b	d0,d0
-	scs	mt_chan2+n_enable(a4)
+	scs	mt_chan2+n_notmuted(a4)
 	add.b	d0,d0
-	scs	mt_chan1+n_enable(a4)
+	scs	mt_chan1+n_notmuted(a4)
 	move.l	mt_MasterVolTab(a4),a0
 	bsr	set_all_volumes
 
@@ -1731,7 +1772,7 @@ set_all_volumes:
 	bne	.1
 	move.w	mt_chan1+n_volume(a4),d0
 	move.b	(a0,d0.w),d0
-	and.b	mt_chan1+n_enable(a4),d0
+	and.b	mt_chan1+n_notmuted(a4),d0
 	move.w	d0,AUD0VOL(a6)
 	ifd	VOL0_UNLOOPS
 	bne	.1
@@ -1741,7 +1782,7 @@ set_all_volumes:
 	bne	.2
 	move.w	mt_chan2+n_volume(a4),d0
 	move.b	(a0,d0.w),d0
-	and.b	mt_chan2+n_enable(a4),d0
+	and.b	mt_chan2+n_notmuted(a4),d0
 	move.w	d0,AUD1VOL(a6)
 	ifd	VOL0_UNLOOPS
 	bne	.2
@@ -1751,7 +1792,7 @@ set_all_volumes:
 	bne	.3
 	move.w	mt_chan3+n_volume(a4),d0
 	move.b	(a0,d0.w),d0
-	and.b	mt_chan3+n_enable(a4),d0
+	and.b	mt_chan3+n_notmuted(a4),d0
 	move.w	d0,AUD2VOL(a6)
 	ifd	VOL0_UNLOOPS
 	bne	.3
@@ -1761,7 +1802,7 @@ set_all_volumes:
 	bne	.4
 	move.w	mt_chan4+n_volume(a4),d0
 	move.b	(a0,d0.w),d0
-	and.b	mt_chan4+n_enable(a4),d0
+	and.b	mt_chan4+n_notmuted(a4),d0
 	move.w	d0,AUD3VOL(a6)
 	ifd	VOL0_UNLOOPS
 	bne	.4
@@ -2086,41 +2127,33 @@ mt_checkfx:
 
 	ifeq	MINIMAL
 	tst.b	n_sfxpri(a2)
-	beq	.3
+	beq	.2
 
 	move.w	n_sfxlen(a2),d0
-	beq	.2
+	beq	.1
 	bsr	start_sfx
-
-	; channel is blocked, only check some E-commands
-.1:	move.w	#$0fff,d4
-	and.w	n_cmd(a2),d4
-	move.w	d4,d0
-	clr.b	d0
-	cmp.w	#$0e00,d0
-	bne	mt_nop
-	and.w	#$00ff,d4
-	bra	blocked_e_cmds
-
-.2:	tst.b	n_looped(a2)
-	bne	.1
+	bra	check_blocked_e_cmds
+.1:	tst.b	n_looped(a2)
+	bne	check_blocked_e_cmds
 	move.w	n_intbit(a2),d0
 	and.w	INTREQR(a6),d0
-	beq	.1
+	beq	check_blocked_e_cmds
 	move.w	n_dmabit(a2),d0
 	and.w	mt_dmaon(pc),d0
-	bne	.1
+	bne	check_blocked_e_cmds
 
 	; sound effect sample has played, so unblock this channel again
 	move.b	d7,n_sfxpri(a2)
 	endc	; !MINIMAL
 
 	; do channel effects between notes
-.3:	move.w	n_funk(a2),d0
-	beq	.4
+.2:	tst.b	n_enable(a2)		; music hardware channel enabled?
+	beq	check_blocked_e_cmds
+	move.w	n_funk(a2),d0
+	beq	.3
 	bsr	mt_updatefunk
 
-.4:	move.w	#$0fff,d4
+.3:	move.w	#$0fff,d4
 	and.w	n_cmd(a2),d4
 	beq	mt_pernop
 	and.w	#$00ff,d4
@@ -2153,8 +2186,6 @@ fx_tab:
 mt_pernop:
 ; just set the current period
 
-	tst.b	n_enable(a2)
-	beq	mt_nop
 	move.w	n_period(a2),AUDPER(a5)
 mt_nop:
 	rts
@@ -2193,10 +2224,10 @@ mt_playvoice:
 	move.b	d7,n_sfxpri(a2)
 	endc	; !MINIMAL
 
-.2:	tst.l	(a2)			; n_note/cmd: any note or cmd set?
+.2:	tst.b	n_enable(a2)		; music hardware channel enabled?
+	beq	moreblockedfx
+	tst.l	(a2)			; n_note/cmd: any note or cmd set?
 	bne	.3
-	tst.b	n_enable(a2)
-	beq	.3
 	move.w	n_period(a2),AUDPER(a5)
 .3:	move.l	d6,(a2)
 
@@ -2294,17 +2325,16 @@ set_len_start:
 	move.l	d2,n_loopstart(a2)
 	move.l	d2,n_wavestart(a2)
 
-	tst.b	n_enable(a2)
-	beq	.1
 	ifeq	MINIMAL
 	move.l	mt_MasterVolTab(a4),a0
 	move.b	(a0,d1.w),d1
+	and.b	n_notmuted(a2),d1
 	endc
 	move.w	d1,AUDVOL(a5)
 
 	; remember if sample is looped
 	; @@@ FIXME: also need to check if n_loopstart equals n_start
-.1:	subq.w	#1,d3
+	subq.w	#1,d3
 	sne	n_looped(a2)
 
 set_regs:
@@ -2472,7 +2502,6 @@ set_toneporta:
 	rts
 
 
-	ifeq	MINIMAL
 moreblockedfx:
 ; d6 = note.w | cmd.w
 
@@ -2495,7 +2524,6 @@ blmorefx_tab:
 	dc.w	mt_patternbrk-blmorefx_tab		; $D
 	dc.w	blocked_e_cmds-blmorefx_tab
 	dc.w	mt_setspeed-blmorefx_tab		; $F
-	endc	; !MINIMAL
 
 
 mt_arpeggio:
@@ -2767,7 +2795,7 @@ mt_tremolo:
 	ifeq	MINIMAL
 	move.l	mt_MasterVolTab(a4),a0
 	move.b	(a0,d0.w),d0
-	and.b	n_enable(a2),d0
+	and.b	n_notmuted(a2),d0
 	endc
 	move.w	d0,AUDVOL(a5)
 	ifd	VOL0_UNLOOPS
@@ -2811,7 +2839,7 @@ set_vol:
 	ifeq	MINIMAL
 	move.l	mt_MasterVolTab(a4),a0
 	move.b	(a0,d0.w),d0
-	and.b	n_enable(a2),d0
+	and.b	n_notmuted(a2),d0
 	endc
 	move.w	d0,AUDVOL(a5)
 	ifd	VOL0_UNLOOPS
@@ -2923,6 +2951,18 @@ ecmd_tab:
 	dc.w	mt_patterndelay-ecmd_tab
 	dc.w	mt_funk-ecmd_tab
 
+
+check_blocked_e_cmds:
+; channel is blocked, only check some E-commands
+; a2 = channel status
+
+	move.w	#$0fff,d4
+	and.w	n_cmd(a2),d4
+	move.w	d4,d0
+	clr.b	d0
+	cmp.w	#$0e00,d0
+	bne	mt_nop
+	and.w	#$00ff,d4
 
 blocked_e_cmds:
 ; cmd E x y (x=command, y=argument)

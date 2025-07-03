@@ -2,7 +2,7 @@ Short:        ProTracker player w/ support for ext. sfx
 Author:       Frank Wille
 Uploader:     frank@phoenix.owl.de
 Type:         mus/play
-Version:      6.4
+Version:      6.5
 Requires:     Assembler
 Architecture: m68k-amigaos
 
@@ -215,6 +215,12 @@ _mt_init(a6=CUSTOM, a0=TrackerModule, a1=Samples|NULL, d0=InitialSongPos.b)
 _mt_end(a6=CUSTOM)
   Stop playing the current module and sound effects.
 
+_mt_enablemask(a6=CUSTOM, d0=ChannelMask.b)
+  Mask defines which channels are enabled for music. Disabled music channels
+  will be ignored and their audio hardware registers are free for other use.
+  Set bit 0 for channel 0, ..., bit 3 for channel 3.
+  After _mt_init and _mt_end all channels will be enabled!
+
 _mt_soundfx(a6=CUSTOM, a0=SamplePointer,
             d0=SampleLength.w, d1=SamplePeriod.w, d2=SampleVolume.w)
   Request playing of an external sound effect on the most unused channel.
@@ -265,11 +271,10 @@ _mt_stopfx(a6=CUSTOM, d0=Channel.b)
 _mt_musicmask(a6=CUSTOM, d0=ChannelMask.b)
   Bits set in the mask define which specific channels are reserved
   for music only. Set bit 0 for channel 0, ..., bit 3 for channel 3.
-  Additionally a cleared bit prevents any access to the sample pointers
-  of this channel.
   When calling _mt_soundfx or _mt_playfx with automatic channel selection
   (sfx_cha=-1) then these masked channels will never be picked.
-  The mask defaults to 0. MINIMAL=0 only
+  The mask defaults to 0 and is reset on _mt_init and _mt_end.
+  MINIMAL=0 only
 
 _mt_mastervol(a6=CUSTOM, d0=MasterVolume.w)
   Set a master volume from 0 to 64 for all music channels.
@@ -287,7 +292,8 @@ _mt_channelmask(a6=CUSTOM, d0=ChannelMask.b)
   Bits cleared in the mask define which specific channels are muted
   for music replay. Clear bit 0 for channel 0, ..., bit 3 for channel 3.
   The mask defaults to all channels unmuted (bits set) and is reset to
-  this state on _mt_init and _mt_end. MINIMAL=0 only.
+  this state on _mt_init and _mt_end.
+  MINIMAL=0 only.
 
 _mt_music(a6=CUSTOM)
   The replayer routine. Can be called from your own VERTB interrupt
@@ -332,7 +338,7 @@ Get it from Aminet: http://aminet.net/dev/c/SDI_headers.lha
 
 License:
 
-Written by Frank Wille in 2013, 2016 - 2024.
+Written by Frank Wille in 2013, 2016 - 2025.
 I, the copyright holder of this work, hereby release it into the public
 domain. This applies worldwide.
 
@@ -534,3 +540,12 @@ History:
   because there are now OS-compliant versions of these routines, which
   additionally do other things, like allocating audio channels.
   The old names remain as an alias for compatibility reasons.
+
+6.5:
+- Fixed cmd 5 toneporta-volumeslide and cmd 6 vibrato-volumeslide.
+- Set the mt_E8Trigger only once for every E8 command.
+- New function mt_enablemask(), which enables or disables the audio hardware
+  for specific music channels. Disabled channels will be ignored by the music
+  replay routine and their hardware registers are free for other use.
+- mt_channelmask() should only mute/unmute music channels. It still writes
+  to the channel's audio hardware as originally intended (was broken in 6.3).
