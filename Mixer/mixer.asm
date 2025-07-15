@@ -2843,8 +2843,9 @@ MixerChannelWrite\1
 			beq.s	.no_plugin
 
 			; Initialise plugin
-			movem.l	a1/a2/a6,-(sp)				; Stack
+			movem.l	a1/a2/a3/a6,-(sp)			; Stack
 			
+			move.l	mfx_length(a0),a3			; Save length
 			move.l	d7,a6						; Plugin in A6
 			move.w	mpl_plugin_type(a6),mch_plugin_type(a1)
 			move.l	mpl_plugin_ptr(a6),mch_plugin_ptr(a1)
@@ -2860,8 +2861,9 @@ MixerChannelWrite\1
 				jsr		(a6)					; Call init
 			ENDIF
 			move.l	mfx_length(a0),d1			; Get correct length
+			move.l	a3,mfx_length(a0)			; Restore length
 	
-			movem.l	(sp)+,a1/a2/a6				; Stack
+			movem.l	(sp)+,a1/a2/a3/a6			; Stack
 			
 .no_plugin
 			move.l	(sp)+,d7					; Stack
