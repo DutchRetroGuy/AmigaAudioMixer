@@ -1414,46 +1414,55 @@ freecnt_valid:
 	sub.b	mt_MusicChannels(a4),d0
 
 	move.b	mt_chan1+n_sfxpri(a4),d4
+	sne	d1
 	or.b	mt_chan1+n_musiconly(a4),d4
 	or.b	mt_chan1+n_disable(a4),d4
-	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan2+n_sfxpri(a4),d5
+	sne	d1
 	or.b	mt_chan2+n_musiconly(a4),d5
 	or.b	mt_chan2+n_disable(a4),d5
-	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan3+n_sfxpri(a4),d6
+	sne	d1
 	or.b	mt_chan3+n_musiconly(a4),d6
 	or.b	mt_chan3+n_disable(a4),d6
-	sne	d1
 	add.b	d1,d0
 	move.b	mt_chan4+n_sfxpri(a4),d7
+	sne	d1
 	or.b	mt_chan4+n_musiconly(a4),d7
 	or.b	mt_chan4+n_disable(a4),d7
-	sne	d1
 	add.b	d1,d0
-	bmi	.overwrite		; all channels reserved/playing effects
+	bmi	.overwrite		; all channels playing effects
 
-	; We will prefer a music channel which had an audio interrupt,
+	; We will prefer a music channel (disregard disabled channels and
+	; those which are already playing sfx) which had an audio interrupt,
 	; because this means the last instrument sample has been played
 	; completely, and the channel is now in an idle loop.
 	; Also exclude channels which have set a repeat loop.
 	; Try not to break them!
 	moveq	#0,d3
-	tst.b	mt_chan1+n_looped(a4)
-	bne	.1
-	or.w	#$0080,d3
-.1:	tst.b	mt_chan2+n_looped(a4)
-	bne	.2
-	or.w	#$0100,d3
-.2:	tst.b	mt_chan3+n_looped(a4)
-	bne	.3
-	or.w	#$0200,d3
-.3:	tst.b	mt_chan4+n_looped(a4)
-	bne	.4
-	or.w	#$0400,d3
-.4:	move.w	INTREQR(a6),d1
+	move.b	mt_chan4+n_looped(a4),d0
+	or.b	d7,d0
+	seq	d0
+	sub.b	d0,d3
+	add.w	d3,d3
+	move.b	mt_chan3+n_looped(a4),d0
+	or.b	d6,d0
+	seq	d0
+	sub.b	d0,d3
+	add.w	d3,d3
+	move.b	mt_chan2+n_looped(a4),d0
+	or.b	d5,d0
+	seq	d0
+	sub.b	d0,d3
+	add.w	d3,d3
+	move.b	mt_chan1+n_looped(a4),d0
+	or.b	d4,d0
+	seq	d0
+	sub.b	d0,d3
+	lsl.w	#7,d3
+	move.w	INTREQR(a6),d1
 	and.w	d3,d1
 	bne	.6
 
@@ -1461,43 +1470,50 @@ freecnt_valid:
 	move.w	d3,d1
 	bne	.6
 
-	; ..except there are none. Then it doesn't matter. :|
-	move.w	#$0780,d1
+	; ..except there are none. Break any free channel, including looped ones.
+	tst.b	d7
+	seq	d0
+	sub.b	d0,d1
+	add.w	d1,d1
+	tst.b	d6
+	seq	d0
+	sub.b	d0,d1
+	add.w	d1,d1
+	tst.b	d5
+	seq	d0
+	sub.b	d0,d1
+	add.w	d1,d1
+	tst.b	d4
+	seq	d0
+	sub.b	d0,d1
+	lsl.w	#7,d1
 
 	; first look for the best unused channel
 .6:	moveq	#0,d3
-	btst	#7,d1
-	seq	d0
-	or.b	d4,d0
-	bne	.7
-	lea	mt_chan1+n_freecnt(a4),a1
+	lsl.w	#6,d1			; check audio IRQ flags
+	bcc	.7
+	lea	mt_chan4+n_freecnt(a4),a1
 	cmp.b	(a1),d3
 	bhi	.7
 	move.l	a1,a2
 	move.b	(a1),d3
-.7:	btst	#8,d1
-	seq	d0
-	or.b	d5,d0
-	bne	.8
-	lea	mt_chan2+n_freecnt(a4),a1
+.7:	add.w	d1,d1
+	bcc	.8
+	lea	mt_chan3+n_freecnt(a4),a1
 	cmp.b	(a1),d3
 	bhi	.8
 	move.l	a1,a2
 	move.b	(a1),d3
-.8:	btst	#9,d1
-	seq	d0
-	or.b	d6,d0
-	bne	.9
-	lea	mt_chan3+n_freecnt(a4),a1
+.8:	add.w	d1,d1
+	bcc	.9
+	lea	mt_chan2+n_freecnt(a4),a1
 	cmp.b	(a1),d3
 	bhi	.9
 	move.l	a1,a2
 	move.b	(a1),d3
-.9:	btst	#10,d1
-	seq	d0
-	or.b	d7,d0
-	bne	.10
-	lea	mt_chan4+n_freecnt(a4),a1
+.9:	add.w	d1,d1
+	bcc	.10
+	lea	mt_chan1+n_freecnt(a4),a1
 	cmp.b	(a1),d3
 	bhi	.10
 	move.l	a1,a2
@@ -1505,6 +1521,8 @@ freecnt_valid:
 
 .10:	move.l	a2,d3
 	bne	found_sfx_ch
+	; We should ony reach this point when all channels are disabled or
+	; have the musiconly-flag set.
 
 .overwrite:
 	; finally try to overwrite a sound effect with lower/equal priority
