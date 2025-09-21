@@ -175,7 +175,7 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 		; Set up E8X sample handling
 		lea.l	samples_e8x,a0
 		lea.l	_mt_E8Trigger,a1
-		move.w	#DMAF_AUD2|MIX_CH3,d0
+		move.w	#DMAF_AUD0|MIX_CH3,d0
 		bsr		MixerSetupE8xSamples
 		bsr		MixerEnableE8xSamples
 
@@ -766,7 +766,7 @@ PTAction
 		jsr		_mt_mastervol
 		
 		; Set correct music channel to be muted
-		moveq	#$b,d0
+		moveq	#$e,d0
 		jsr		_mt_enablemask
 		
 		; Start playback

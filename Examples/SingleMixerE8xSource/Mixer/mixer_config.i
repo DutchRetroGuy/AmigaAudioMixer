@@ -67,7 +67,7 @@ MIXER_HQ_MODE			EQU	0
 ;-----------------------------------------------------------------------------
 ; Mixer output configuration
 ;-----------------------------------------------------------------------------
-mixer_output_channels	EQU	DMAF_AUD2
+mixer_output_channels	EQU	DMAF_AUD0
 									; valid values are DMAF_AUD0/1/2/3 or
 									; any bitwise combination of these with at
 									; least one channel set.
@@ -168,7 +168,7 @@ MIXER_SIZEXBUF			EQU 0
 ; Performance measurement options
 ;-----------------------------------------------------------------------------
 ; Set define below to 1 to enable colour/timing bars
-MIXER_TIMING_BARS		EQU	0
+MIXER_TIMING_BARS		EQU	1
 ; Set to desired background colour to reset to after colour bars end (valid if
 ; mixer timing bars are in use).
 MIXER_DEFAULT_COLOUR	EQU	$000

@@ -25,14 +25,26 @@ EXREF	MACRO
 ; External references
 	EXREF	sample1_e8x
 	EXREF	sample2_e8x
+	EXREF	sample3_e8x
+	EXREF	sample4_e8x
+	EXREF	sample5_e8x
+	EXREF	sample6_e8x
 
 	EXREF	sample1_e8x_size
 	EXREF	sample2_e8x_size
+	EXREF	sample3_e8x_size
+	EXREF	sample4_e8x_size
+	EXREF	sample5_e8x_size
+	EXREF	sample6_e8x_size
 	
 	EXREF	sample_e8x_total_size
 	
 	EXREF	sample1_e8x_mix
 	EXREF	sample2_e8x_mix
+	EXREF	sample3_e8x_mix
+	EXREF	sample4_e8x_mix
+	EXREF	sample5_e8x_mix
+	EXREF	sample6_e8x_mix
 	
 	EXREF	sample_e8x_info
 	EXREF	si_e8x_STRT_o
@@ -40,5 +52,5 @@ EXREF	MACRO
 	EXREF	si_e8x_END
 
 ; Constants
-sample_e8x_count	EQU	2
+sample_e8x_count	EQU	6
 ; End of File
