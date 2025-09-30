@@ -85,7 +85,7 @@ mixer_output_channels	EQU	DMAF_AUD0
 mixer_sw_channels		EQU	4		; Maximum number of software mixed 
 									; channels on a single hardware channel.
 									; Valid values are 1,2,3 and 4
-mixer_period			EQU	322 	; Valid values: 124 and up
+mixer_period			EQU	214;322 	; Valid values: 124 and up
 									; Default value of 322 is about
 									; 11025Hz when using a PAL Amiga
 									;
