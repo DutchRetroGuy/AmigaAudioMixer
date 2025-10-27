@@ -766,8 +766,8 @@ PTAction
 		jsr		_mt_mastervol
 		
 		; Set correct music channel to be muted
-		moveq	#$e,d0
-		;moveq	#$0,d0
+		;moveq	#$e,d0
+		moveq	#$0,d0
 		jsr		_mt_enablemask
 		
 		; Start playback
@@ -891,17 +891,17 @@ e8x_sample1		dc.l	sample1_e8x_size	; Length
 e8x_sample2		dc.l	sample2_e8x_size
 				dc.l	sample2_e8x
 				dc.w	1
-e8x_sample3		dc.l	sample1_e8x_size
-				dc.l	sample1_e8x
+e8x_sample3		dc.l	sample3_e8x_size
+				dc.l	sample3_e8x
 				dc.w	1
-e8x_sample4		dc.l	sample2_e8x_size
-				dc.l	sample2_e8x
+e8x_sample4		dc.l	sample4_e8x_size
+				dc.l	sample4_e8x
 				dc.w	1
-e8x_sample5		dc.l	sample1_e8x_size
-				dc.l	sample1_e8x
+e8x_sample5		dc.l	sample5_e8x_size
+				dc.l	sample5_e8x
 				dc.w	1
-e8x_sample6		dc.l	sample2_e8x_size
-				dc.l	sample2_e8x
+e8x_sample6		dc.l	sample6_e8x_size
+				dc.l	sample6_e8x
 				dc.w	1
 e8x_sample7		dc.l	sample1_e8x_size
 				dc.l	sample1_e8x
