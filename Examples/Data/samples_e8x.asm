@@ -18,8 +18,8 @@
 
 ; 8 bit samples
 		cnop	0,4
-sample1_e8x				;INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_01_BD.raw"
-						INCBIN "Examples/Data/E8x_Samples/am_dt01_click_02.raw"
+sample1_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_01_BD.raw"
+						;INCBIN "Examples/Data/E8x_Samples/am_dt01_click_02.raw"
 		cnop	0,4
 .sample1_e8x_end
 sample1_e8x_size		EQU	(.sample1_e8x_end-sample1_e8x)

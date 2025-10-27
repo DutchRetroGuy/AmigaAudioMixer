@@ -17,8 +17,8 @@
 		section	gfxdata,data_c
 		cnop	0,2
 
-module		;INCBIN	"Examples/Data/audiomixer_004.mod"
-			INCBIN "Examples/Data/am_delay_test_01.mod"
+module		INCBIN	"Examples/Data/audiomixer_004.mod"
+			;INCBIN "Examples/Data/am_delay_test_01.mod"
 lspsam		INCBIN	"Examples/Data/SneakyChick.lsbank"
 
 		section	data,data
