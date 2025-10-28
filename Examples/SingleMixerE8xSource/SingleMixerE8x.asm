@@ -766,8 +766,8 @@ PTAction
 		jsr		_mt_mastervol
 		
 		; Set correct music channel to be muted
-		;moveq	#$e,d0
-		moveq	#$0,d0
+		moveq	#$e,d0
+		;moveq	#$0,d0
 		jsr		_mt_enablemask
 		
 		; Start playback

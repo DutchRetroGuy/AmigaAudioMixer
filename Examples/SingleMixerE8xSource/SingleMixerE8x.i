@@ -19,6 +19,6 @@
 ; Constants
 ; Volume levels determined experimentally. Best sounding volume levels will
 ; depend on module to play and samples to mix.
-mod_volume_std	EQU	40
+mod_volume_std	EQU	24
 
 ; End of File
