@@ -18,28 +18,28 @@
 
 ; 8 bit samples
 		cnop	0,4
-sample1_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_01_BD.raw"
+sample1_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_01_BD.raw"
 						;INCBIN "Examples/Data/E8x_Samples/am_dt01_click_02.raw"
 		cnop	0,4
 .sample1_e8x_end
 sample1_e8x_size		EQU	(.sample1_e8x_end-sample1_e8x)
-sample2_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_02_BD+HH.raw"
+sample2_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_02_BD+HH.raw"
 		cnop	0,4
 .sample2_e8x_end
 sample2_e8x_size		EQU	(.sample2_e8x_end-sample2_e8x)
-sample3_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_03_HH.raw"
+sample3_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_03_HH.raw"
 		cnop	0,4
 .sample3_e8x_end
 sample3_e8x_size		EQU	(.sample3_e8x_end-sample3_e8x)
-sample4_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_04_BD+SN_TAIL.raw"
+sample4_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_04_BD+SN_TAIL.raw"
 		cnop	0,4
 .sample4_e8x_end
 sample4_e8x_size		EQU	(.sample4_e8x_end-sample4_e8x)
-sample5_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_05_BD_VOL50.raw"
+sample5_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_05_BD_VOL50.raw"
 		cnop	0,4
 .sample5_e8x_end
 sample5_e8x_size		EQU	(.sample5_e8x_end-sample5_e8x)
-sample6_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-11025_DR_06_HH_VOL66.raw"
+sample6_e8x				INCBIN	"Examples/Data/E8x_Samples/AMSET-16574_DR_06_HH_VOL66.raw"
 		cnop	0,4
 .sample6_e8x_end
 sample6_e8x_size		EQU	(.sample6_e8x_end-sample6_e8x)

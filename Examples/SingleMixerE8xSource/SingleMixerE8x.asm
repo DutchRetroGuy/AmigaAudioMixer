@@ -158,7 +158,7 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 		ENDIF
 		move.l	a2,-(sp)					; Stack
 		lea.l	sample_e8x_info,a2
-		bsr		PrepSamplesE8x
+		;bsr		PrepSamplesE8x
 		move.l	(sp)+,a2					; Stack
 		
 		; Set up the mixer
