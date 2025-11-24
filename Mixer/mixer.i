@@ -699,8 +699,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
 	APTR	mfx_sample_ptr
-	UWORD	mfx_loop
-	UWORD	mfx_priority
+	WORD	mfx_loop
+	WORD	mfx_priority
 	LONG	mfx_loop_offset					; Note: always use a longword 
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
@@ -728,7 +728,7 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
 	APTR	me8xs_sample_ptr
-	UWORD	me8xs_priority
+	WORD	me8xs_priority
 	LABEL	me8xs_SIZEOF
 	
  STRUCTURE MXE8xSamples,0
@@ -773,19 +773,19 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		APTR	mch_plugin_deferred_ptr
 		APTR	mch_plugin_data_ptr
 		APTR	mch_plugin_output_buffer
-		UWORD	mch_plugin_type
+		WORD	mch_plugin_type
 	ELSE
 	IF MIXER_ENABLE_PLUGINS=1
 		APTR	mch_plugin_ptr
 		APTR	mch_plugin_deferred_ptr
 		APTR	mch_plugin_data_ptr
 		APTR	mch_plugin_output_buffer
-		UWORD	mch_plugin_type
+		WORD	mch_plugin_type
 	ENDIF
 	ENDIF
 	UWORD	mch_channel_id
 	UWORD	mch_status
-	UWORD	mch_priority
+	WORD	mch_priority
 	UWORD	mch_age
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mch_align

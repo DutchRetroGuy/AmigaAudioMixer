@@ -63,6 +63,10 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 ### Release Notes
 
 Release notes for the Audio Mixer
+#### v3.8
+- (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
+- (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
+
 #### v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
 
@@ -1240,7 +1244,7 @@ Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
 
 #### The following two routines are deprecated and will no longer receive new functionality when the mixer is updated. They are still available for backwards compatibility purposes and have been updated with the new offset loop mode.
 
-*D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length, D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)*  
+*D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length, D2=signed_priority.w, D3=signed_loop_indicator.w, D4=loop_offset)*  
 This routine adds a sample to the given hardware channel, using values in registers passed to it. The routine automatically determines the best mixer channel to play back on based on priority and age. If no applicable channel is free (for instance due to higher priority samples playing), the routine will not play the sample.
 
 The routine has five parameters:
@@ -1267,7 +1271,7 @@ The routine has a return value:
 
 - D0 - returns the hardware & mixer channel the sample will play on, or -1 if no free channel could be found.
 
-*D0=MixerPlayChannelSample(A0=sample, D0=mixer_channel, D1=length, D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)*  
+*D0=MixerPlayChannelSample(A0=sample, D0=mixer_channel, D1=length, D2=signed_priority.w, D3=signed_loop_indicator.w, D4=loop_offset)*  
 This routine adds a sample to the given hardware/mixer channel combination, using values in registers passed to it. The routine uses the selected hardware/mixer channel to play back on. It checks for priority to see if the sample can be played. If the selected channel isn't free (due to a higher priority sample playing), the routine will not play the sample. The routine has five parameters:
 
 - A0 - Pointer to the pre-processed sample to play

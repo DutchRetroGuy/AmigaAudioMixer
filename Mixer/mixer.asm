@@ -2142,7 +2142,7 @@ MixerSetup\1
 		; Loop over mixer entry channels
 .mixer_channel_lp
 		IF mxslength_word=1
-			move.w	d4,mch_remaining_length
+			move.w	d4,mch_remaining_length(a4)
 			move.w	d4,mch_length(a4)
 			move.w	d4,mch_loop_length(a4)
 		ELSE
