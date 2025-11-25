@@ -1,0 +1,13 @@
+TODO pre version 3.8
+--------------------
+
+=> Maintenance
+	* combine all separate versions back into one base (main, dev, exp, outrun branch, outrun source),
+	  adding all fixes from each
+=> Bugfixes
+	* 
+=> Improve documentation
+	* MixerPlayFX() can't be called from higher priority interrupts
+	* MixerSetReturnVector() is not explained very well
+=> Features
+	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
