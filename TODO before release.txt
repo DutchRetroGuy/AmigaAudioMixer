@@ -11,3 +11,12 @@ TODO pre version 3.8
 	* MixerSetReturnVector() is not explained very well
 => Features
 	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
+	This should just involve dividing mixer_PAL_buffer_size & mixer_NTSC_buffer_size by the interrupt count pre-rounding.
+
+	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
+	becomes
+	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/(50*interrupt_multiplier))&65532)+4
+
+	Or: 
+	mixer_PAL_rate SET 50*mixer_interrupt_multiplier
+	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65532)+4
