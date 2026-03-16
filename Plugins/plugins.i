@@ -448,6 +448,9 @@ EXREF	MACRO
 	EXREF	MixerPluginGetMaxDataSize
 	EXREF	MixPluginPitchRatioPrecalc
 	
+	EXREF	MixPluginSetPitch
+	EXREF	MixPluginSetVolume
+	
 	ENDIF
 
 ; Constants

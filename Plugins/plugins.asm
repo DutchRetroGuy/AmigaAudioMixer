@@ -1,7 +1,7 @@
-; $VER: plugins.asm 1.2 (19.05.25)
+; $VER: plugins.asm 1.2o (23.06.25)
 ;
 ; plugins.asm
-; Audio mixer plugin routines (Outrun version)
+; Audio mixer plugin routines (Outrun edition)
 ;
 ; For plugin API, see plugins.i and the rest of the mixer documentation.
 ;
@@ -9,7 +9,7 @@
 ; 
 ; Author: Jeroen Knoester
 ; Version: 1.2
-; Revision: 20250519
+; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -23,9 +23,9 @@
 	include plugins_config.i
 	include	plugins.i
 
-	;IFD BUILD_MIXER_DEBUG
+	IFD BUILD_MIXER_DEBUG
 		include debug.i
-	;ENDIF
+	ENDIF
 	
 ; Constants
 mxcustombase		EQU	$dff000				; mx prefix to keep one namespace
@@ -268,7 +268,214 @@ MixPluginCopyLoop	MACRO
 ;*****************************************************************************
 PlgAllCode	MACRO	
 
+;-----------------------------------------------------------------------------
+; Plugin Outrun Specific routines
+;-----------------------------------------------------------------------------
 
+	; Note: the routine does not check if the correct plugin is running on the given channel, only whether or not *any* plugin is running.
+	; Note: the routine does not check if the given pitch is in range (0-31).
+	;
+	; D0.w - channel (HW|MIX)
+	; D1.w - new pitch
+MixPluginSetPitch\1
+	IFND BUILD_MIXER_POSTFIX
+	mc68020
+	movem.l	d0-d5/a0/a6,-(sp)				; Stack
+
+	; Load MXMixerEntry for given hardware channel
+	lea.l	mixer(pc),a0
+
+	IF MIXER_SINGLE=1
+		lea.l	mx_mixer_entries(a0),a0
+	ELSE
+		; Note: this is not actually used for Outrun, it's a fallback path just
+		;       in case.
+		move.w	d0,d2
+		and.w	#$000f,d2
+		mulu	#mxe_SIZEOF,d2
+		lea.l	mx_mixer_entries(a0,d2.w),a0
+	ENDIF
+
+	; Load MXChannel for given mixer channel
+	and.w	#$f0,d0
+	move.w	d0,d2
+
+.pitch_mix_channel	SET MIX_CH0
+	REPT 4
+		move.w	#(mch_SIZEOF*REPTN),d0
+		cmp.w	#.pitch_mix_channel,d2
+		IF REPTN!=3
+			beq.s	.fetch_channel
+		ENDIF
+.pitch_mix_channel	SET .pitch_mix_channel<<1
+	ENDR
+
+.fetch_channel
+	lea.l	mxe_channels(a0,d0.w),a0
+
+	; Disable audio interrupts
+	lea.l	mxcustombase,a6
+	move.w	mixer+mx_irq_bits(pc),d5		; Fetch audio bits
+	and.w	#$7fff,d5						; Mask out SET/CLR bit
+	move.w	d5,intena(a6)					; Disable audio interrupts
+	tst.w	dmaconr(a6)						; Wait for A4000
+
+	; Check if channel is active
+	tst.w	mch_status(a0)	; MIX_CH_FREE = 0
+	beq		.done
+
+	; Check if plugin is active
+	tst.l	mch_plugin_ptr(a0)
+	beq		.done
+
+	; Fetch plugin data & write new pitch
+	move.l	mch_plugin_data_ptr(a0),a0
+	move.w	mpd_pit_ratio_fp8(a0),d2		; Get old pitch
+	and.l	#$0000ffff,d1					; Clear top bits of pitch
+	and.l	#$0000ffff,d2
+
+	; Compare old vs new pitch
+	cmp.w	d1,d2
+	beq		.done							; Early exit if the same
+
+	; Update pitch
+	move.w	d1,mpd_pit_ratio_fp8(a0)		; Write new pitch
+	addq.w	#1,d1							; Update pitch to range 1-32
+	addq.w	#1,d2
+	move.l	d1,d3
+	asr.w	#1,d3							; Half of new pitch
+
+	
+
+	; Updating pitch to new level:
+	; - Leave offset in source as is
+	; - Leave source length as is
+	; - Modify destination length
+	;   new_length = (current_length*new_quotient)/old_quotient
+	move.l	mpd_pit_output_length(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_length
+	
+	addq.l	#1,d4							; Round length up
+	
+.no_rounding_length
+	move.l	d4,mpd_pit_output_length(a0)
+	
+	; - Modify destination offset
+	move.l	mpd_pit_output_offset(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_offset
+	
+	addq.l	#1,d4							; Round offset up
+	
+.no_rounding_offset
+	move.l	d4,mpd_pit_output_offset(a0)
+	
+	; - Modify destination loop offset
+	move.l	mpd_pit_output_loop_offset(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_loop_offset
+	
+	addq.l	#1,d4							; Round loop offset up
+	
+.no_rounding_loop_offset
+	move.l	d4,mpd_pit_output_loop_offset(a0)	
+
+.done
+	; Re-enable audio interrupts
+	move.w	mixer+mx_irq_bits(pc),d5
+	or.w	#$8000,d5						; Set the SET/CLR bit
+	move.w	d5,intena(a6)					; Enable audio interrupts
+
+	movem.l	(sp)+,d0-d5/a0/a6				; Stack
+	rts
+	mc68000
+	ENDIF
+
+	; Note: the routine does not check if the correct plugin is running on the given channel, only whether or not *any* plugin is running.
+	; Note: the routine does not check if the given volume is in range (0-16).
+	;
+	; D0.w - channel (HW|MIX)
+	; D1.w - new volume
+MixPluginSetVolume\1
+	IFND BUILD_MIXER_POSTFIX
+	mc68020
+	movem.l	d0-d5/a0/a6,-(sp)				; Stack
+
+	; Load MXMixerEntry for given hardware channel
+	lea.l	mixer(pc),a0
+
+	IF MIXER_SINGLE=1
+		lea.l	mx_mixer_entries(a0),a0
+	ELSE
+		; Note: this is not actually used for Outrun, it's a fallback path just
+		;       in case.
+		move.w	d0,d2
+		and.w	#$000f,d2
+		mulu	#mxe_SIZEOF,d2
+		lea.l	mx_mixer_entries(a0,d2.w),a0
+	ENDIF
+
+	; Load MXChannel for given mixer channel
+	and.w	#$f0,d0
+	move.w	d0,d2
+
+.vol_mix_channel	SET MIX_CH0
+	REPT 4
+		move.w	#(mch_SIZEOF*REPTN),d0
+		cmp.w	#.vol_mix_channel,d2
+		IF REPTN!=3
+			beq.s	.fetch_channel
+		ENDIF
+.vol_mix_channel	SET .vol_mix_channel<<1
+	ENDR
+
+.fetch_channel
+	lea.l	mxe_channels(a0,d0.w),a0
+
+	; Disable audio interrupts
+	lea.l	mxcustombase,a6
+	move.w	mixer+mx_irq_bits(pc),d5		; Fetch audio bits
+	and.w	#$7fff,d5						; Mask out SET/CLR bit
+	move.w	d5,intena(a6)					; Disable audio interrupts
+	tst.w	dmaconr(a6)						; Wait for A4000
+
+	; Check if channel is active
+	tst.w	mch_status(a0)	; MIX_CH_FREE = 0
+	beq		.done
+
+	; Check if plugin is active
+	tst.l	mch_plugin_ptr(a0)
+	beq		.done
+
+	; Fetch plugin data & write new volume & volume table offset
+	move.l	mch_plugin_data_ptr(a0),a0
+	move.w	d1,mpd_vol_volume(a0)
+	subq.w	#1,d1
+	asl.w	#8,d1
+	move.w	d1,mpd_vol_table_offset(a0)
+
+.done
+	; Re-enable audio interrupts
+	move.w	mixer+mx_irq_bits(pc),d5
+	or.w	#$8000,d5						; Set the SET/CLR bit
+	move.w	d5,intena(a6)					; Enable audio interrupts
+
+	movem.l	(sp)+,d0-d5/a0/a6				; Stack
+	rts
+	mc68000
+	ENDIF
+
+	
 ;-----------------------------------------------------------------------------
 ; Plugin initialisation routines
 ;-----------------------------------------------------------------------------
@@ -4507,7 +4714,6 @@ MixPluginLevels_internal\1
 
 .end_pitch_routines\1
 .pitch_routines_size\1 EQU .end_pitch_routines\1-MixPluginLevels_internal\1
-		printv .pitch_routines_size\1
 		
 		; Routine: MixPluginVolume
 		; This routine forms the volume plugin routine. See
@@ -5690,6 +5896,7 @@ _MixerPluginGetMaxInitDataSize\1	EQU MixerPluginGetMaxInitDataSize\1
 _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 
 _MixPluginSetPitch\1				EQU	MixPluginSetPitch\1
+_MixPluginSetVolume\1				EQU	MixPluginSetVolume\1
 
 	XDEF	_MixPluginInitDummy\1
 	XDEF	_MixPluginInitRepeat\1
@@ -5709,6 +5916,7 @@ _MixPluginSetPitch\1				EQU	MixPluginSetPitch\1
 	XDEF	_MixPluginPitchRatioPrecalc\1
 	
 	XDEF	_MixPluginSetPitch\1
+	XDEF	_MixPluginSetVolume\1
 
 		ENDIF
 	ENDM
