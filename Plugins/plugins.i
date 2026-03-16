@@ -446,7 +446,10 @@ EXREF	MACRO
 	EXREF	MixPluginGetMultiplier
 	EXREF	MixerPluginGetMaxInitDataSize
 	EXREF	MixerPluginGetMaxDataSize
-	EXREF	MixPluginRatioPrecalc
+	EXREF	MixPluginPitchRatioPrecalc
+	
+	EXREF	MixPluginSetPitch
+	EXREF	MixPluginSetVolume
 	
 	ENDIF
 
@@ -459,6 +462,7 @@ MXPLG_PITCH_1x				EQU 0			; For internal use only, do not
 											; use when filling plugin data
 MXPLG_PITCH_STANDARD		EQU	1
 MXPLG_PITCH_LOWQUALITY		EQU	2
+MXPLG_PITCH_LEVELS			EQU	3
 
 MXPLG_PITCH_NO_PRECALC		EQU	0
 MXPLG_PITCH_PRECALC			EQU	1
@@ -552,21 +556,27 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 
 ; Structures (internal)
  STRUCTURE MXPDPitchData,0
-	LONG	mpd_pit_length
-	APTR	mpd_pit_sample_ptr
-	LONG	mpd_pit_loop_offset
+	LONG	mpd_pit_sample_length
+	LONG	mpd_pit_output_length
+	LONG	mpd_pit_sample_loop_offset
+	LONG	mpd_pit_output_loop_offset
 	LONG	mpd_pit_sample_offset
-	UWORD	mpd_pit_loop
+	LONG	mpd_pit_output_offset
+	APTR	mpd_pit_sample_ptr
 	UWORD	mpd_pit_mode
 	UWORD	mpd_pit_ratio_fp8	
 	UWORD	mpd_pit_current_fp8
+	UWORD	mpd_pit_align					; For 68020+ performance
 	LABEL	mpd_pit_SIZEOF
 
  STRUCTURE MXPDVolumeData,0
-	LONG	mpd_vol_length
-	APTR	mpd_vol_sample_ptr
-	LONG	mpd_vol_loop_offset
+ 	LONG	mpd_vol_sample_length
+	LONG	mpd_vol_output_length
+	LONG	mpd_vol_sample_loop_offset
+	LONG	mpd_vol_output_loop_offset
 	LONG	mpd_vol_sample_offset
+	LONG	mpd_vol_output_offset
+	APTR	mpd_vol_sample_ptr
 	UWORD	mpd_vol_mode
 	UWORD	mpd_vol_table_offset
 	UWORD	mpd_vol_volume
@@ -587,6 +597,9 @@ mxplg_max_idata_size	SET		mpid_pit_SIZEOF
 	
  STRUCTURE MXPDSyncData,0
 	APTR	mpd_snc_address
+ 	LONG	mpd_snc_sample_length
+	LONG	mpd_snc_sample_loop_offset
+	LONG	mpd_snc_sample_offset
 	UWORD	mpd_snc_mode
 	UWORD	mpd_snc_type
 	UWORD	mpd_snc_delay

@@ -1,27 +1,34 @@
-; $VER: plugins.asm 1.1 (05.04.24)
+; $VER: plugins.asm 1.2o (23.06.25)
 ;
 ; plugins.asm
-; Audio mixer plugin routines
+; Audio mixer plugin routines (Outrun edition)
 ;
 ; For plugin API, see plugins.i and the rest of the mixer documentation.
 ;
 ; Note: all plugin configuration is done via plugins_config.i.
 ; 
 ; Author: Jeroen Knoester
-; Version: 1.1
-; Revision: 20240205
+; Version: 1.2
+; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; Includes (OS includes assume at least NDK 1.3) 
+; Includes (OS includes assume at least NDK 1.3)
+	include hardware/custom.i
+	include hardware/dmabits.i
+
 	include	mixer.i
+	include mixer_config.i
 	include plugins_config.i
 	include	plugins.i
 
 	IFD BUILD_MIXER_DEBUG
 		include debug.i
 	ENDIF
+	
+; Constants
+mxcustombase		EQU	$dff000				; mx prefix to keep one namespace
 	
 ; Start of code
 		section code,code
@@ -74,6 +81,173 @@ MPlLongDiv	MACRO
 			movem.l	(sp)+,\4/\5				; Stack
 		ENDIF
 			ENDM
+			
+		; Plugin macro's for dealing with correct length/looping conditions
+		
+		; Macro: MixPluginLoopSetup
+		; This macro fetches the correct sample offset to use in A2 and
+		; determines the correct length to use for the main loop.
+		;
+		; Note: this macro contains the .determine_length label used by the
+		;       MixPluginLoopEnd macro.
+		;
+		; Parameters:
+		; \1 - structure prefix (i.e. mpd_pit for pitch change)
+		;
+		; Input registers:
+		; A1 - Pointer to plugin data structure. This structure must contain
+		;      the following members:
+		;         * <prefix>_sample_ptr
+		;         * <prefix>_sample_offset
+		;         * <prefix>_output_length
+		;         * <prefix>_output_offset
+		;
+		; Returns:
+		; D4 - zero (bytes processed source)
+		; D5 - bytes to process
+		; A2 - Sample pointer + offset
+MixPluginLoopSetup	MACRO
+		; Always receive mixer buffer size bytes to process
+		; So, loop or play silence as needed when sample ends
+
+.fetch_pointers
+		move.l	\1_sample_ptr(a1),a2
+		add.l	\1_sample_offset(a1),a2
+
+.determine_length
+		; Determine length
+		; If bytes to process > remaining length, use remaining sample length
+		; Else use bytes to process
+		; Register use:
+		;    D4 - zero (bytes processed source) 
+		;    D5 - remaining output length
+		moveq	#0,d4
+		move.l	\1_output_length(a1),d5		; Total length
+		sub.l	\1_output_offset(a1),d5		; D5 = remaining length
+		cmp.l	d0,d5
+		blt.s	.setup_loop
+		
+		move.l	d0,d5						; D5 = total bytes to process
+		
+.setup_loop
+					ENDM
+		
+		; Macro: MixPluginLoopEnd
+		; This macro handles updating the sample/loop offsets and continuing
+		; to process in case of a looped sample.
+		;
+		; Note: this macro branches to .determine_length in case bytes remain
+		;       to process. See the MixPluginLoopSetup macro.
+		; Note: this macro branches to .silence in case of sample end. See 
+		;       the MixPluginSilenceLoop macro.
+		;
+		; Parameters:
+		; \1 - structure prefix (i.e. mpd_pit for pitch change)
+		;
+		; Input registers:
+		; D0 - total bytes to process
+		; D1 - loop indicator
+		; D4 - bytes processed (source)
+		; D5 - bytes processed (output)
+		;
+		; Registers trashed:
+		; D6, D7
+		;
+		; Returns:
+		; D0 - remaining bytes to process
+MixPluginLoopEnd	MACRO
+.loop_end
+		; Update the sample offsets
+		moveq	#0,d6
+		add.l	d4,a2
+		add.l	d4,\1_sample_offset(a1)				; Update source offset
+		move.l	\1_output_offset(a1),d7
+		add.l	d5,d7								; Total output offset
+		cmp.l	\1_output_length(a1),d7
+		blt.s	.update_offset
+		
+		; Reset loop offset
+		moveq	#1,d6								; Set the reset flag
+		move.l	\1_output_loop_offset(a1),d7		; Fetch output loop offset
+		move.l	\1_sample_loop_offset(a1),a2		; Fetch sample loop offset
+		move.l	a2,\1_sample_offset(a1)
+		add.l	\1_sample_ptr(a1),a2				; Corrected sample pointer
+		
+.update_offset
+		move.l	d7,\1_output_offset(a1)				; Store output offset
+
+		; Check if more work needs to be done
+		sub.l	d5,d0								; Update bytes remaining
+		beq.s	.done
+		
+		; More work to do, check for end/loop
+		tst.w	d6
+		beq		.determine_length
+		
+		; Sample ended or looped
+		tst.w	d1
+		beq		.silence							; Sample ended
+		bra		.determine_length					; Sample looped
+
+.done
+					ENDM
+		
+		; Macro: MixPluginSilenceLoop
+		; This macro adds silence to the remainder of the output buffer in
+		; case the sample ends.
+		;
+		; Note: this macro contains the .silence label used by the
+		;       MixPluginLoopEnd macro.
+		; Note: this macro should be placed below the RTS of the plugin that
+		;       uses it.
+		;
+		; Input registers:
+		; D0 - number of bytes to process
+		;
+		; Trashes:
+		; D0,D6
+MixPluginSilenceLoop	MACRO
+.silence
+
+		; Write silence to remainder of buffer
+		moveq	#0,d6
+		asr.w	#2,d0						; Convert to longwords
+		subq.w	#1,d0
+		bmi.s	.done
+
+.si_lp	move.l	d6,(a0)+
+		dbra	d0,.si_lp
+		bra		.done
+						ENDM
+						
+		; Macro: MixPluginCopyLoop
+		; This macro copies over the source sample to the remainder the output
+		; buffer in case the plugin does not alter the (remaining part of the)
+		; sample.
+		;
+		; Note: this macro contains the .copy label
+		; Note: this macro should be placed below the RTS of the plugin that
+		;       uses it.
+		;
+		; Input registers:
+		; D0 - number of bytes to process
+		;
+		; Trashes:
+		; D6,D7
+MixPluginCopyLoop	MACRO
+.copy
+		; Copy contents of sample to output buffer
+		move.l	a2,d6
+		move.w	d5,d7
+		asr.w	#2,d7						; Convert to longwords
+		subq.w	#1,d7
+		bmi.s	.loop_end
+
+.cp_lp	move.l	(a2)+,(a0)+
+		dbra	d7,.cp_lp
+		move.l	d6,a2
+		bra		.loop_end
+					ENDM
 
 ;*****************************************************************************
 ;*****************************************************************************
@@ -87,10 +261,219 @@ MPlLongDiv	MACRO
 ; Note: by default, the plugins will not use a postfix. Enabling this is done
 ;       by setting the BUILD_MIXER_POSTFIX build flag. This will disable the
 ;       automatic use of this macro at the end of mixer.asm
+; Note: if a postfix is used, it should be the same as the corresponding postfix
+;       used for the mixer
 ; 
 ;*****************************************************************************
 ;*****************************************************************************
 PlgAllCode	MACRO	
+
+;-----------------------------------------------------------------------------
+; Plugin Outrun Specific routines
+;-----------------------------------------------------------------------------
+
+	; Note: the routine does not check if the correct plugin is running on the given channel, only whether or not *any* plugin is running.
+	; Note: the routine does not check if the given pitch is in range (0-31).
+	;
+	; D0.w - channel (HW|MIX)
+	; D1.w - new pitch
+MixPluginSetPitch\1
+	IFND BUILD_MIXER_POSTFIX
+	mc68020
+	movem.l	d0-d5/a0/a6,-(sp)				; Stack
+
+	; Load MXMixerEntry for given hardware channel
+	lea.l	mixer(pc),a0
+
+	IF MIXER_SINGLE=1
+		lea.l	mx_mixer_entries(a0),a0
+	ELSE
+		; Note: this is not actually used for Outrun, it's a fallback path just
+		;       in case.
+		move.w	d0,d2
+		and.w	#$000f,d2
+		mulu	#mxe_SIZEOF,d2
+		lea.l	mx_mixer_entries(a0,d2.w),a0
+	ENDIF
+
+	; Load MXChannel for given mixer channel
+	and.w	#$f0,d0
+	move.w	d0,d2
+
+.pitch_mix_channel	SET MIX_CH0
+	REPT 4
+		move.w	#(mch_SIZEOF*REPTN),d0
+		cmp.w	#.pitch_mix_channel,d2
+		IF REPTN!=3
+			beq.s	.fetch_channel
+		ENDIF
+.pitch_mix_channel	SET .pitch_mix_channel<<1
+	ENDR
+
+.fetch_channel
+	lea.l	mxe_channels(a0,d0.w),a0
+
+	; Disable audio interrupts
+	lea.l	mxcustombase,a6
+	move.w	mixer+mx_irq_bits(pc),d5		; Fetch audio bits
+	and.w	#$7fff,d5						; Mask out SET/CLR bit
+	move.w	d5,intena(a6)					; Disable audio interrupts
+	tst.w	dmaconr(a6)						; Wait for A4000
+
+	; Check if channel is active
+	tst.w	mch_status(a0)	; MIX_CH_FREE = 0
+	beq		.done
+
+	; Check if plugin is active
+	tst.l	mch_plugin_ptr(a0)
+	beq		.done
+
+	; Fetch plugin data & write new pitch
+	move.l	mch_plugin_data_ptr(a0),a0
+	move.w	mpd_pit_ratio_fp8(a0),d2		; Get old pitch
+	and.l	#$0000ffff,d1					; Clear top bits of pitch
+	and.l	#$0000ffff,d2
+
+	; Compare old vs new pitch
+	cmp.w	d1,d2
+	beq		.done							; Early exit if the same
+
+	; Update pitch
+	move.w	d1,mpd_pit_ratio_fp8(a0)		; Write new pitch
+	addq.w	#1,d1							; Update pitch to range 1-32
+	addq.w	#1,d2
+	move.l	d1,d3
+	asr.w	#1,d3							; Half of new pitch
+
+	
+
+	; Updating pitch to new level:
+	; - Leave offset in source as is
+	; - Leave source length as is
+	; - Modify destination length
+	;   new_length = (current_length*new_quotient)/old_quotient
+	move.l	mpd_pit_output_length(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_length
+	
+	addq.l	#1,d4							; Round length up
+	
+.no_rounding_length
+	move.l	d4,mpd_pit_output_length(a0)
+	
+	; - Modify destination offset
+	move.l	mpd_pit_output_offset(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_offset
+	
+	addq.l	#1,d4							; Round offset up
+	
+.no_rounding_offset
+	move.l	d4,mpd_pit_output_offset(a0)
+	
+	; - Modify destination loop offset
+	move.l	mpd_pit_output_loop_offset(a0),d4
+	mulu.l	d2,d4
+	divul	d1,d5:d4
+	
+	cmp.l	d3,d5
+	blt.s	.no_rounding_loop_offset
+	
+	addq.l	#1,d4							; Round loop offset up
+	
+.no_rounding_loop_offset
+	move.l	d4,mpd_pit_output_loop_offset(a0)	
+
+.done
+	; Re-enable audio interrupts
+	move.w	mixer+mx_irq_bits(pc),d5
+	or.w	#$8000,d5						; Set the SET/CLR bit
+	move.w	d5,intena(a6)					; Enable audio interrupts
+
+	movem.l	(sp)+,d0-d5/a0/a6				; Stack
+	rts
+	mc68000
+	ENDIF
+
+	; Note: the routine does not check if the correct plugin is running on the given channel, only whether or not *any* plugin is running.
+	; Note: the routine does not check if the given volume is in range (0-16).
+	;
+	; D0.w - channel (HW|MIX)
+	; D1.w - new volume
+MixPluginSetVolume\1
+	IFND BUILD_MIXER_POSTFIX
+	mc68020
+	movem.l	d0-d5/a0/a6,-(sp)				; Stack
+
+	; Load MXMixerEntry for given hardware channel
+	lea.l	mixer(pc),a0
+
+	IF MIXER_SINGLE=1
+		lea.l	mx_mixer_entries(a0),a0
+	ELSE
+		; Note: this is not actually used for Outrun, it's a fallback path just
+		;       in case.
+		move.w	d0,d2
+		and.w	#$000f,d2
+		mulu	#mxe_SIZEOF,d2
+		lea.l	mx_mixer_entries(a0,d2.w),a0
+	ENDIF
+
+	; Load MXChannel for given mixer channel
+	and.w	#$f0,d0
+	move.w	d0,d2
+
+.vol_mix_channel	SET MIX_CH0
+	REPT 4
+		move.w	#(mch_SIZEOF*REPTN),d0
+		cmp.w	#.vol_mix_channel,d2
+		IF REPTN!=3
+			beq.s	.fetch_channel
+		ENDIF
+.vol_mix_channel	SET .vol_mix_channel<<1
+	ENDR
+
+.fetch_channel
+	lea.l	mxe_channels(a0,d0.w),a0
+
+	; Disable audio interrupts
+	lea.l	mxcustombase,a6
+	move.w	mixer+mx_irq_bits(pc),d5		; Fetch audio bits
+	and.w	#$7fff,d5						; Mask out SET/CLR bit
+	move.w	d5,intena(a6)					; Disable audio interrupts
+	tst.w	dmaconr(a6)						; Wait for A4000
+
+	; Check if channel is active
+	tst.w	mch_status(a0)	; MIX_CH_FREE = 0
+	beq		.done
+
+	; Check if plugin is active
+	tst.l	mch_plugin_ptr(a0)
+	beq		.done
+
+	; Fetch plugin data & write new volume & volume table offset
+	move.l	mch_plugin_data_ptr(a0),a0
+	move.w	d1,mpd_vol_volume(a0)
+	subq.w	#1,d1
+	asl.w	#8,d1
+	move.w	d1,mpd_vol_table_offset(a0)
+
+.done
+	; Re-enable audio interrupts
+	move.w	mixer+mx_irq_bits(pc),d5
+	or.w	#$8000,d5						; Set the SET/CLR bit
+	move.w	d5,intena(a6)					; Enable audio interrupts
+
+	movem.l	(sp)+,d0-d5/a0/a6				; Stack
+	rts
+	mc68000
+	ENDIF
 
 	
 ;-----------------------------------------------------------------------------
@@ -120,17 +503,9 @@ MixPluginInitDummy\1
 		;    * mpid_pit_mode       - MXPLG_PITCH_STANDARD or 
 		;                            MXPLG_PITCH_LOWQUALITY
 		;    * mpid_pit_precalc    - Either MXPLG_PITCH_NO_PRECALC or
-		;                            MXPLG_PITCH_PRECALC. If set to the 
-		;                            former, the initialisation routine will
-		;                            calculate the new length & loop offset
-		;                            for the given ratio in mpid_pit_ratio_fp8
-		;                            in real time and update the MXEffect
-		;                            structure with new values. If set to the
-		;                            latter, the initialisation routine will
-		;                            not do this calculation and keep the 
-		;                            MXEffect structure as is, which can save
-		;                            a considerable amount of CPU overhead on
-		;                            68000 based systems.
+		;                            MXPLG_PITCH_PRECALC. 
+		;
+		;                            TODO: rewrite text, precalc fetches from mpid not mfx
 		;
 		;                            Note that in either case, 
 		;                            mpid_pit_ratio_fp8 must be set.
@@ -171,7 +546,7 @@ MixPluginInitDummy\1
 		;       already has), this path is still considerably slower than
 		;       playing such samples without use of the pitch plugin.
 		; Note: the pitch plugin has a maximum sample size. The input and 
-		;       output length are both limited to 524.288 bytes. This limit is
+		;       output length are both limited to 262.144 bytes. This limit is
 		;       only valid for the real time calculation of mfx_length and 
 		;       mfx_loop_offset. If pre-calculated length/loop offset values
 		;       are used, this limit can be higher in some circumstances.
@@ -189,18 +564,44 @@ MixPluginInitDummy\1
 		;      MixerPlayChannelFX()
 MixPluginInitPitch\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0/d1,-(sp)					; Stack
+		movem.l	d0-d3,-(sp)						; Stack
 
 		; Write base values
 		move.l	mfx_sample_ptr(a0),mpd_pit_sample_ptr(a2)
-		move.w	mfx_loop(a0),mpd_pit_loop(a2)
+		move.l	mfx_length(a0),mpd_pit_sample_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_pit_sample_loop_offset(a2)
 		clr.l	mpd_pit_sample_offset(a2)
+		clr.l	mpd_pit_output_offset(a2)
 		clr.w	mpd_pit_current_fp8(a2)
 		
-		; 1) Check if the ratio is valid
+		; 0) Check for pre-calc
+		cmp.w	#MXPLG_PITCH_PRECALC,mpid_pit_precalc(a1)
+		beq		.precalc
+		
+		; 1) Check for MXPLG_PITCH_LEVELS
+		moveq	#MXPLG_PITCH_LEVELS,d0
+		cmp.w	mpid_pit_mode(a1),d0
+		bne		.check_ratio
+		
+		; Look up MXPLG_PITCH_LEVELS ratio
+		move.l	a0,-(sp)					; Stack
+		
+		; Fetch correct FP8.8 ratio
+		lea.l	MixPluginLevels_pitch_table\1(pc),a0
+		move.w	mpid_pit_ratio_fp8(a1),d2
+		moveq	#0,d0
+		move.w	d2,d0
+		add.w	d0,d0
+		move.w	0(a0,d0.w),d0
+
+		move.l	(sp)+,a0					; Stack
+		bra		.pitch_test_1x
+		
+.check_ratio
+		; 2) Check if the ratio is valid
 		moveq	#0,d0
 		move.w	mpid_pit_ratio_fp8(a1),d0
-		
+	
 		tst.w	d0
 		bne.s	.pitch_test_1x
 		
@@ -209,68 +610,106 @@ MixPluginInitPitch\1
 .pitch_test_1x
 		cmp.w	#$100,d0
 		bne.s	.pitch_valid
-		
+
+		; Write 1x ratio / mode
 		move.w	d0,mpd_pit_ratio_fp8(a2)
 		move.w	#MXPLG_PITCH_1x,mpd_pit_mode(a2)
-		move.l	mfx_length(a0),mpd_pit_length(a2)
-		
-		; Check for offset looping
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop_1x
-		
-		; No offset based looping, restart at sample start
-		clr.l	d1
-		bra.s	.cnt_1x
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop_1x
-		move.l	mfx_loop_offset(a0),d1
-
-		; Write loop offset into plugin data
-.cnt_1x	move.l	d1,mpd_pit_loop_offset(a2)
-		bra		.done
+		move.l	mfx_length(a0),mpd_pit_output_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
+		bra		.check_looping
 
 .pitch_valid
 		; Copy over mpid values
 		move.w	mpid_pit_mode(a1),mpd_pit_mode(a2)
 		move.w	d0,mpd_pit_ratio_fp8(a2)
 
-		; 2) test if the length/loop values have been pre-calculated
-		move.w	mpid_pit_precalc(a1),d1
-		cmp.w	#MXPLG_PITCH_PRECALC,d1
-		beq.s	.precalc
-
 		; 3) Write original length into plugin data
-		move.l	mfx_length(a0),mpd_pit_length(a2)
+		move.l	mfx_length(a0),mpd_pit_sample_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_pit_sample_loop_offset(a2)
 		
-		; 4) Check if offset based looping is enabled
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop
-		
-		; No offset based looping, restart at sample start
-		clr.l	d1
-		bra.s	.cnt
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop
-		move.l	mfx_loop_offset(a0),d1
+		; 4) Calculate new length value
+		moveq	#2,d1					; Set length shift to 2
+		bsr		MixPluginPitchRatioPrecalc\1
+		move.l	mfx_length(a0),mpd_pit_output_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
 
-		; 5) Write loop offset into plugin data
-.cnt	move.l	d1,mpd_pit_loop_offset(a2)
+		; 5) make sure length/offset are multiples of 4
+		move.w	mfx_length+2(a0),d0
+		move.w	d0,d1
+		and.w	#$0003,d1
+		beq.s	.check_loop_offset
 		
+		and.w	#$fffc,d0
+		addq.w	#4,d0
+		move.w	d0,mfx_length+2(a0)
+		
+.check_loop_offset
+		move.w	mfx_loop_offset+2(a0),d0
+		move.w	d0,d1
+		and.w	#$0003,d1
+		beq.s	.check_looping
+		
+		and.w	#$fffc,d0
+		addq.w	#4,d0
+		move.w	d0,mfx_loop_offset+2(a0)
 
-		; 6) Calculate new length/loop offset values
-		moveq	#3,d1						; Set length/offset shift to 3
-		bsr		MixPluginRatioPrecalc\1
-	
+.check_looping
+		; 6) Check if the sample is looping
+		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
+		beq.s	.done
+
+		; Looping samples with pitch plugin get length = mixer buffer size
+		moveq	#0,d0
+		move.l	d0,mfx_loop_offset(a0)
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
+		IF MIXER_WORDSIZED=1
+			move.w	d0,mfx_length(a0)
+		ELSE
+			move.l	d0,mfx_length(a0)
+		ENDIF
+
 .done
-		movem.l	(sp)+,d0/d1					; Stack
+		; Check for MXPLG_PITCH_LEVELS
+		cmp.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a1)
+		bne		.return
+
+		; Reset pitch ratio field for MXPLG_PITCH_LEVELS
+		move.w	mpid_pit_ratio_fp8(a1),mpd_pit_ratio_fp8(a2)
+	
+.return
+		movem.l	(sp)+,d0-d3					; Stack
 		rts
 
 .precalc
-		move.l	mpid_pit_length(a1),mpd_pit_length(a2)
-		move.l	mpid_pit_loop_offset(a1),mpd_pit_loop_offset(a2)
-		movem.l	(sp)+,d0/d1					; Stack
+		; Store precalculated values
+		move.l	mpid_pit_length(a1),d0
+		move.l	mpid_pit_loop_offset(a1),d1
+		move.l	d0,mpd_pit_output_length(a2)
+		move.l	d1,mpd_pit_output_loop_offset(a2)
+		
+		; Check ratio
+		move.w	mpid_pit_mode(a1),d1
+		move.w	mpid_pit_ratio_fp8(a1),d0
+		bne.s	.check_ratio_precalc
+		
+		move.w	#$100,d0					; Change zero to 1
+		
+.check_ratio_precalc
+		cmp.w	#$100,d0
+		bne.s	.pitch_valid_precalc
+		
+		; Ratio is 1x, change pitch mode to 1x pitch
+		move.w	#MXPLG_PITCH_1x,d1
+		
+.pitch_valid_precalc
+		move.w	d0,mpd_pit_ratio_fp8(a2)
+		move.w	d1,mpd_pit_mode(a2)
+		
+		bra		.check_looping
 	ENDIF
 		rts
 		
@@ -309,37 +748,52 @@ MixPluginInitPitch\1
 		;      MixerPlayChannelFX()
 MixPluginInitVolume\1
 	IF MXPLUGIN_VOLUME=1
-		move.w	d0,-(sp)					; Stack
+		move.l	d0,-(sp)					; Stack
 		
 		; Copy over mpid values
 		move.w	mpid_vol_mode(a1),mpd_vol_mode(a2)
 		move.w	mpid_vol_volume(a1),mpd_vol_volume(a2)
 
 		; Write length & sample pointer
-		move.l	mfx_length(a0),mpd_vol_length(a2)
+		move.l	mfx_length(a0),d0
+		move.l	d0,mpd_vol_sample_length(a2)
+		move.l	d0,mpd_vol_output_length(a2)
 		move.l	mfx_sample_ptr(a0),mpd_vol_sample_ptr(a2)
-
-		; Check if offset based looping is enabled
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop
-
-		; No offset based looping, restart at sample start
-		clr.l	mpd_vol_loop_offset(a2)
-		bra		.cnt
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop
-		move.l	mfx_loop_offset(a0),mpd_vol_loop_offset(a2)
+		move.l	mfx_loop_offset(a0),d0
+		move.l	d0,mpd_vol_sample_loop_offset(a2)
+		move.l	d0,mpd_vol_output_loop_offset(a2)
 
 		; Write remaining values
 .cnt
-		clr.l	mpd_vol_sample_offset(a2)
+		moveq	#0,d0
+		move.l	d0,mpd_vol_sample_offset(a2)
+		move.l	d0,mpd_vol_output_offset(a2)
 		move.w	mpd_vol_volume(a2),d0
 		subq.w	#1,d0
 		asl.w	#8,d0
 		move.w	d0,mpd_vol_table_offset(a2)
+		
+.check_looping
+		; Check if the sample is looping
+		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
+		beq.s	.done
 
-		move.w	(sp)+,d0					; Stack
+		; Looping samples with pitch plugin get length = mixer buffer size
+		moveq	#0,d0
+		move.l	d0,mfx_loop_offset(a0)
+		IFD BUILD_MIXER_POSTFIX
+			jsr		MixerGetChannelBufferSize\1
+		ELSE
+			bsr		MixerGetChannelBufferSize\1
+		ENDIF
+		IF MIXER_WORDSIZED=1
+			move.w	d0,mfx_length(a0)
+		ELSE
+			move.l	d0,mfx_length(a0)
+		ENDIF
+
+.done
+		move.l	(sp)+,d0					; Stack
 	ENDIF
 		rts
 	
@@ -474,6 +928,11 @@ MixPluginInitRepeat\1
 		;      MixerPlayChannelFX()
 MixPluginInitSync\1
 	IF MXPLUGIN_SYNC=1
+		; Copy over mfx values
+		move.l	mfx_length(a0),mpd_snc_sample_length(a2)
+		move.l	mfx_loop_offset(a0),mpd_snc_sample_loop_offset(a2)
+		clr.l	mpd_snc_sample_offset(a2)
+	
 		; Copy over mpid values
 		move.l	mpid_snc_address(a1),mpd_snc_address(a2)
 		move.w	mpid_snc_mode(a1),mpd_snc_mode(a2)
@@ -550,9 +1009,9 @@ MixPluginDummy\1
 		;   A0 - Pointer to the output buffer to use
 		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
-		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
-		;        loop offset (or at its start in case the loop offset is not
-		;        set)
+		;   D1 - Loop indicator. Set to 1 if the sample has to restart when
+		;        reaching its end. Restart has to be from the loop offset
+		;        point
 MixPluginPitch\1
 	IF MXPLUGIN_PITCH=1
 		move.l	d7,-(sp)
@@ -560,7 +1019,7 @@ MixPluginPitch\1
 		tst.w	d0
 		beq.s	.done
 		
-		; Branch of to correct volume plugin based on mode
+		; Branch of to correct pitch plugin based on mode
 		move.w	mpd_pit_mode(a1),d7
 		IF MIXER_68020=1
 			IF MXPLUGIN_68020_ONLY=1
@@ -582,284 +1041,3679 @@ MixPluginPitch\1
 		jmp		MixPluginPitch1x\1(pc)
 		jmp		MixPluginPitchStandard\1(pc)
 		jmp		MixPluginPitchLowQuality\1(pc)
+		jmp		MixPluginPitchLevels\1(pc)
 		
 .done	move.l	(sp)+,d7
+		rts
+	ELSE
 		rts
 	ENDIF
 
 MixPluginPitch1x\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0/d6/a0/a2,-(sp)			; Stack
+		movem.l	d0/d4-d6/a0/a2,-(sp)			; Stack
 
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_loop_offset(a1),mpd_pit_sample_offset(a1)
+		; Remaining loop set up
+		; A2 = sample pointer + offset
+		; D5 = bytes to process
+		move.l	d5,d4							; D4 = source bytes processed
+		bra		.copy
 		
-.no_loop		
-		; Set up pitch loop length
-		move.w	d0,d7
-		lsr.w	#2,d7
-		subq.w	#1,d7
-		
-		move.l	mpd_pit_sample_ptr(a1),a2
-		add.l	mpd_pit_sample_offset(a1),a2
-		
-		; The loop below does not deal correctly with sample end or looping
-		
-		; Fill output buffer with copy of original
-.lp_mv	move.l	(a2)+,(a0)+
-		dbra	d7,.lp_mv		
-		
-		; Update the sample offset
-		moveq	#0,d6
-		move.w	d0,d6
-		move.l	mpd_pit_sample_offset(a1),d0
-		add.l	d6,d0
-		cmp.l	mpd_pit_length(a1),d0
-		blt.s	.no_reset
-		
-		; Reset offset here
-		move.l	mpd_pit_loop_offset(a1),d0
-		
-.no_reset
-		move.l	d0,mpd_pit_sample_offset(a1)
+		; Deal with end of loop and potential looping of sample
+		MixPluginLoopEnd mpd_pit
 
-.done
-		movem.l	(sp)+,d0/d6/a0/a2			; Stack
+		movem.l	(sp)+,d0/d4-d6/a0/a2			; Stack
 		move.l	(sp)+,d7
-	ENDIF
+
 		rts
+		
+		MixPluginSilenceLoop
+		
+		MixPluginCopyLoop
+	ELSE
+		rts
+	ENDIF
 		
 MixPluginPitchStandard\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2,-(sp)			; Stack
-		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_loop_offset(a1),mpd_pit_sample_offset(a1)
-.no_loop
-		
-		; Set up for loop
-		moveq	#0,d3
-		move.w	mpd_pit_ratio_fp8(a1),d4
-		move.w	mpd_pit_current_fp8(a1),d5
-		move.l	mpd_pit_sample_offset(a1),d1
-		move.l	mpd_pit_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
-		
-		; Split FP 8.8 values into two bytes
-		move.w	d4,d3
-		asr.w	#8,d3						; High-byte delta
-		and.w	#$00ff,d4					; Low-byte delta
+		movem.l	d0/d2-d6/a0/a2-a4,-(sp)		; Stack
 
-		; Determine amount of bytes to process
-.determine_length
+		; Pre-loop set up
+		move.w	d1,-(sp)					; Stack loop indicator
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	mpd_pit_current_fp8(a1),d3
 		moveq	#0,d2
-		moveq	#0,d6
-		move.l	d7,d6
-		sub.l	d1,d6
-		move.w	d0,d2
-		
-		cmp.l	d2,d6
-		blt.s	.lp_rem_smaller
 
-		moveq	#0,d0				; Nothing remains after loop
-		bra.s	.lp_size_calculated
-	
-.lp_rem_smaller
-		move.w	d6,d2				; remaining bytes < bytes to process
-		sub.w	d6,d0				; remaining bytes to process after loop
+		; Split FP 8.8 values into two bytes
+		move.w	d1,d2
+		asr.w	#8,d2						; High-byte delta
+		and.w	#$00ff,d1					; Low-byte delta
+		move.w	d1,a3						; Store Low-byte delta in temp register
 
-.lp_size_calculated
-		moveq	#0,d6
-		asr.w	#2,d2
-		subq.w	#1,d2
-		bmi.s	.lp_done
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-		; Process D2 longwords
-;		IF MIXER_68020=1
-;			move.l	d0,-(sp)
-;
-;.lp		
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			lsl.l	#8,d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.b	0(a2,d1.l),d0
-;			add.b	d4,d5
-;			addx.l	d6,d1
-;			add.l	d3,d1
-;			move.l	d0,(a0)+
-;			dbra	d2,.lp
-;			
-;			move.l	(sp)+,d0
-;		ELSE
+		; Remaining loop set up
+		; A2 = Sample pointer + offset
+		; D5 = bytes to process
+		moveq	#0,d6						; D6 = fractional carry
+		move.w	a3,d1						; D1 = FP8.8 low byte
+		move.w	d5,d7
+		and.w	#$3,d7						; Calculate remainder
+		move.w	d7,a4						; A4 = remainder
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
+		bmi.s	.lp_remainder
+		
+		; Process D7 longwords
 .lp		
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			move.b	0(a2,d1.l),(a0)+
-			add.b	d4,d5
-			addx.l	d6,d1
-			add.l	d3,d1
-			dbra	d2,.lp
-			
-			tst.w	d0
-;		ENDIF
-		beq.s	.lp_done
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		dbra	d7,.lp
 		
-		; More bytes to process
-		tst.w	mpd_pit_loop(a1)
-		bpl.s	.silence
+.lp_remainder
+		; Deal with remainder here
+		move.w	a4,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
 
-		move.l	mpd_pit_loop_offset(a1),d1
-		bra.s	.determine_length
-
+		; Process D7 bytes
+.rem_lp	move.b	0(a2,d4.l),(a0)+
+		add.b	d1,d3
+		addx.l	d6,d4
+		add.l	d2,d4
+		dbra	d7,.rem_lp
+		
 .lp_done
-		; Write resulting values back into data
-		move.w	d5,mpd_pit_current_fp8(a1)
-		move.l	d1,mpd_pit_sample_offset(a1)
+		; Fetch loop indicator to D1
+		move.w	(sp),d1		
+		MixPluginLoopEnd mpd_pit
 
-.done
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		; Write resulting fractional part
+		move.w	d3,mpd_pit_current_fp8(a1)
+
+		move.w	(sp)+,d1
+		movem.l	(sp)+,d0/d2-d6/a0/a2-a4		; Stack
 		move.l	(sp)+,d7
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		asr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
-		move.l	(sp)+,d7
-	ENDIF
+		MixPluginSilenceLoop
+	ELSE
 		rts
+	ENDIF
 		
 MixPluginPitchLowQuality\1
 	IF MXPLUGIN_PITCH=1
-		movem.l	d0-d6/a0/a2,-(sp)			; Stack
-		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_pit_loop_offset(a1),mpd_pit_sample_offset(a1)
-.no_loop
+		movem.l	d0/d2-d6/a0/a2-a4,-(sp)		; Stack
 
-		; Set up for loop
-		moveq	#0,d3
-		move.w	mpd_pit_ratio_fp8(a1),d4
-		move.w	mpd_pit_current_fp8(a1),d5
-		move.l	mpd_pit_sample_offset(a1),d1
-		move.l	mpd_pit_length(a1),d7
-		move.l	mpd_pit_sample_ptr(a1),a2
+		; Pre-loop set up
+		move.w	d1,-(sp)					; Stack loop indicator
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	mpd_pit_current_fp8(a1),d3
+		moveq	#0,d2
+		
+		; Round bytes to process
+		and.w	#$fffc,d0
 
 		; Split FP 8.8 values into two bytes
-		move.w	d4,d3
-		lsr.w	#6,d3						; High-byte delta << 2
-		and.w	#$fffc,d3					; Round to nearest 4 bytes
-		and.w	#$00ff,d4					; Low-byte delta
+		move.w	d1,d2
+		lsr.w	#6,d2						; High-byte delta << 2
+		and.w	#$fffc,d2					; Round to nearest 4 bytes
+		and.w	#$00ff,d1					; Low-byte delta
+		move.w	d1,a3						; Store Low-byte delta in temp register
 
-		; Determine amount of bytes to process
-.determine_length
-		moveq	#0,d2
-		moveq	#0,d6
-		move.l	d7,d6
-		sub.l	d1,d6
-		move.w	d0,d2
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
 		
-		cmp.l	d2,d6
-		blt.s	.lp_rem_smaller
-
-		moveq	#0,d0				; Nothing remains after loop
-		bra.s	.lp_size_calculated
-	
-.lp_rem_smaller
-		move.w	d6,d2				; remaining bytes < bytes to process
-		sub.w	d6,d0				; remaining bytes to process after loop
-
-.lp_size_calculated
+		; Remaining loop set up
+		; A2 = Sample pointer + offset
+		; D5 = bytes to process
+		moveq	#4,d6						; D6 = longword mask
 		moveq	#0,d7
-		moveq	#4,d6
-		asr.w	#2,d2
-		subq.w	#1,d2
+		move.w	a3,d1						; D1 = FP8.8 low byte
+		move.w	d0,a4						; A4 = total bytes to process
+		move.w	d5,d0
+		asr.w	#2,d0
+		subq.w	#1,d0
 		bmi.s	.lp_done
 		
-		; Process D2 longwords
-.lp		
-		move.l	0(a2,d1.l),(a0)+
-		add.b	d4,d5
+		; Process D0 longwords
+.lp
+		move.l	0(a2,d4.l),(a0)+
+		add.b	d1,d3
 		scs		d7
 		and.b	d6,d7
-		add.l	d7,d1
-		add.l	d3,d1
-		dbra	d2,.lp
-
-		tst.w	d0
-		beq.s	.lp_done
+		add.l	d7,d4
+		add.l	d2,d4
+		dbra	d0,.lp
 		
-		; More bytes to process
-		tst.w	mpd_pit_loop(a1)
-		bpl.s	.silence
-
-		move.l	mpd_pit_loop_offset(a1),d1
-		move.l	mpd_pit_length(a1),d7
-		bra.s	.determine_length
-
 .lp_done
-		; Write resulting values back into data
-		move.w	d5,mpd_pit_current_fp8(a1)
-		move.l	d1,mpd_pit_sample_offset(a1)
-	
-.done
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
+		move.w	a4,d0						; Restore total length to D0
+		move.w	(sp),d1						; Fetch loop indicator to D1
+		MixPluginLoopEnd mpd_pit
+
+		; Write resulting fractional part
+		move.w	d3,mpd_pit_current_fp8(a1)
+
+		move.w	(sp)+,d1
+		movem.l	(sp)+,d0/d2-d6/a0/a2-a4		; Stack
 		move.l	(sp)+,d7
 		rts
 		
-.silence
-		; Write silence to remainder of buffer
-		lsr.w	#2,d0						; Convert to longwords
-		subq.w	#1,d0
-		bmi.s	.done
-
-.si_lp	move.l	d6,(a0)+
-		dbra	d0,.si_lp
-
-		movem.l	(sp)+,d0-d6/a0/a2			; Stack
-		move.l	(sp)+,d7
+		MixPluginSilenceLoop
 	ENDIF
+
+MixPluginPitchLevels\1
+	IF MXPLUGIN_PITCH=1
+	IF MXPLUGIN_NO_PITCH_LEVELS=0
+		movem.l	d0/d2-d6/a0/a2-a4,-(sp)			; Stack
+
+		move.w	d1,d3
+		move.w	mpd_pit_ratio_fp8(a1),d1
+		move.w	d1,a3
+
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_pit
+		
+		; Remaining loop set up
+		; A2 = sample pointer + offset
+		; D5 = bytes to process
+		move.w	d5,d2
+		move.w	a3,d1
+		move.w	d5,a4
+		
+		bsr		MixPluginLevels_internal\1
+
+		move.w	a4,d5
+		move.w	d3,d1
+	
+		; Deal with end of loop and potential looping of sample
+		MixPluginLoopEnd mpd_pit
+					
+		movem.l	(sp)+,d0/d2-d6/a0/a2-a4			; Stack
+		move.l	(sp)+,d7
+
 		rts
+		
+		MixPluginSilenceLoop
+	ELSE
+		rts
+	ELSE
+		rts
+	ENDIF
+	ENDIF
+
+		; Internal pitch shifting subroutines
+		; Note: all pitch ratios are rounded to nearest rational
+MixPluginLevels_internal\1
+	IF MXPLUGIN_PITCH=1
+	IF MXPLUGIN_NO_PITCH_LEVELS=0
+.m68020_indicator	SET MIXER_68020+MXPLUGIN_68020_ONLY
+		moveq	#0,d6
+		IF .m68020_indicator=2
+			mc68020
+			jmp .jt_table(pc,d1.w*4)
+			mc68000
+		ELSE
+			move.w	d1,d7
+			add.w	d7,d7
+			add.w	d7,d7
+			jmp .jt_table(pc,d7.w)
+		ENDIF
+
+.jt_table
+		bra.w	.pitch_level_0
+		bra.w	.pitch_level_1
+		bra.w	.pitch_level_2
+		bra.w	.pitch_level_3
+		bra.w	.pitch_level_4
+		bra.w	.pitch_level_5
+		bra.w	.pitch_level_6
+		bra.w	.pitch_level_7
+		bra.w	.pitch_level_8
+		bra.w	.pitch_level_9
+		bra.w	.pitch_level_10
+		bra.w	.pitch_level_11
+		bra.w	.pitch_level_12
+		bra.w	.pitch_level_13
+		bra.w	.pitch_level_14
+		bra.w	.pitch_level_15
+		bra.w	.pitch_level_16
+		bra.w	.pitch_level_17
+		bra.w	.pitch_level_18
+		bra.w	.pitch_level_19
+		bra.w	.pitch_level_20
+		bra.w	.pitch_level_21
+		bra.w	.pitch_level_22
+		bra.w	.pitch_level_23
+		bra.w	.pitch_level_24
+		bra.w	.pitch_level_25
+		bra.w	.pitch_level_26
+		bra.w	.pitch_level_27
+		bra.w	.pitch_level_28
+		bra.w	.pitch_level_29
+		bra.w	.pitch_level_30
+		bra.w	.pitch_level_31
+
+.pitch_level_0:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_0
+
+.lp_0
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		addq.w	#1,a2
+		addq.l	#1,d4
+		dbra	d2,.lp_0
+
+.remainder_0
+		tst.w	d6
+		beq		.lp_done_0
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_0(pc,d5.w)
+
+.jt_table_0
+	opt o2-
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_0(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_0
+		rts
+
+.remainder_table_0
+		dc.b 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		dc.b 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+		cnop 0,2
+
+.pitch_level_1:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_1
+
+.lp_1
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		addq.w	#2,a2
+		addq.l	#2,d4
+		dbra	d2,.lp_1
+
+.remainder_1
+		tst.w	d6
+		beq		.lp_done_1
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_1(pc,d5.w)
+
+.jt_table_1
+	opt o2-
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_1(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_1
+		rts
+
+.remainder_table_1
+		dc.b 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1
+		dc.b 1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2
+
+		cnop 0,2
+
+.pitch_level_2:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_2
+
+.lp_2
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		addq.w	#3,a2
+		addq.l	#3,d4
+		dbra	d2,.lp_2
+
+.remainder_2
+		tst.w	d6
+		beq		.lp_done_2
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_2(pc,d5.w)
+
+.jt_table_2
+	opt o2-
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_2(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_2
+		rts
+
+.remainder_table_2
+		dc.b 0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1
+		dc.b 2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3
+
+		cnop 0,2
+
+.pitch_level_3:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_3
+
+.lp_3
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		addq.w	#4,a2
+		addq.l	#4,d4
+		dbra	d2,.lp_3
+
+.remainder_3
+		tst.w	d6
+		beq		.lp_done_3
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_3(pc,d5.w)
+
+.jt_table_3
+	opt o2-
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_3(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_3
+		rts
+
+.remainder_table_3
+		dc.b 0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2
+		dc.b 2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4
+
+		cnop 0,2
+
+.pitch_level_4:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_4
+
+.lp_4
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		addq.w	#5,a2
+		addq.l	#5,d4
+		dbra	d2,.lp_4
+
+.remainder_4
+		tst.w	d6
+		beq		.lp_done_4
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_4(pc,d5.w)
+
+.jt_table_4
+	opt o2-
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_4(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_4
+		rts
+
+.remainder_table_4
+		dc.b 0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2
+		dc.b 3,3,3,3,3,3,3,4,4,4,4,4,4,5,5,5
+
+		cnop 0,2
+
+.pitch_level_5:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_5
+
+.lp_5
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		addq.w	#6,a2
+		addq.l	#6,d4
+		dbra	d2,.lp_5
+
+.remainder_5
+		tst.w	d6
+		beq		.lp_done_5
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_5(pc,d5.w)
+
+.jt_table_5
+	opt o2-
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_5(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_5
+		rts
+
+.remainder_table_5
+		dc.b 0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3
+		dc.b 3,3,3,4,4,4,4,4,5,5,5,5,5,6,6,6
+
+		cnop 0,2
+
+.pitch_level_6:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_6
+
+.lp_6
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		addq.w	#7,a2
+		addq.l	#7,d4
+		dbra	d2,.lp_6
+
+.remainder_6
+		tst.w	d6
+		beq		.lp_done_6
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_6(pc,d5.w)
+
+.jt_table_6
+	opt o2-
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_6(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_6
+		rts
+
+.remainder_table_6
+		dc.b 0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3
+		dc.b 4,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7
+
+		cnop 0,2
+
+.pitch_level_7:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_7
+
+.lp_7
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		addq.w	#8,a2
+		addq.l	#8,d4
+		dbra	d2,.lp_7
+
+.remainder_7
+		tst.w	d6
+		beq		.lp_done_7
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_7(pc,d5.w)
+
+.jt_table_7
+	opt o2-
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_7(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_7
+		rts
+
+.remainder_table_7
+		dc.b 0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4
+		dc.b 4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8
+
+		cnop 0,2
+
+.pitch_level_8:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_8
+
+.lp_8
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		add.w	#9,a2
+		add.l	#9,d4
+		dbra	d2,.lp_8
+
+.remainder_8
+		tst.w	d6
+		beq		.lp_done_8
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_8(pc,d5.w)
+
+.jt_table_8
+	opt o2-
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_8(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_8
+		rts
+
+.remainder_table_8
+		dc.b 0,0,1,1,1,1,2,2,2,3,3,3,3,4,4,4
+		dc.b 5,5,5,5,6,6,6,7,7,7,7,8,8,8,9,9
+
+		cnop 0,2
+
+.pitch_level_9:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_9
+
+.lp_9
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		add.w	#10,a2
+		add.l	#10,d4
+		dbra	d2,.lp_9
+
+.remainder_9
+		tst.w	d6
+		beq		.lp_done_9
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_9(pc,d5.w)
+
+.jt_table_9
+	opt o2-
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_9(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_9
+		rts
+
+.remainder_table_9
+		dc.b 0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5
+		dc.b 5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10
+
+		cnop 0,2
+
+.pitch_level_10:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_10
+
+.lp_10
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		add.w	#11,a2
+		add.l	#11,d4
+		dbra	d2,.lp_10
+
+.remainder_10
+		tst.w	d6
+		beq		.lp_done_10
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_10(pc,d5.w)
+
+.jt_table_10
+	opt o2-
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_10(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_10
+		rts
+
+.remainder_table_10
+		dc.b 0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5
+		dc.b 6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11
+
+		cnop 0,2
+
+.pitch_level_11:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_11
+
+.lp_11
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		add.w	#12,a2
+		add.l	#12,d4
+		dbra	d2,.lp_11
+
+.remainder_11
+		tst.w	d6
+		beq		.lp_done_11
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_11(pc,d5.w)
+
+.jt_table_11
+	opt o2-
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_11(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_11
+		rts
+
+.remainder_table_11
+		dc.b 0,1,1,1,2,2,2,3,3,4,4,4,5,5,5,6
+		dc.b 6,7,7,7,8,8,8,9,9,10,10,10,11,11,11,12
+
+		cnop 0,2
+
+.pitch_level_12:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_12
+
+.lp_12
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		add.w	#13,a2
+		add.l	#13,d4
+		dbra	d2,.lp_12
+
+.remainder_12
+		tst.w	d6
+		beq		.lp_done_12
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_12(pc,d5.w)
+
+.jt_table_12
+	opt o2-
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_12(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_12
+		rts
+
+.remainder_table_12
+		dc.b 0,1,1,1,2,2,3,3,3,4,4,5,5,5,6,6
+		dc.b 7,7,7,8,8,9,9,9,10,10,11,11,11,12,12,13
+
+		cnop 0,2
+
+.pitch_level_13:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_13
+
+.lp_13
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		add.w	#14,a2
+		add.l	#14,d4
+		dbra	d2,.lp_13
+
+.remainder_13
+		tst.w	d6
+		beq		.lp_done_13
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_13(pc,d5.w)
+
+.jt_table_13
+	opt o2-
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_13(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_13
+		rts
+
+.remainder_table_13
+		dc.b 0,1,1,1,2,2,3,3,4,4,4,5,5,6,6,7
+		dc.b 7,8,8,8,9,9,10,10,11,11,11,12,12,13,13,14
+
+		cnop 0,2
+
+.pitch_level_14:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_14
+
+.lp_14
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		add.w	#15,a2
+		add.l	#15,d4
+		dbra	d2,.lp_14
+
+.remainder_14
+		tst.w	d6
+		beq		.lp_done_14
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_14(pc,d5.w)
+
+.jt_table_14
+	opt o2-
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_14(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_14
+		rts
+
+.remainder_table_14
+		dc.b 0,1,1,1,2,2,3,3,4,4,5,5,6,6,7,7
+		dc.b 8,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15
+
+		cnop 0,2
+
+.pitch_level_15:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_15
+
+.lp_15
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		add.w	#16,a2
+		add.l	#16,d4
+		dbra	d2,.lp_15
+
+.remainder_15
+		tst.w	d6
+		beq		.lp_done_15
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_15(pc,d5.w)
+
+.jt_table_15
+	opt o2-
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_15(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_15
+		rts
+
+.remainder_table_15
+		dc.b 0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8
+		dc.b 8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16
+
+		cnop 0,2
+
+.pitch_level_16:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_16
+
+.lp_16
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		add.w	#17,a2
+		add.l	#17,d4
+		dbra	d2,.lp_16
+
+.remainder_16
+		tst.w	d6
+		beq		.lp_done_16
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_16(pc,d5.w)
+
+.jt_table_16
+	opt o2-
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_16(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_16
+		rts
+
+.remainder_table_16
+		dc.b 0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8
+		dc.b 9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,17
+
+		cnop 0,2
+
+.pitch_level_17:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_17
+
+.lp_17
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		add.w	#18,a2
+		add.l	#18,d4
+		dbra	d2,.lp_17
+
+.remainder_17
+		tst.w	d6
+		beq		.lp_done_17
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_17(pc,d5.w)
+
+.jt_table_17
+	opt o2-
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_17(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_17
+		rts
+
+.remainder_table_17
+		dc.b 0,1,1,2,2,3,3,4,5,5,6,6,7,7,8,9
+		dc.b 9,10,10,11,11,12,12,13,14,14,15,15,16,16,17,18
+
+		cnop 0,2
+
+.pitch_level_18:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_18
+
+.lp_18
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		add.w	#19,a2
+		add.l	#19,d4
+		dbra	d2,.lp_18
+
+.remainder_18
+		tst.w	d6
+		beq		.lp_done_18
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_18(pc,d5.w)
+
+.jt_table_18
+	opt o2-
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_18(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_18
+		rts
+
+.remainder_table_18
+		dc.b 0,1,1,2,2,3,4,4,5,5,6,7,7,8,8,9
+		dc.b 10,10,11,11,12,13,13,14,14,15,16,16,17,17,18,19
+
+		cnop 0,2
+
+.pitch_level_19:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_19
+
+.lp_19
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		add.w	#20,a2
+		add.l	#20,d4
+		dbra	d2,.lp_19
+
+.remainder_19
+		tst.w	d6
+		beq		.lp_done_19
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_19(pc,d5.w)
+
+.jt_table_19
+	opt o2-
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_19(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_19
+		rts
+
+.remainder_table_19
+		dc.b 0,1,1,2,3,3,4,5,5,6,6,7,8,8,9,10
+		dc.b 10,11,11,12,13,13,14,15,15,16,16,17,18,18,19,20
+
+		cnop 0,2
+
+.pitch_level_20:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_20
+
+.lp_20
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		add.w	#21,a2
+		add.l	#21,d4
+		dbra	d2,.lp_20
+
+.remainder_20
+		tst.w	d6
+		beq		.lp_done_20
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_20(pc,d5.w)
+
+.jt_table_20
+	opt o2-
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_20(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_20
+		rts
+
+.remainder_table_20
+		dc.b 0,1,1,2,3,3,4,5,5,6,7,7,8,9,9,10
+		dc.b 11,11,12,13,13,14,15,15,16,17,17,18,19,19,20,21
+
+		cnop 0,2
+
+.pitch_level_21:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_21
+
+.lp_21
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		add.w	#22,a2
+		add.l	#22,d4
+		dbra	d2,.lp_21
+
+.remainder_21
+		tst.w	d6
+		beq		.lp_done_21
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_21(pc,d5.w)
+
+.jt_table_21
+	opt o2-
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_21(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_21
+		rts
+
+.remainder_table_21
+		dc.b 0,1,2,2,3,4,4,5,6,6,7,8,8,9,10,11
+		dc.b 11,12,13,13,14,15,15,16,17,17,18,19,19,20,21,22
+
+		cnop 0,2
+
+.pitch_level_22:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_22
+
+.lp_22
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		add.w	#23,a2
+		add.l	#23,d4
+		dbra	d2,.lp_22
+
+.remainder_22
+		tst.w	d6
+		beq		.lp_done_22
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_22(pc,d5.w)
+
+.jt_table_22
+	opt o2-
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_22(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_22
+		rts
+
+.remainder_table_22
+		dc.b 0,1,2,2,3,4,5,5,6,7,7,8,9,10,10,11
+		dc.b 12,12,13,14,15,15,16,17,17,18,19,20,20,21,22,23
+
+		cnop 0,2
+
+.pitch_level_23:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_23
+
+.lp_23
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		add.w	#24,a2
+		add.l	#24,d4
+		dbra	d2,.lp_23
+
+.remainder_23
+		tst.w	d6
+		beq		.lp_done_23
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_23(pc,d5.w)
+
+.jt_table_23
+	opt o2-
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_23(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_23
+		rts
+
+.remainder_table_23
+		dc.b 0,1,2,3,3,4,5,6,6,7,8,9,9,10,11,12
+		dc.b 12,13,14,15,15,16,17,18,18,19,20,21,21,22,23,24
+
+		cnop 0,2
+
+.pitch_level_24:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_24
+
+.lp_24
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		add.w	#25,a2
+		add.l	#25,d4
+		dbra	d2,.lp_24
+
+.remainder_24
+		tst.w	d6
+		beq		.lp_done_24
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_24(pc,d5.w)
+
+.jt_table_24
+	opt o2-
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_24(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_24
+		rts
+
+.remainder_table_24
+		dc.b 0,1,2,3,3,4,5,6,7,7,8,9,10,10,11,12
+		dc.b 13,14,14,15,16,17,17,18,19,20,21,21,22,23,24,25
+
+		cnop 0,2
+
+.pitch_level_25:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_25
+
+.lp_25
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		add.w	#26,a2
+		add.l	#26,d4
+		dbra	d2,.lp_25
+
+.remainder_25
+		tst.w	d6
+		beq		.lp_done_25
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_25(pc,d5.w)
+
+.jt_table_25
+	opt o2-
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_25(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_25
+		rts
+
+.remainder_table_25
+		dc.b 0,1,2,3,4,4,5,6,7,8,8,9,10,11,12,13
+		dc.b 13,14,15,16,17,17,18,19,20,21,21,22,23,24,25,26
+
+		cnop 0,2
+
+.pitch_level_26:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_26
+
+.lp_26
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		add.w	#27,a2
+		add.l	#27,d4
+		dbra	d2,.lp_26
+
+.remainder_26
+		tst.w	d6
+		beq		.lp_done_26
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_26(pc,d5.w)
+
+.jt_table_26
+	opt o2-
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_26(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_26
+		rts
+
+.remainder_table_26
+		dc.b 0,1,2,3,4,5,5,6,7,8,9,10,10,11,12,13
+		dc.b 14,15,16,16,17,18,19,20,21,21,22,23,24,25,26,27
+
+		cnop 0,2
+
+.pitch_level_27:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_27
+
+.lp_27
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		add.w	#28,a2
+		add.l	#28,d4
+		dbra	d2,.lp_27
+
+.remainder_27
+		tst.w	d6
+		beq		.lp_done_27
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_27(pc,d5.w)
+
+.jt_table_27
+	opt o2-
+		move.b	27(a2),-(a0)
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_27(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_27
+		rts
+
+.remainder_table_27
+		dc.b 0,1,2,3,4,5,6,7,7,8,9,10,11,12,13,14
+		dc.b 14,15,16,17,18,19,20,21,21,22,23,24,25,26,27,28
+
+		cnop 0,2
+
+.pitch_level_28:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_28
+
+.lp_28
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		add.w	#29,a2
+		add.l	#29,d4
+		dbra	d2,.lp_28
+
+.remainder_28
+		tst.w	d6
+		beq		.lp_done_28
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_28(pc,d5.w)
+
+.jt_table_28
+	opt o2-
+		move.b	28(a2),-(a0)
+		move.b	27(a2),-(a0)
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_28(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_28
+		rts
+
+.remainder_table_28
+		dc.b 0,1,2,3,4,5,6,7,8,9,9,10,11,12,13,14
+		dc.b 15,16,17,18,19,19,20,21,22,23,24,25,26,27,28,29
+
+		cnop 0,2
+
+.pitch_level_29:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_29
+
+.lp_29
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	29(a2),(a0)+
+		add.w	#30,a2
+		add.l	#30,d4
+		dbra	d2,.lp_29
+
+.remainder_29
+		tst.w	d6
+		beq		.lp_done_29
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_29(pc,d5.w)
+
+.jt_table_29
+	opt o2-
+		move.b	29(a2),-(a0)
+		move.b	28(a2),-(a0)
+		move.b	27(a2),-(a0)
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_29(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_29
+		rts
+
+.remainder_table_29
+		dc.b 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+		dc.b 15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+
+		cnop 0,2
+
+.pitch_level_30:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_30
+
+.lp_30
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	29(a2),(a0)+
+		move.b	30(a2),(a0)+
+		add.w	#31,a2
+		add.l	#31,d4
+		dbra	d2,.lp_30
+
+.remainder_30
+		tst.w	d6
+		beq		.lp_done_30
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_30(pc,d5.w)
+
+.jt_table_30
+	opt o2-
+		move.b	30(a2),-(a0)
+		move.b	29(a2),-(a0)
+		move.b	28(a2),-(a0)
+		move.b	27(a2),-(a0)
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_30(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_30
+		rts
+
+.remainder_table_30
+		dc.b 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+		dc.b 16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+
+		cnop 0,2
+
+.pitch_level_31:
+		move.w	d2,d6
+		and.w	#$1f,d6
+		move.w	d6,d7
+		add.w	d6,d6
+		add.w	d6,d6
+		lsr.w	#5,d2
+		subq.w	#1,d2
+		bmi		.remainder_31
+
+.lp_31
+		move.b	(a2),(a0)+
+		move.b	1(a2),(a0)+
+		move.b	2(a2),(a0)+
+		move.b	3(a2),(a0)+
+		move.b	4(a2),(a0)+
+		move.b	5(a2),(a0)+
+		move.b	6(a2),(a0)+
+		move.b	7(a2),(a0)+
+		move.b	8(a2),(a0)+
+		move.b	9(a2),(a0)+
+		move.b	10(a2),(a0)+
+		move.b	11(a2),(a0)+
+		move.b	12(a2),(a0)+
+		move.b	13(a2),(a0)+
+		move.b	14(a2),(a0)+
+		move.b	15(a2),(a0)+
+		move.b	16(a2),(a0)+
+		move.b	17(a2),(a0)+
+		move.b	18(a2),(a0)+
+		move.b	19(a2),(a0)+
+		move.b	20(a2),(a0)+
+		move.b	21(a2),(a0)+
+		move.b	22(a2),(a0)+
+		move.b	23(a2),(a0)+
+		move.b	24(a2),(a0)+
+		move.b	25(a2),(a0)+
+		move.b	26(a2),(a0)+
+		move.b	27(a2),(a0)+
+		move.b	28(a2),(a0)+
+		move.b	29(a2),(a0)+
+		move.b	30(a2),(a0)+
+		move.b	31(a2),(a0)+
+		add.w	#32,a2
+		add.l	#32,d4
+		dbra	d2,.lp_31
+
+.remainder_31
+		tst.w	d6
+		beq		.lp_done_31
+
+		lea.l	1(a0,d7.w),a0
+		move.w	#128,d5
+		sub.w	d6,d5
+		lsr.w	#2,d6
+		jmp		.jt_table_31(pc,d5.w)
+
+.jt_table_31
+	opt o2-
+		move.b	31(a2),-(a0)
+		move.b	30(a2),-(a0)
+		move.b	29(a2),-(a0)
+		move.b	28(a2),-(a0)
+		move.b	27(a2),-(a0)
+		move.b	26(a2),-(a0)
+		move.b	25(a2),-(a0)
+		move.b	24(a2),-(a0)
+		move.b	23(a2),-(a0)
+		move.b	22(a2),-(a0)
+		move.b	21(a2),-(a0)
+		move.b	20(a2),-(a0)
+		move.b	19(a2),-(a0)
+		move.b	18(a2),-(a0)
+		move.b	17(a2),-(a0)
+		move.b	16(a2),-(a0)
+		move.b	15(a2),-(a0)
+		move.b	14(a2),-(a0)
+		move.b	13(a2),-(a0)
+		move.b	12(a2),-(a0)
+		move.b	11(a2),-(a0)
+		move.b	10(a2),-(a0)
+		move.b	9(a2),-(a0)
+		move.b	8(a2),-(a0)
+		move.b	7(a2),-(a0)
+		move.b	6(a2),-(a0)
+		move.b	5(a2),-(a0)
+		move.b	4(a2),-(a0)
+		move.b	3(a2),-(a0)
+		move.b	2(a2),-(a0)
+		move.b	1(a2),-(a0)
+		move.b	0(a2),-(a0)
+	opt o2+
+		move.b	.remainder_table_31(pc,d6.w),d6
+		add.w	d6,a2
+		add.l	d6,d4
+		lea.l	1(a0,d7.w),a0
+
+.lp_done_31
+		rts
+
+.remainder_table_31
+		dc.b 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+		dc.b 17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
+
+		cnop 0,2
+
+		ELSE
+			rts
+		ENDIF
+		ELSE
+			rts
+		ENDIF
+
+.end_pitch_routines\1
+.pitch_routines_size\1 EQU .end_pitch_routines\1-MixPluginLevels_internal\1
 		
 		; Routine: MixPluginVolume
 		; This routine forms the volume plugin routine. See
@@ -905,175 +4759,125 @@ MixPluginVolume\1
 		
 .done	move.l	(sp)+,d7
 		rts
+	ELSE
+		rts
 	ENDIF
 
 		; Table based volume
 MixPluginVolumeTable\1
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
-		
-			IF MIXER_68020=1
-				movem.l	d0/d4-d6/a0-a3,-(sp)	; Stack
-			ELSE
-				movem.l	d0/d6/a0-a3,-(sp)		; Stack
-			ENDIF
+			movem.l	d0/d4-d6/a0/a2-a4,-(sp)		; Stack
 			
-			; Check if sample looped
-			tst.w	d1
-			beq.s	.no_loop
-			
-			; Sample looped, reset offset to loop offset
-			move.l	mpd_vol_loop_offset(a1),mpd_vol_sample_offset(a1)
-		
-.no_loop		
-			; Set up volume loop length
-			move.w	d0,d7
-			lsr.w	#2,d7
-			subq.w	#1,d7
-			bmi.s	.update_sample_offset
+			; Set up for start of loop
+			MixPluginLoopSetup mpd_vol
 			
 			; Check for silence (= volume 0)
 			move.w	mpd_vol_volume(a1),d6
-			beq.s	.silence
+			beq		.vol_silence
 		
+			; Generic setup for non-silent volumes
+			move.l	a2,a4
+			move.l	d5,d4
+			
 			; Check for maximum volume
 			cmp.w	#15,d6
-			beq.s	.max_volume
+			beq		.copy
 			
 			; Fill output buffer based on volume table
-			lea.l	vol_level_1\1(pc),a2
-			move.l	mpd_vol_sample_ptr(a1),a3
-			add.l	mpd_vol_sample_offset(a1),a3
+			lea.l	vol_level_1\1(pc),a3
 			move.w	mpd_vol_table_offset(a1),d6
-			lea.l	0(a2,d6.w),a2
+			lea.l	0(a3,d6.w),a3
 			moveq	#0,d6
+			move.w	d5,d7
+			asr.w	#2,d7
+			subq.w	#1,d7
+			bmi.s	.lp_done
 
 .lp_vol		
-;			IF MIXER_68020=1
-;				move.l	(a3)+,d4
-;				rol.l	#8,d4
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				rol.l	#8,d4
-;				move.b	0(a2,d6.w),d5
-;				lsl.l	#8,d5
-;				move.b	d4,d6
-;				move.b	0(a2,d6.w),d5
-;				move.l	d5,(a0)+
-;			ELSE
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-				move.b	(a3)+,d6
-				move.b	0(a2,d6.w),(a0)+
-;			ENDIF
+			move.b	(a2)+,d6
+			move.b	0(a3,d6.w),(a0)+
+			move.b	(a2)+,d6
+			move.b	0(a3,d6.w),(a0)+
+			move.b	(a2)+,d6
+			move.b	0(a3,d6.w),(a0)+
+			move.b	(a2)+,d6
+			move.b	0(a3,d6.w),(a0)+
+
 			dbra	d7,.lp_vol
-			bra.s	.update_sample_offset
-		
-			; Fill output buffer with silence
-.silence
-			moveq	#0,d6
-		
-.lp_si		move.l	d6,(a0)+
-			dbra	d7,.lp_si
-			bra.s	.update_sample_offset
-		
-			; Fill output buffer with copy of original
-.max_volume
-			move.l	mpd_vol_sample_ptr(a1),a2
-			add.l	mpd_vol_sample_offset(a1),a2
-		
-.lp_mv		move.l	(a2)+,(a0)+
-			dbra	d7,.lp_mv
-		
-.update_sample_offset
-			moveq	#0,d6
-			move.w	d0,d6
-			move.l	mpd_vol_sample_offset(a1),d0
-			add.l	d6,d0
-			cmp.l	mpd_vol_length(a1),d0
-			blt.s	.no_reset
 			
-			; Reset offset here
-			move.l	mpd_vol_loop_offset(a1),d0
-		
-.no_reset
-			move.l	d0,mpd_vol_sample_offset(a1)
+.lp_done
+			move.l	a4,a2
+			MixPluginLoopEnd mpd_vol
 
-			IF MIXER_68020=1
-				movem.l	(sp)+,d0/d4-d6/a0-a3	; Stack
-			ELSE
-				movem.l	(sp)+,d0/d6/a0-a3		; Stack
-			ENDIF
+			movem.l	(sp)+,d0/d4-d6/a0/a2-a4		; Stack
 			move.l	(sp)+,d7
-
 		ENDIF
-	ENDIF
 		rts
+		
+.vol_silence
+			moveq	#0,d6
+			move.l	a2,a4
+			move.l	d5,d4
+			move.w	d5,d7
+			asr.w	#2,d7
+			subq.w	#1,d7
+			bmi.s	.lp_done
+			
+.lp_vol_silence
+			move.l	d6,(a0)+
+			dbra	d7,.lp_vol_silence
+			
+			bra		.lp_done
+		
+		MixPluginSilenceLoop
+		
+		MixPluginCopyLoop
+	ELSE
+		rts
+	ENDIF
 		
 		; Shift based volume
 MixPluginVolumeShift\1
 	IF MXPLUGIN_VOLUME=1
-		IF MIXER_68020=1
-			movem.l	d0/d2-d6/a0-a3,-(sp)	; Stack
+		IF MIXER_68020=0
+			movem.l	d0/d4-d6/a0/a2-a5,-(sp)		; Stack
 		ELSE
-			movem.l	d0/d5-d6/a0-a3,-(sp)	; Stack
+			movem.l	d0/d2-d6/a0/a2-a5,-(sp)		; Stack
 		ENDIF
-		
-		; Check if sample looped
-		tst.w	d1
-		beq.s	.no_loop
-		
-		; Sample looped, reset offset to loop offset
-		move.l	mpd_vol_loop_offset(a1),mpd_vol_sample_offset(a1)
-		
-.no_loop		
-		; Set up volume loop length
-		move.w	d0,d7
-		lsr.w	#2,d7
-		subq.w	#1,d7
+		; Set up for start of loop
+		MixPluginLoopSetup mpd_vol
 		
 		; Check for silence (= volume 8)
 		move.w	mpd_vol_volume(a1),d6
 		cmp.w	#8,d6
-		IF MIXER_68020=1
-			bge		.silence
-		ELSE
-			bge.s	.silence
-		ENDIF
+		beq		.vol_silence
+	
+		; Generic setup for non-silent volumes
+		move.l	a2,a4
+		move.l	d5,d4
 		
-		; Check for maximum volume
+		; Check for maximum volume (= volume 0)
 		tst.w	d6
-		IF MIXER_68020=1
-			beq		.max_volume
-		ELSE
-			beq.s	.max_volume
-		ENDIF
+		beq		.copy
 		
-		; Fill output buffer based on shifting
-		move.l	mpd_vol_sample_ptr(a1),a3
-		add.l	mpd_vol_sample_offset(a1),a3
-		
+		; Fill output buffer based on volume shifting
+		move.w	d5,a5
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
+
 		IF MIXER_68020=1
 			; Setup masks for use in the loop
 			IF MXPLUGIN_68020_ONLY=1
 				mc68020
-				jmp	.shift_mask_jptable(pc,d6.w*8)
+				jmp		.shift_mask_jptable(pc,d6.w*8)
 				mc68000
 			ELSE
 				move.w	d6,d5
 				asl.w	#3,d5
-				jmp	.shift_mask_jptable(pc,d5)
+				jmp		.shift_mask_jptable(pc,d5)
 			ENDIF
 
 .shift_mask_jptable
@@ -1104,7 +4908,7 @@ MixPluginVolumeShift\1
 		
 .lp_vol	
 		IF MIXER_68020=1
-			move.l	(a3)+,d4
+			move.l	(a2)+,d4
 			btst	#31,d4
 			sne		d5
 			lsl.l	#8,d5
@@ -1122,60 +4926,57 @@ MixPluginVolumeShift\1
 			or.l	d5,d4					; Correct upper bits set in D0
 			move.l	d4,(a0)+
 		ELSE
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
-			move.b	(a3)+,d5
+			move.b	(a2)+,d5
 			asr.b	d6,d5
 			move.b	d5,(a0)+
 		ENDIF
 		dbra	d7,.lp_vol
-		bra.s	.update_sample_offset
-		
-		; Fill output buffer with silence
-.silence
-		moveq	#0,d6
-		
-.lp_si	move.l	d6,(a0)+
-		dbra	d7,.lp_si
-		bra.s	.update_sample_offset
-		
-		; Fill output buffer with copy of original
-.max_volume
-		move.l	mpd_vol_sample_ptr(a1),a2
-		add.l	mpd_vol_sample_offset(a1),a2
-		
-.lp_mv	move.l	(a2)+,(a0)+
-		dbra	d7,.lp_mv		
-		
-.update_sample_offset
-		moveq	#0,d6
-		move.w	d0,d6
-		move.l	mpd_vol_sample_offset(a1),d0
-		add.l	d6,d0
-		cmp.l	mpd_vol_length(a1),d0
-		blt.s	.no_reset
-		
-		; Reset offset here
-		move.l	mpd_vol_loop_offset(a1),d0
-		
-.no_reset
-		move.l	d0,mpd_vol_sample_offset(a1)
+			
+.lp_done
+		move.l	a4,a2
+		move.l	a5,d5
+		MixPluginLoopEnd mpd_vol
 
-		IF MIXER_68020=1
-			movem.l	(sp)+,d0/d2-d6/a0-a3	; Stack
+		IF MIXER_68020=0
+			movem.l	(sp)+,d0/d4-d6/a0/a2-a5		; Stack
 		ELSE
-			movem.l	(sp)+,d0/d5-d6/a0-a3	; Stack
-		ENDIF
+			movem.l	(sp)+,d0/d2-d6/a0/a2-a5		; Stack
+		ENDIF	  
 		move.l	(sp)+,d7
-	ENDIF
+
 		rts
+		
+.vol_silence
+		moveq	#0,d6
+		move.l	a2,a4
+		move.l	d5,a5
+		move.l	d5,d4
+		move.w	d5,d7
+		asr.w	#2,d7
+		subq.w	#1,d7
+		bmi.s	.lp_done
+			
+.lp_vol_silence
+		move.l	d6,(a0)+
+		dbra	d7,.lp_vol_silence
+		
+		bra		.lp_done
+		
+		MixPluginSilenceLoop
+		
+		MixPluginCopyLoop
+	ELSE
+		rts
+	ENDIF
 	
 		; Routine: MixPluginRepeat
 		; This routine forms the repeat plugin routine. See 
@@ -1213,8 +5014,10 @@ MixPluginRepeat\1
 		ENDIF
 		move.l	(sp)+,a0					; Stack
 .done
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 		
 		; Routine: MixPluginRepeatDeferred
 		; This routine is the deferred routine for MixPluginRepeat. It does
@@ -1251,8 +5054,10 @@ MixPluginRepeatDeferred\1
 		ENDIF
 
 		movem.l	(sp)+,d0/a0					; Stack
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 		
 		; Routine: MixPluginSync
 		; This routine forms the sync plugin routine. See MixPluginInitSync
@@ -1270,8 +5075,37 @@ MixPluginSync\1
 		tst.w	mpd_snc_done(a1)
 		bne		.done
 
-		movem.l	d6/d7/a0,-(sp)				; Stack
+		movem.l	d1/d6/d7/a0,-(sp)			; Stack
 		
+		; Test if this is a looping sample
+		tst.w	d1
+		beq.s	.select_sync
+		
+		; Reset looping indicator
+		moveq	#0,d1
+		
+		; Update sample position
+		moveq	#0,d6
+		move.w	d0,d6
+		move.l	mpd_snc_sample_offset(a1),d7
+		add.l	d6,d7
+		
+		; Test if sample looped
+		sub.l	mpd_snc_sample_length(a1),d7
+		bpl.s	.sample_looped
+
+.update_offset
+		add.l	d6,mpd_snc_sample_offset(a1)
+		bra.s	.select_sync
+		
+.sample_looped
+		; Sample looped, reset offset
+		moveq	#1,d1
+		neg.l	d7
+		add.l	mpd_snc_sample_loop_offset(a1),d7
+		move.l	d7,mpd_snc_sample_offset(a1)
+
+.select_sync
 		; Set flag register to 0
 		moveq	#0,d7
 		
@@ -1385,19 +5219,19 @@ MixPluginSync\1
 		; Set trigger value to 1
 .sync_one
 		move.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 
 		; Trigger value incremented by 1
 .sync_increment
 		addq.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 
 		; Trigger value decremented by 1
 .sync_decrement
 		subq.w	#1,(a0)
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 		rts
 		
 .sync_deferred
@@ -1409,11 +5243,13 @@ MixPluginSync\1
 		ENDIF
 
 .sync_update_done
-		movem.l	(sp)+,d6/d7/a0				; Stack
+		movem.l	(sp)+,d1/d6/d7/a0			; Stack
 
 .done
-	ENDIF
 		rts
+	ELSE
+		rts
+	ENDIF
 
 ;-----------------------------------------------------------------------------
 ; Plugin support routines
@@ -1453,7 +5289,7 @@ MixerPluginGetMaxDataSize\1
 		move.l	#mxplg_max_data_size,d0
 		rts
 
-		; Routine: MixPluginRatioPrecalc
+		; Routine: MixPluginPitchRatioPrecalc
 		; This routine can be used to pre-calculate length and loop offset
 		; values for plugins that need these values divided by a FP8.8 ratio.
 		; The routine calculates the values using a pointer to a filled 
@@ -1472,7 +5308,7 @@ MixerPluginGetMaxDataSize\1
 		; A0 - Pointer to filled MXEffect structure
 		; D0 - FP8.8 ratio value
 		; D1 - Shift value
-MixPluginRatioPrecalc\1
+MixPluginPitchRatioPrecalc\1
 		movem.l	d0-d3/d5-d7,-(sp)			; Stack
 
 		; Save shift value in D2 & ratio in D3
@@ -1481,22 +5317,20 @@ MixPluginRatioPrecalc\1
 		move.w	d0,d3
 
 		; Fetch length
-		move.l	mfx_length(a0),d0
-		
-		; Check if offset based looping is enabled
-		cmp.w	#MIX_FX_LOOP_OFFSET,mfx_loop(a0)
-		beq.s	.offset_loop
-		
-		; No offset based looping, restart at sample start
-		clr.l	d1
-		bra.s	.cnt
-		
-		; Offset based looping, restarts at loop offset
-.offset_loop
-		move.l	mfx_loop_offset(a0),d1
+		IF MIXER_68020=0
+			IF MIXER_WORDSIZED=1
+				moveq	#0,d0
+				move.w	mfx_length(a0),d0
+				move.l	mfx_loop_offset(a0),d1
+			ELSE
+				move.l	mfx_length(a0),d0
+				move.l	mfx_loop_offset(a0),d1
+			ENDIF
+		ELSE
+			move.l	mfx_length(a0),d0
+			move.l	mfx_loop_offset(a0),d1
+		ENDIF
 
-		; Calculate output length & output loop offset
-.cnt	
 		; 1) Check if the ratio is valid
 		tst.w	d3
 		bne.s	.test_1x
@@ -1507,17 +5341,16 @@ MixPluginRatioPrecalc\1
 		cmp.w	#$100,d3
 		beq		.done						; A ratio of 1 means no division
 		
-		; 2) apply shift to length and offset
+		; 2) apply pre-shift to length and offset
 		lsr.l	d2,d0
 		lsr.l	d2,d1
 		
 		; 3) Convert divided length & offset to 16.8 fixed point
-		lsl.l	#8,d0						; D0 = 16.8
-		lsl.l	#8,d0						; Prepared for divide
-		lsl.l	#8,d1						; D1 = 16.8
-		lsl.l	#8,d1						; Prepared for divide
+		moveq	#16,d5
+		lsl.l	d5,d0						; D0 = 16.8 & prepared for divide
+		lsl.l	d5,d1						; D1 = 16.8 & prepared for divide
 		
-		; 4) divide 16.8 fixed point length & offset by mpd_pit_ratio_fp8
+		; 4) divide 16.8 fixed point length by mpd_pit_ratio_fp8
 		IF MIXER_68020=1
 			IF MXPLUGIN_68020_ONLY=1
 				mc68020
@@ -1530,8 +5363,9 @@ MixPluginRatioPrecalc\1
 			MPlLongDiv d0,d3,d7,d5,d6,0
 		ENDIF
 
+		; 5) divide 16.8 fixed point loop offset by mpd_pit_ratio_fp8
 		tst.l	d1
-		beq.s	.do_rounding				; Skip loop offset of zero
+		beq.s	.convert_to_int				; Skip loop offset of zero
 		
 		IF MIXER_68020=1
 			IF MXPLUGIN_68020_ONLY=1
@@ -1544,39 +5378,19 @@ MixPluginRatioPrecalc\1
 		ELSE
 			MPlLongDiv d1,d3,d7,d5,d6,0
 		ENDIF
-		
-.do_rounding
-		; 5) round results up
-		move.l	d0,d7
-		and.w	#$00ff,d7
-		tst.w	d7
-		
-		beq.s	.rounded_length_2
-		
-		add.l	#$100,d0
-		
-.rounded_length_2
-		move.l	d1,d7
-		and.w	#$00ff,d7
-		tst.w	d7
-		
-		beq.s	.rounded_offset_2
-		
-		add.l	#$100,d1
 
-.rounded_offset_2
-
-		; 6) convert 16.8 fixed point length & offset back to integers
-		lsr.l	#8,d0						; D0 = int
-		lsr.l	#8,d1						; D1 = int
+.convert_to_int
+		; 7) convert 16.8 fixed point length & offset back to integers
+		moveq	#8,d5
+		sub.b	d2,d5
+		lsr.l	d5,d0						; D0 = int
+		lsr.l	d5,d1						; D1 = int
 		
-.write_length_offset
-		; 7) undo shift of length & offset and write results
-		lsl.l	d2,d0
+.write_length
+		; 8) write results
 		move.l	d0,mfx_length(a0)
-		lsl.l	d2,d1
 		move.l	d1,mfx_loop_offset(a0)
-
+		
 .done
 		movem.l	(sp)+,d0-d3/d5-d7			; Stack
 		rts
@@ -1586,6 +5400,13 @@ MixPluginRatioPrecalc\1
 		cnop 0,4
 	ENDIF
 plugin_fx_struct\1		blk.b	mfx_SIZEOF
+
+; Pitch ratios in fp8.8 format
+MixPluginLevels_pitch_table\1
+		dc.w	8,16,24,32,40,48,56,64
+		dc.w	72,80,88,96,104,112,120,128
+		dc.w	136,144,152,160,168,176,184,192
+		dc.w	200,208,216,224,232,240,248,256
 
 	IF MXPLUGIN_VOLUME=1
 		IF MXPLUGIN_NO_VOLUME_TABLES=0
@@ -2068,11 +5889,14 @@ _MixPluginRepeat\1					EQU MixPluginRepeat\1
 _MixPluginSync\1					EQU MixPluginSync\1
 _MixPluginVolume\1					EQU MixPluginVolume\1
 _MixPluginPitch\1					EQU MixPluginPitch\1
-_MixPluginRatioPrecalc\1			EQU	MixPluginRatioPrecalc\1
+_MixPluginPitchRatioPrecalc\1		EQU	MixPluginPitchRatioPrecalc\1
 
 _MixPluginGetMultiplier\1			EQU MixPluginGetMultiplier\1
 _MixerPluginGetMaxInitDataSize\1	EQU MixerPluginGetMaxInitDataSize\1
 _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
+
+_MixPluginSetPitch\1				EQU	MixPluginSetPitch\1
+_MixPluginSetVolume\1				EQU	MixPluginSetVolume\1
 
 	XDEF	_MixPluginInitDummy\1
 	XDEF	_MixPluginInitRepeat\1
@@ -2089,7 +5913,10 @@ _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 	XDEF	_MixPluginGetMultiplier\1
 	XDEF	_MixerPluginGetMaxInitDataSize\1
 	XDEF	_MixerPluginGetMaxDataSize\1
-	XDEF	_MixPluginRatioPrecalc\1
+	XDEF	_MixPluginPitchRatioPrecalc\1
+	
+	XDEF	_MixPluginSetPitch\1
+	XDEF	_MixPluginSetVolume\1
 
 		ENDIF
 	ENDM

@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.8 (23.06.25)
+; $VER: mixer.i 3.8o (23.06.25)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -515,16 +515,16 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.8
+; Version: 3.8o
 ; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
 ; Includes (OS includes assume at least NDK 1.3) 
-	include	exec/types.i
-	include hardware/dmabits.i
-	include mixer_config.i
+	include	includes/exec/types.i
+	include includes/hardware/dmabits.i
+	include mixer/mixer_config.i
 	
 	IFND	MIXER_I
 MIXER_I	SET	1
@@ -723,18 +723,17 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	APTR	mxicb_set_dmacon
 	LABEL	mxicb_SIZEOF
 	
- STRUCTURE MXE8xSampleEntry,0
-	LONG	me8xs_length					; Note: always use a longword 
+ STRUCTURE MXE8Sample,0
+	LONG	me8s_length						; Note: always use a longword 
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
-	APTR	me8xs_sample_ptr
-	WORD	me8xs_priority
-	LABEL	me8xs_SIZEOF
+	APTR	me8s_sample_ptr
+	UWORD	me8s_priority
+	LABEL	me8s_SIZEOF
 	
- STRUCTURE MXE8xSamples,0
-	STRUCT	me8x_index,15*4
-	STRUCT	me8x_sample_entries,15*me8xs_SIZEOF
-	LABEL	me8x_SIZEOF
+ STRUCTURE MXE8Samples,0
+	STRUCT	me8_index,15*4
+	STRUCT	me8_samples,15*me8s_SIZEOF
 
 ; Internal (private) structures
  STRUCTURE MXChannel,0
@@ -837,6 +836,7 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_buffer_size
 	UWORD	mx_buffer_size_w
 	UWORD	mx_irq_bits
+	UWORD	mx_current_irq_bits
 	UWORD	mx_hw_channels
 	UWORD	mx_hw_period
 	UWORD	mx_volume
@@ -844,7 +844,6 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_vidsys
 	UWORD	mx_e8x_enabled
 	UWORD	mx_e8x_channel
-	UWORD	mx_e8x_last_trigger
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mx_counter
 	ELSE

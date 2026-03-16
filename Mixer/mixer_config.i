@@ -66,7 +66,7 @@ MIXER_HQ_MODE			EQU	0
 ;-----------------------------------------------------------------------------
 ; Mixer output configuration
 ;-----------------------------------------------------------------------------
-mixer_output_channels	EQU	DMAF_AUD2
+mixer_output_channels	EQU	DMAF_AUD3
 									; valid values are DMAF_AUD0/1/2/3 or
 									; any bitwise combination of these with at
 									; least one channel set.
@@ -81,10 +81,12 @@ mixer_output_channels	EQU	DMAF_AUD2
 									;       * DMAF_AUD2|DMAF_AUD3|DMAF_AUD1
 									;		* all 4 channels
 									
-mixer_sw_channels		EQU	4		; Maximum number of software mixed 
+mixer_sw_channels		EQU	3		; Maximum number of software mixed 
 									; channels on a single hardware channel.
 									; Valid values are 1,2,3 and 4
-mixer_period			EQU	322 	; Valid values: 124 and up
+;mixer_period			EQU 443		; ~8006Hz
+;mixer_period			EQU 214		; ~16754Hz
+mixer_period			EQU	214 	; Valid values: 124 and up
 									; Default value of 322 is about
 									; 11025Hz when using a PAL Amiga
 									;
@@ -115,7 +117,7 @@ MIXER_PER_IS_NTSC		EQU	0		; Set to 1 if the mixer period value set
 ;       setting, the only difference is one of speed - the 68000 code is
 ;       significantly faster on 68000/68010 than the 68020+ code and
 ;       vice versa.
-MIXER_68020				EQU 0
+MIXER_68020				EQU 1
 
 ; Optimisations below only apply to the 68000 version, as they will not
 ; improve performance for 68020+ code/machines.
@@ -211,7 +213,7 @@ MIXER_ENABLE_CALLBACK	EQU 0
 ; Note: enabling plugins slightly increases CPU and memory costs of the mixer
 ;       for all mixer channels playing back samples. In addition, the effects
 ;       routines themselves will also add CPU overhead.
-MIXER_ENABLE_PLUGINS	EQU 0
+MIXER_ENABLE_PLUGINS	EQU 1
 
 ; Set define below to enable the return vector. The return vector is a user
 ; specified routine that will be called at the end of audio interrupt
