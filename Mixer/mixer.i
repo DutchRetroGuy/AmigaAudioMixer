@@ -91,6 +91,41 @@
 ;						  For more information about plugin initialisation
 ;						  data, see  the plugins API in plugins.i.
 ;
+; MXE8xSampleEntry
+;	This structure defines a sample to be used by E8x sample playback support.
+;	E8x sample playback support is only available if MIXER_ENABLE_PTPLAYER_E8X
+;	is set to 1 and Frank Wille's PTPlayer is used for MOD playback. Samples 
+;	played back this way have to follow all requirements all mixer samples 
+;	need to follow.
+;
+;	For more information see routine documentation for MixerSetupE8xSamples. 
+;
+;	The MXE8xSampleEntry structure has the following members:
+;	* me8x_length		- the length of the sample to play in bytes. Must be
+;						  passed as a longword even if MIXER_WORDSIZED is set
+;						  to 1.
+;	* me8x_sample_ptr	- Pointer to the sample to play. Samples can be placed
+;						  in any type of memory. Longword alignment is 
+;						  preferred on 68020+ systems for performance reasons.
+;	* me8x_priority		- Determines the priority of the sample to play. 
+;						  Samples of higher priority can overwrite already 
+;						  playing, non-looping, samples of lower priority.
+;
+; MXE8xSamples
+;	This structure contains all sample definitions used by E8x sample playback
+;	support. In total, 15 samples can be defined at any time. E8x sample 
+;	playback is only available if MIXER_ENABLE_PTPLAYER_E8X is set to 1 and
+;	Frank Wille's PTPlayer is used for MOD playback.
+;
+;	For more information see routine documentation for MixerSetupE8xSamples.
+;
+;	The MXE8xSamples structure has the following members:
+;	* me8x_index		- An array of 15 pointers to each sample definition,
+;	                      stored consequitively in memory.
+;	* me8x_samples		- An array of 15 sample entries (MXE8xSampleEntry),
+;	                      stored consequitively in memory.
+;
+;
 ; Routines
 ; --------
 ;
@@ -420,6 +455,48 @@
 ;   Note: see plugins.i for more details on deferred functions
 ;
 ;
+; If MIXER_ENABLE_PTPLAYER_E8X is set to 1, additional routines are available:
+;
+; MixerSetupE8xSamples(A0=e8x_samples_ptr,A1=_mt_e8trigger_ptr,
+;                      D0=mixer_channel)
+;	This routine sets up the mixer to be able to play back samples when 
+;	ptplayer triggers an _mt_E8Trigger update. This occurs each time when
+;	ptplayer reads a channel command in the of range E81 to E8F. See 
+;	ptplayer.readme for more information. 
+;
+;	It requires a pointer to a filled MXE8xSamples structure in A0, a pointer
+;	to the _mt_E8Trigger variable from ptplayer.asm in A1 and the hardware and
+;	mixer channel to use in D0.
+;
+;	Note: MixerSetup has to be called prior to calling this routine.
+;	Note: this routine defaults to disabling E8x playback to prevent 
+;	      potential unwanted samples from earlier modules playing back, use 
+;	      MixerEnableE8xSamples to start E8x playback.
+;	Note: E8x sample playback is currently only supported if Frank Wille's
+;	      PTPlayer is used for MOD playback.
+;
+; MixerUpdateE8xSamples(A0=e8x_samples_ptr)
+;	This routine updates the set of samples to use for E8x sample playback. It
+;	requires a pointer to a filled MXE8xSamples structure in A0.
+;
+;	Note: MixerSetupE8xSamples has to be called prior to calling this
+;	      function.
+;
+; MixerEnableE8xSamples()
+;	This routine enables playback of samples when ptplayer triggers an
+;	_mt_E8Trigger update.
+;
+;	Note: MixerSetupE8xSamples has to be called prior to calling this
+;	      function.
+;
+; MixerDisableE8xSamples()
+;	This routine disables playback of samples when ptplayer triggers an
+;	_mt_E8Trigger update.
+;
+;	Note: MixerSetupE8xSamples has to be called prior to calling this
+;	      function.
+;
+;
 ; If MIXER_CIA_TIMER is set to 1, an additional routine is available:
 ;
 ; MixerCalcTicks()
@@ -622,8 +699,8 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
 	APTR	mfx_sample_ptr
-	UWORD	mfx_loop
-	UWORD	mfx_priority
+	WORD	mfx_loop
+	WORD	mfx_priority
 	LONG	mfx_loop_offset					; Note: always use a longword 
 											; for this value, even when 
 											; MIXER_WORDSIZED is set to 1
@@ -695,19 +772,19 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 		APTR	mch_plugin_deferred_ptr
 		APTR	mch_plugin_data_ptr
 		APTR	mch_plugin_output_buffer
-		UWORD	mch_plugin_type
+		WORD	mch_plugin_type
 	ELSE
 	IF MIXER_ENABLE_PLUGINS=1
 		APTR	mch_plugin_ptr
 		APTR	mch_plugin_deferred_ptr
 		APTR	mch_plugin_data_ptr
 		APTR	mch_plugin_output_buffer
-		UWORD	mch_plugin_type
+		WORD	mch_plugin_type
 	ENDIF
 	ENDIF
 	UWORD	mch_channel_id
 	UWORD	mch_status
-	UWORD	mch_priority
+	WORD	mch_priority
 	UWORD	mch_age
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mch_align

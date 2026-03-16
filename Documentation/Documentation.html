@@ -1092,8 +1092,21 @@ them.</p>
 how to make use of it and the mixer together. This is the SingleMixer
 example. See <a href="#examples">"Examples"</a> for more
 information.</p>
-<h4 id="for-ptplayer-63-the-way-to-set-it-up-is-as-follows">For PTPlayer
-6.3, the way to set it up is as follows:</h4>
+<h4 id="for-ptplayer-65-the-way-to-set-it-up-is-as-follows">For PTPlayer
+6.5, the way to set it up is as follows:</h4>
+<ol type="1">
+<li>initialise PTPlayer as normal</li>
+<li>call the routine <em>_mt_enablemask()</em> with the correct channel
+mask in D0</li>
+<li>set up the mixer as described in <a href="#using-the-mixer">"Using
+the mixer"</a></li>
+<li>both the mixer and PTPlayer should now work, allowing music and
+sound effects at the same time. Note that SFX playback should be done
+exclusively through the mixer, not using the built in SFX abilities of
+PTPlayer.</li>
+</ol>
+<h4 id="for-ptplayer-63--64-the-way-to-set-it-up-is-as-follows">For
+PTPlayer 6.3 &amp; 6.4, the way to set it up is as follows:</h4>
 <ol type="1">
 <li>initialise PTPlayer as normal</li>
 <li>call the routine <em>_mt_channelmask()</em> with the correct channel
@@ -2724,7 +2737,7 @@ the music player to not touch the audio channels used by the
 mixer.</p></li>
 <li><p>if all else fails, try using one of the two music players that
 have been verified to work with the mixer: Frank Wille's PTPlayer 6.3+
-or Arnaud Carré's LSP.</p></li>
+(version 6.5 or higher prefered), or Arnaud Carré's LSP.</p></li>
 </ul></li>
 <li><p>Calling <em>MixerStart()</em> after interrupting the mixer using
 <em>MixerStop()</em> does not restart samples/loops that were playing
@@ -2831,6 +2844,51 @@ they are of higher priority. To stop a looping sample, use the
 combination the loop is playing on.</p>
 <p>If all mixer channels are playing looping samples, stopping one or
 more of them will allow other samples to play again.</p></li>
+</ul></li>
+<li><h4 id="module-playback-issues">Module playback issues</h4>
+<ul>
+<li><p>Calling <em>MixerStart()</em> causes random audio glitches and
+playing samples through the mixer does not work<br />
+This is usually caused by a music player setting or resetting registers
+on channels reserved for use by the mixer. If the channel configuration
+for the mixer is set correctly, the music track used does not use the
+channel(s) reserved for the mixer and the problem persists:</p>
+<ul>
+<li><p>try disabling the music channels in the player</p></li>
+<li><p>if the player does not support this, it may be required to patch
+the music player to not touch the audio channels used by the
+mixer.</p></li>
+<li><p>if all else fails, try using one of the two music players that
+have been verified to work with the mixer: Frank Wille's PTPlayer 6.3+
+(version 6.5 or higher prefered), or Arnaud Carré's LSP.</p></li>
+</ul></li>
+<li><p>Music (completely) drowns out the sound effects / music is much
+louder than samples This is caused by the audio mixer's pre-processed
+samples being significantly lower amplitude than the maximum amplitude
+possible. There are two ways that can help fix this problem:</p>
+<ul>
+<li><p>reduce the volume of the module being played. Either by using the
+master volume of the module player, or if this is not available for the
+chosen player, reducing the playback volume of the module at the
+composing stage. Combine this by following the <a
+href="#best-practices-for-source-samples">"best practices for source
+samples"</a> for best results.</p></li>
+<li><p>use the HQ mode of the audio mixer. Note that this significantly
+increases CPU use, which may make this inpractical in many
+situations.</p></li>
+</ul></li>
+<li><p>Upgrading to PTPlayer 6.5 breaks mixer sample playback The
+routine to call to disable a channel in PTPlayer, so it can be used for
+audio mixer playback has changed. In version 6.3 &amp; 6.4, the routine
+to call was _mt_channelmask. In version 6.5, the routine to call is
+_mt_enablemask. Parameters have not changed.</p></li>
+<li><p>Sample playback stutters when playing back modules using PTPlayer
+6.3 or 6.4 This is usually caused by having any activity at all
+(including tempo changes or pattern jumps) on the channel reserved for
+audio mixer use. To fix this, either upgrade to PTPlayer 6.5, or make
+sure that the channel is completely empty in the module. If issues
+persist after clearing the channel in the module, upgrade to PTPlayer
+6.5, which should fix the issue.</p></li>
 </ul></li>
 <li><h4 id="callback-issues">Callback issues</h4>
 <ul>

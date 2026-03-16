@@ -63,6 +63,10 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 ### Release Notes
 
 Release notes for the Audio Mixer
+#### v3.8
+- (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
+- (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
+
 #### v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
 
@@ -762,7 +766,14 @@ One thing to keep in mind is that some music players trash some of the registers
 
 The mixer contains an example using Frank Wille's PTPlayer that shows how to make use of it and the mixer together. This is the SingleMixer example. See ["Examples"](#examples) for more information.
 
-#### For PTPlayer 6.3, the way to set it up is as follows:
+#### For PTPlayer 6.5, the way to set it up is as follows:
+
+1.  initialise PTPlayer as normal
+2.  call the routine *\_mt_enablemask()* with the correct channel mask in D0
+3.  set up the mixer as described in ["Using the mixer"](#using-the-mixer)
+4.  both the mixer and PTPlayer should now work, allowing music and sound effects at the same time. Note that SFX playback should be done exclusively through the mixer, not using the built in SFX abilities of PTPlayer.
+
+#### For PTPlayer 6.3 & 6.4, the way to set it up is as follows:
 
 1.  initialise PTPlayer as normal
 2.  call the routine *\_mt_channelmask()* with the correct channel mask in D0
@@ -1233,7 +1244,7 @@ Note: this routine is only available if MIXER_EXTERNAL_IRQ_DMA is set to 1.
 
 #### The following two routines are deprecated and will no longer receive new functionality when the mixer is updated. They are still available for backwards compatibility purposes and have been updated with the new offset loop mode.
 
-*D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length, D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)*  
+*D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length, D2=signed_priority.w, D3=signed_loop_indicator.w, D4=loop_offset)*  
 This routine adds a sample to the given hardware channel, using values in registers passed to it. The routine automatically determines the best mixer channel to play back on based on priority and age. If no applicable channel is free (for instance due to higher priority samples playing), the routine will not play the sample.
 
 The routine has five parameters:
@@ -1260,7 +1271,7 @@ The routine has a return value:
 
 - D0 - returns the hardware & mixer channel the sample will play on, or -1 if no free channel could be found.
 
-*D0=MixerPlayChannelSample(A0=sample, D0=mixer_channel, D1=length, D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)*  
+*D0=MixerPlayChannelSample(A0=sample, D0=mixer_channel, D1=length, D2=signed_priority.w, D3=signed_loop_indicator.w, D4=loop_offset)*  
 This routine adds a sample to the given hardware/mixer channel combination, using values in registers passed to it. The routine uses the selected hardware/mixer channel to play back on. It checks for priority to see if the sample can be played. If the selected channel isn't free (due to a higher priority sample playing), the routine will not play the sample. The routine has five parameters:
 
 - A0 - Pointer to the pre-processed sample to play
@@ -1938,7 +1949,7 @@ This section of the documentation lists some possible problems when using the mi
 
       - if the player does not support this, it may be required to patch the music player to not touch the audio channels used by the mixer.
 
-      - if all else fails, try using one of the two music players that have been verified to work with the mixer: Frank Wille's PTPlayer 6.3+ or Arnaud Carré's LSP.
+      - if all else fails, try using one of the two music players that have been verified to work with the mixer: Frank Wille's PTPlayer 6.3+ (version 6.5 or higher prefered), or Arnaud Carré's LSP.
 
     - Calling *MixerStart()* after interrupting the mixer using *MixerStop()* does not restart samples/loops that were playing before  
       This is a known limitation of the mixer, calling *MixerStop()* clears all mixer samples still in progress.
@@ -1993,7 +2004,31 @@ This section of the documentation lists some possible problems when using the mi
 
       If all mixer channels are playing looping samples, stopping one or more of them will allow other samples to play again.
 
-3.  #### Callback issues
+3.  #### Module playback issues
+
+    - Calling *MixerStart()* causes random audio glitches and playing samples through the mixer does not work  
+      This is usually caused by a music player setting or resetting registers on channels reserved for use by the mixer. If the channel configuration for the mixer is set correctly, the music track used does not use the channel(s) reserved for the mixer and the problem persists:
+
+      - try disabling the music channels in the player
+
+      - if the player does not support this, it may be required to patch the music player to not touch the audio channels used by the mixer.
+
+      - if all else fails, try using one of the two music players that have been verified to work with the mixer: Frank Wille's PTPlayer 6.3+ (version 6.5 or higher prefered), or Arnaud Carré's LSP.
+
+    - Music (completely) drowns out the sound effects / music is much louder than samples
+	  This is caused by the audio mixer's pre-processed samples being significantly lower amplitude than the maximum amplitude possible. There are two ways that can help fix this problem:
+
+	  - reduce the volume of the module being played. Either by using the master volume of the module player, or if this is not available for the chosen player, reducing the playback volume of the module at the composing stage. Combine this by following the ["best practices for source samples"](#best-practices-for-source-samples) for best results.
+	  
+	  - use the HQ mode of the audio mixer. Note that this significantly increases CPU use, which may make this inpractical in many situations.
+
+    - Upgrading to PTPlayer 6.5 breaks mixer sample playback
+	  The routine to call to disable a channel in PTPlayer, so it can be used for audio mixer playback has changed. In version 6.3 & 6.4, the routine to call was _mt_channelmask. In version 6.5, the routine to call is _mt_enablemask. Parameters have not changed.
+	
+	- Sample playback stutters when playing back modules using PTPlayer 6.3 or 6.4
+	  This is usually caused by having any activity at all (including tempo changes or pattern jumps) on the channel reserved for audio mixer use. To fix this, either upgrade to PTPlayer 6.5, or make sure that the channel is completely empty in the module. If issues persist after clearing the channel in the module, upgrade to PTPlayer 6.5, which should fix the issue.
+
+4.  #### Callback issues
 
     - The callback function set does not fire when samples end  
       This is usually caused by not having enabled callback functionality in mixer_config.i. To enable callback functionality, set *MIXER_ENABLE_CALLBACK* to 1 in mixer_config.i
@@ -2007,7 +2042,7 @@ This section of the documentation lists some possible problems when using the mi
     - When a callback triggers, the mixer either crashes or starts behaving in a weird way  
       This is either caused by not properly saving and restoring all registers other than D0, or by setting D0 to a non-zero value prior to returning while not starting a new sample on the channel of the sample that just ended playback.
 
-4.  #### Plugin issues
+5.  #### Plugin issues
 
     - Plugins attached to samples do not activate  
       This is either caused by not having plugin support enabled in mixer_config.i, by setting the *mfx_plugin_ptr* to 0 (or NULL in C programs) or by not filling the MXPlugin structure correctly.
@@ -2045,7 +2080,7 @@ This section of the documentation lists some possible problems when using the mi
 
       Note that the low quality Pitch change mode is much more likely to cause these kind of distortions.
 
-5.  #### Other issues
+6.  #### Other issues
 
     - The makefile does not work / gives errors  
       The makefile was created to work on Windows based systems, on other OS's the paths need to be changed to use the correct slash type. Similarly, the makefile was created to work using VASM, VLINK and VBCC and expects them in the path. If the makefile is changed to use a different assembler, linker or compiler is chosen, the makefile might need further changes.

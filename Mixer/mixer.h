@@ -64,9 +64,9 @@ typedef struct MXEffect
 {
 	LONG mfx_length;		/* Length of sample */
 	void *mfx_sample_ptr;	/* Pointer to sample in any RAM (even address) */
-	UWORD mfx_loop;			/* Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or 
+	WORD mfx_loop;			/* Loop indicator (MIX_FX_ONCE, MIX_FX_LOOP or 
 							   MIX_FX_LOOP_OFFSET) */
-	UWORD mfx_priority;		/* Priority indicator (higher is better) */
+	WORD mfx_priority;		/* Priority indicator (higher is better) */
 	LONG mfx_loop_offset;	/* Offset to loop restart point in case 
 							   MIX_FX_LOOP_OFFSET is set as looping mode */
 	void *mfx_plugin;		/* NULL or a pointer to an instance of 
@@ -466,7 +466,7 @@ MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
 							  MIX_REGARG(ULONG hardware_channel,"d0"),
 							  MIX_REGARG(LONG length,"d1"),
 							  MIX_REGARG(WORD signed_priority,"d2"),
-							  MIX_REGARG(UWORD loop_indicator,"d3"),
+							  MIX_REGARG(WORD loop_indicator,"d3"),
 							  MIX_REGARG(LONG loop_offset,"d4"));
 
 /*
@@ -503,7 +503,7 @@ MIX_API ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
 									 MIX_REGARG(ULONG hardware_channel,"d0"),
 									 MIX_REGARG(LONG length,"d1"),
 									 MIX_REGARG(WORD signed_priority,"d2"),
-									 MIX_REGARG(UWORD loop_indicator,"d3"),
+									 MIX_REGARG(WORD loop_indicator,"d3"),
 									 MIX_REGARG(LONG loop_offset,"d4"));
 
 #undef MIX_REGARG
@@ -826,14 +826,14 @@ MIX_API ULONG MixerPlaySample(void *sample,
 							  ULONG hardware_channel,
 							  LONG length, 
 							  WORD signed_priority,
-							  UWORD loop_indicator, 
+							  WORD loop_indicator, 
 							  LONG loop_offset)
 {
     register volatile void *reg_sample __asm("a0") = sample;
     register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
     register volatile LONG reg_length __asm("d1") = length;
     register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
-    register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+    register volatile WORD reg_loop_indicator __asm("d3") = loop_indicator;
     register volatile LONG reg_loop_offset __asm("d4") = loop_offset;
     register volatile ULONG reg_result __asm("d0");
 
@@ -855,14 +855,14 @@ MIX_API ULONG MixerPlayChannelSample(void *sample,
 									 ULONG mixer_channel, 
 									 LONG length, 
 									 WORD signed_priority,
-									 UWORD loop_indicator, 
+									 WORD loop_indicator, 
 									 LONG loop_offset)
 {
     register volatile void *reg_sample __asm("a0") = sample;
     register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
     register volatile LONG reg_length __asm("d1") = length;
     register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
-    register volatile UWORD reg_loop_indicator __asm("d3") = loop_indicator;
+    register volatile WORD reg_loop_indicator __asm("d3") = loop_indicator;
     register volatile LONG reg_loop_offset __asm("d4") = reg_loop_offset;
     register volatile ULONG reg_result __asm("d0");
 

@@ -6,8 +6,10 @@
  **************************************************/
 
 /*
-  Version 6.2
-  Written by Frank Wille in 2013, 2016, 2017, 2018, 2019, 2020, 2021, 2022.
+  Version 6.4
+  Written by Frank Wille in 2013, 2016-2024.
+
+  Define __OSCOMPAT, when using the OS-compatible ptplayer variant.
 */
 
 #ifndef EXEC_TYPES_H
@@ -18,25 +20,49 @@
 #include <SDI_compiler.h>
 #endif
 
+#ifdef __OSCOMPAT
 /*
-  mt_install_cia(a6=CUSTOM, a0=VectorBase, d0=PALflag.b)
-    Install a CIA-B interrupt for calling _mt_music or mt_sfxonly.
-    The music module is replayed via _mt_music when _mt_Enable is non-zero.
+  ok = mt_install()
+    Register CIA-B interrupts with AmigaOS for calling mt_music or
+    mt_sfxonly. Allocate all Paula audio channels via audio.device.
+    The music module is replayed via mt_music when _mt_Enable is non-zero.
+    Otherwise the interrupt handler calls mt_sfxonly to play sound
+    effects only.
+    Returns true (1) on success, false (0) otherwise. You must not call
+    _mt_remove(), when _mt_install() failed!
+*/
+
+int ASM mt_install(void);
+
+/*
+  mt_remove()
+    Unregister the CIA-B interrupts handlers and deallocate all
+    audio channels.
+*/
+
+void ASM mt_remove(void);
+
+#else
+/*
+  mt_install(a6=CUSTOM, a0=VectorBase, d0=PALflag.b)
+    Install a CIA-B interrupt for calling mt_music or mt_sfxonly.
+    The music module is replayed via mt_music when _mt_Enable is non-zero.
     Otherwise the interrupt handler calls mt_sfxonly to play sound
     effects only. VectorBase is 0 for 68000, otherwise set it to the CPU's
     VBR register. A non-zero PALflag selects PAL-clock for the CIA timers
     (NTSC otherwise).
 */
 
-void ASM mt_install_cia(REG(a6, void *custom),
+void ASM mt_install(REG(a6, void *custom),
 	REG(a0, void *VectorBase), REG(d0, UBYTE PALflag));
 
 /*
-  mt_remove_cia(a6=CUSTOM)
+  mt_remove(a6=CUSTOM)
     Remove the CIA-B music interrupt and restore the old vector.
 */
 
-void ASM mt_remove_cia(REG(a6, void *custom));
+void ASM mt_remove(REG(a6, void *custom));
+#endif  /* !__OSCOMPAT */
 
 /*
   mt_init(a6=CUSTOM, a0=TrackerModule, a1=Samples|NULL, d0=InitialSongPos.b)
@@ -174,6 +200,8 @@ void ASM mt_samplevol(REG(d0, UWORD SampleNumber), REG(d1, UBYTE Volume));
   mt_channelmask(a6=CUSTOM, d0=ChannelMask.b)
     Bits cleared in the mask define which specific channels are muted
     for music replay. Clear bit 0 for channel 0, ..., bit 3 for channel 3.
+    Additionally a cleared bit prevents any access to the sample pointers
+    of this channel.
     The mask defaults to all channels unmuted (bits set) and is reset to
     this state on mt_init() and mt_end().
 */
@@ -185,16 +213,34 @@ void ASM mt_channelmask(REG(a6, void *custom),
   mt_music(a6=CUSTOM)
     The replayer routine. Can be called from your own VBlank interrupt
     handler when VBLANK_MUSIC is set. Is otherwise called automatically
-    by Timer-A interrupts after mt_install_cia().
+    by Timer-A interrupts after mt_install().
 */
 
 void ASM mt_music(REG(a6, void *custom));
 
 /*
+  mt_dmaon(void)
+    NO_TIMERS=1 only!
+    MUST be called ca. 550 ticks after calling mt_music(). Enables Audio
+    DMA to play a new note.
+*/
+
+void ASM mt_dmaon(void);
+
+/*
+  mt_setrep(void)
+    NO_TIMERS=1 only!
+    MUST be called ca. 550 ticks after calling _mt_dmaon. Sets the
+    repetition pointers and lengths for looped samples.
+*/
+
+void ASM mt_setrep(void);
+
+/*
   mt_Enable
     Set this byte to non-zero to play music, zero to pause playing.
     Note that you can still play sound effects, while music is stopped.
-    It is set to 0 by mt_install_cia().
+    It is set to 0 by mt_install().
 */
 
 extern UBYTE mt_Enable;

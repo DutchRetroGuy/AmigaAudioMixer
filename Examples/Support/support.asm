@@ -305,6 +305,7 @@ PrepSamples
 	
 		; Fetch sample info
 		lea.l	sample_info,a2
+prepsamples_internal
 		move.w	(a2)+,d7
 		subq.w	#1,d7						; Loop counter
 
@@ -319,6 +320,19 @@ PrepSamples
 		
 .done	movem.l	(sp)+,d0/d7/a0-a2				; Stack
 		rts
+		
+		; Routine PrepSamplesE8x
+		; This routine sets up the E8x samples for use in mixing. It uses
+		; either the standard conversion (divide by #of channels) or
+		; conversion based on limiting or compression.
+		; 
+		; D1 - number of channels
+		; A2 - pointer to sample info for E8x samples
+PrepSamplesE8x
+		movem.l	d0/d7/a0-a2,-(sp)				; Stack
+	
+		; Fetch sample info
+		bra		prepsamples_internal
 		
 		; Routine: InitLFSR
 		; This routine sets up the seed values for the LFSR random number
