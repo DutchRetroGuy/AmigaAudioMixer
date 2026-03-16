@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.8o (23.06.25)
+; $VER: mixer.i 3.8 (23.06.25)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -515,7 +515,7 @@
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.8o
+; Version: 3.8
 ; Revision: 20250623
 ;
 ; Assembled using VASM in Amiga-link mode.

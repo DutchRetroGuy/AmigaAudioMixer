@@ -1,7 +1,7 @@
-; $VER: mixer.asm 3.8o (14.09.25)
+; $VER: mixer.asm 3.8 (14.09.25)
 ;
 ; mixer.asm
-; Audio mixing routines (Outrun edition)
+; Audio mixing routines
 ;  
 ; For mixer API, see mixer.i and the rest of the mixer documentation.
 ;
@@ -38,7 +38,7 @@
 ;       between these two.
 ;
 ; Author: Jeroen Knoester
-; Version: 3.8o
+; Version: 3.8
 ; Revision: 20250914
 ;
 ; Assembled using VASM in Amiga-link mode.
