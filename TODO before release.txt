@@ -4,6 +4,8 @@ TODO pre version 3.8
 => Maintenance
 	* combine all separate versions back into one base (main, dev, exp, outrun branch, outrun source),
 	  adding all fixes from each
+	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
+	* Test if merging did not create new bugs
 => Bugfixes
 	* 
 => Improve documentation

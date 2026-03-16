@@ -1,7 +1,7 @@
-; $VER: plugins.asm 1.2o (23.06.25)
+; $VER: plugins.asm 1.2 (23.06.25)
 ;
 ; plugins.asm
-; Audio mixer plugin routines (Outrun edition)
+; Audio mixer plugin routines
 ;
 ; For plugin API, see plugins.i and the rest of the mixer documentation.
 ;
