@@ -58,8 +58,8 @@ LNK=vlink
 CC=vc
 
 # Setup assembler flags
-ASMFLAGS_BASE=-nowarn=62 -kick1hunks -Fhunk -m68000 -allmp
-ASMFLAGS_020=-nowarn=62 -kick1hunks -Fhunk -m68020 -allmp
+ASMFLAGS_BASE=-nowarn=62 -kick1hunks -Fhunk -m68000 -allmp -DBUILD_MIXER_DEBUG
+ASMFLAGS_020=-nowarn=62 -kick1hunks -Fhunk -m68020 -allmp -DBUILD_MIXER_DEBUG
 ASMFLAGS_STARTUP=-no-opt -nowarn=62 -kick1hunks -Fhunk -m68010 -allmp
 
 # Setup linker flags
@@ -224,7 +224,7 @@ MINIMALOBJS=$(MINIMALMIXERDIR)$(SLASH)MinimalMixer.o $(MINIMALMIXERDIR)$(SLASH)M
 EXTERNALOBJS=$(EXTERNALIRQMIXERDIR)$(SLASH)ExternalIRQMixer.o $(EXTERNALIRQMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.o
 CALLBOBJS=$(CALLBACKEXAMPLEDIR)$(SLASH)CallbackExample.o $(CALLBACKEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.o $(CALLBACKEXAMPLEDIR)$(SLASH)Support$(SLASH)strings.o
 PLUGINEXOBJS=$(PLUGINEXAMPLEDIR)$(SLASH)PluginExample.o $(PLUGINEXAMPLEDIR)$(SLASH)Mixer$(SLASH)mixer.o $(PLUGINEXAMPLEDIR)$(SLASH)Plugins$(SLASH)plugins.o $(PLUGINEXAMPLEDIR)$(SLASH)Support$(SLASH)strings.o
-PERFOBJS=$(PERFTESTDIR)$(SLASH)PerformanceTest.o $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.o $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.o $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o
+PERFOBJS=$(PERFTESTDIR)$(SLASH)PerformanceTest.o $(PERFTESTDIR)$(SLASH)Mixer$(SLASH)mixer_wrapper.o $(PERFTESTDIR)$(SLASH)Plugins$(SLASH)plugins_wrapper.o $(PERFTESTDIR)$(SLASH)Support$(SLASH)strings.o
 
 # C objects
 CMIXOBJS=$(CMIXERDIR)$(SLASH)CMixer.o $(CMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.o $(CMIXERDIR)$(SLASH)Plugins$(SLASH)plugins.o

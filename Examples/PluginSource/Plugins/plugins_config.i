@@ -40,7 +40,7 @@ MXPLUGIN_PITCH				EQU	1
 ;       use 68020+ only instructions. Setting the define below to 1 changes
 ;       this so that the plugin code will use 68020+ only instructions as
 ;       well.
-MXPLUGIN_68020_ONLY			EQU	0
+MXPLUGIN_68020_ONLY			EQU	1
 
 ; Set define below to 1 to remove the tables for the volume plugin. This saves
 ; memory and disables table based volume selection in the volume plugin. Shift
@@ -48,6 +48,13 @@ MXPLUGIN_68020_ONLY			EQU	0
 ;
 ; Note: this define has no effect if MXPLUGIN_VOLUME is set to 0.
 MXPLUGIN_NO_VOLUME_TABLES	EQU	0
+
+; Set define below to 1 to remove the MXPLUGIN_PITCH_LEVELS mode. This saves
+; memory and disables level based pitch selection in the pitch plugin. The
+; other modes remain available.
+;
+; Note: this define has no effect if MXPLUGIN_PITCH is set to 0.
+MXPLUGIN_NO_PITCH_LEVELS	EQU 0
 
 	ENDC	; MIXER_PLUGINS_CONFIG_I
 ; End of File
