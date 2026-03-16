@@ -2713,7 +2713,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
-				move.l	a1,-(sp)
+				movem.l	d0/a1,-(sp)
 			ENDIF
 			
 			lea.l	mixer_irqdma_vectors\1(pc),a1
@@ -2746,7 +2746,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
-				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/a1
 			ENDIF
 		ENDIF
 .irq_disabled
@@ -2910,7 +2910,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	d0/d1/a0/a1/a2,-(sp)
 			ELSE
-				move.l	a1,-(sp)
+				movem.l	d0/a1,-(sp)
 			ENDIF
 			
 			lea.l	mixer_irqdma_vectors\1(pc),a1
@@ -2940,7 +2940,7 @@ MixerChannelWrite\1
 			IF MIXER_C_DEFS=1
 				movem.l	(sp)+,d0/d1/a0/a1/a2
 			ELSE
-				move.l	(sp)+,a1
+				movem.l	(sp)+,d0/a1
 			ENDIF
 		ENDIF
 .irq_enabled
@@ -3184,8 +3184,6 @@ MixerPlayFX\1
 			addq.w	#1,d7					; Next channel
 			swap	d7						; Loop counter
 			dbra	d7,.chlp
-			
-			swap	d0						; Swap back HW channel
 		ELSE
 			MixChkChan 0					; Check MIX_CH0
 			IF mixer_sw_channels>=2
@@ -3213,6 +3211,9 @@ MixerPlayFX\1
 
 .found
 		; Found a free channel, add the sample
+		IF MIXER_68020=1
+			swap	d0						; Swap back HW channel
+		ENDIF
 		IF mxsize_x32=1
 			and.w	#$ffe0,d1				; Limit to multiple of 32 bytes
 		ELSE
@@ -3225,8 +3226,8 @@ MixerPlayFX\1
 		ENDIF
 		
 		; Set HW/Mixer channel in D0
-		or.w	d6,d0
-		
+		or.w	d6,d0					
+
 		bsr		MixerChannelWrite\1
 		tst.w	d0							; Set condition codes
 
@@ -3372,6 +3373,10 @@ MixerPlayChannelFX\1
 			move.w	d1,mfx_length+2(a0)
 		ELSE
 			move.l	d1,mfx_length(a0)
+		ENDIF
+		
+		IF MIXER_ENABLE_PLUGINS=1
+			move.w	d6,d0					; Restore HW/Mixer channel
 		ENDIF
 		
 		; Set HW/Mixer channel in D0
