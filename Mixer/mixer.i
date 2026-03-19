@@ -522,9 +522,9 @@
 ; TAB size = 4 spaces
 
 ; Includes (OS includes assume at least NDK 1.3) 
-	include	includes/exec/types.i
-	include includes/hardware/dmabits.i
-	include mixer/mixer_config.i
+	include	exec/types.i
+	include hardware/dmabits.i
+	include mixer_config.i
 	
 	IFND	MIXER_I
 MIXER_I	SET	1

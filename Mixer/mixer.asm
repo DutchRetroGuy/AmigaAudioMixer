@@ -45,8 +45,8 @@
 ; TAB size = 4 spaces
 
 ; Includes (OS includes assume at least NDK 1.3)
-	include includes/hardware/custom.i
-	include includes/hardware/dmabits.i
+	include hardware/custom.i
+	include hardware/dmabits.i
 
 	include mixer/mixer.i
 	IFD BUILD_MIXER_DEBUG
@@ -2765,7 +2765,7 @@ MixerChannelWrite\1
 			and.w	#$7fff,d7						; Mask out SET/CLR bit
 			move.w	d7,intena(a6)					; Disable audio interrupts
 			tst.w	dmaconr(a6)						; Wait for A4000
-			lea.l	mixer,a6
+			lea.l	mixer\1,a6
 			move.w	d7,mx_current_irq_bits(a6)		; Store actually masked bits
 		ELSE
 			IF MIXER_C_DEFS=1
@@ -4146,94 +4146,6 @@ MixerDisableCallback\1
 		
 		; Routine: MixerSetupE8xSamples
 		; This routine sets up the mixer to be able to play back samples when
-		; ptplayer triggers an _mt_E8Trigger.
-		;
-		; Note: this routine defaults to having E8x
-		;
-		; A0 - pointer to MXE8Samples structure
-		; A1 - pointer to _mt_E8Trigger
-		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
-		;      Supports setting exactly one mixer channel.
-		;
-		;      Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
-		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
-		;            channel.
-		;      Note: Only one HW channel can be selected at a time.
-MixerSetupE8xSamples\1
-		IF MIXER_ENABLE_PTPLAYER_E8X=1
-			movem.l	d0/d1/a2,-(sp)				; Stack
-			
-			lea.l	mixer\1(pc),a2
-			
-			IF MIXER_SINGLE=1
-				; Set HW channel to correct channel for single mixing
-				move.w	#mxsingledma,d2
-				and.w	#$f0,d0
-				or.w	d2,d0
-			ENDIF
-
-			; Fill mixer structure members
-			move.l	a0,mx_e8x_samples_ptr(a2)
-			move.l	a1,mx_e8x_trigger_ptr(a2)
-			move.w	d0,mx_e8x_channel(a2)
-			clr.w	mx_e8x_enabled(a2)
-
-			movem.l	(sp)+,d0/d2/a2				; Stack
-		ENDIF
-		rts
-
-		; Routine: MixerUpdateE8xSamples
-		; This routine updates the set of samples to use for E8x sample
-		; playback. It requires a pointer to a filled MXE8xSamples structure
-		; in A0.
-		;
-		; Note: MixerSetupE8xSamples has to be called prior to calling this
-		;       function.
-		;
-		; A0 - pointer to MXE8xSamples structure
-MixerUpdateE8xSamples\1
-		IF MIXER_ENABLE_PTPLAYER_E8X=1
-			movem.l	a1,-(sp)					; Stack
-			
-			lea.l	mixer\1(pc),a1
-			
-			; Fill mixer structure member
-			move.l	a0,mx_e8x_samples_ptr(a1)
-
-			movem.l	(sp)+,a1					; Stack
-		ENDIF
-		rts
-	
-		; Routine: MixerEnableE8xSamples
-		; This routine enables playback of samples when ptplayer triggers an 
-		; _mt_E8Trigger.
-MixerEnableE8xSamples\1
-		IF MIXER_ENABLE_PTPLAYER_E8X=1
-			move.l	a0,-(sp)					; Stack
-			
-			lea.l	mixer\1(pc),a0
-			st		mx_e8x_enabled(a0)
-			
-			move.l	(sp)+,a0					; Stack
-		ENDIF
-		rts
-
-		; Routine: MixerDisablesE8xSamples
-		; This routine disables playback of samples when ptplayer triggers an
-		; _mt_E8Trigger.
-MixerDisableE8xSamples\1
-		IF MIXER_ENABLE_PTPLAYER_E8X=1
-			move.l	a0,-(sp)					; Stack
-			
-			lea.l	mixer\1(pc),a0
-			clr.w	mx_e8x_enabled(a0)
-			
-			move.l	(sp)+,a0					; Stack
-		ENDIF
-		rts
-
-		; Routine: MixerSetupE8xSamples
-		; This routine sets up the mixer to be able to play back samples when
 		; ptplayer triggers an _mt_E8Trigger update. This occurs each time
 		; when ptplayer reads a channel command in the of range E81 to E8F.
 		; See ptplayer.readme for more information. 
@@ -4276,7 +4188,6 @@ MixerSetupE8xSamples\1
 			move.l	a1,mx_e8x_trigger_ptr(a2)
 			move.w	d0,mx_e8x_channel(a2)
 			clr.w	mx_e8x_enabled(a2)
-			clr.w	mx_e8x_last_trigger(a2)
 
 			movem.l	(sp)+,d0/d2/a2				; Stack
 		ENDIF
