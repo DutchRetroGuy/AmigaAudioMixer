@@ -1,4 +1,4 @@
-# Audio Mixer 3.7 readme
+# Audio Mixer 3.8 readme
 
 The Audio Mixer is a configurable SFX engine designed to play back multiple 
 samples at the same time on a single hardware channel. It achieves a high 
@@ -45,7 +45,7 @@ The included plugins are:
 The Audio Mixer is provided as full assembly source code with examples,
 [documentation](Documentation/Documentation.md) and extra code to help integrate the mixer in C programs.
 
-For more information about the Audio Mixer 3.7, see the included 
+For more information about the Audio Mixer 3.8, see the included 
 [documentation](Documentation/Documentation.md).
 
 For more information about mixing audio on the Amiga, see the my website:

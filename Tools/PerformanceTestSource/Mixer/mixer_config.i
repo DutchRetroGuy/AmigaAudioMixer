@@ -12,7 +12,7 @@
 ;
 
 
-; $VER: mixer_config.i 3.7 (30.01.25)
+; $VER: mixer_config.i 3.8 (30.03.26)
 ;
 ; mixer_config.i
 ; Configuration file for the audio mixer.
@@ -26,8 +26,8 @@
 ;       signed limits or overflow from positive to negative (or vice versa).
 ; 
 ; Author: Jeroen Knoester
-; Version: 3.7
-; Revision: 20250130
+; Version: 3.8
+; Revision: 20260320
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces

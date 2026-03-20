@@ -1,7 +1,9 @@
 # Release notes for the Audio Mixer
 ## v3.8
+- (NEW) 
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
+- (BUGFIX) Corrected wrong address register used in one of the support functions
 
 ## v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set

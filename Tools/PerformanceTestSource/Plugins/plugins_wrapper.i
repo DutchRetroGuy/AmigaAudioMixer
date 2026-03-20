@@ -1,11 +1,11 @@
-; $VER: plugins_wrapper.i 3.7 (04.02.24)
+; $VER: plugins_wrapper.i 3.8 (04.02.24)
 ;
 ; plugins_wrapper.i
 ; Include file for plugins_wrapper.asm
 ;
 ;
 ; Author: Jeroen Knoester
-; Version: 3.7
+; Version: 3.8
 ; Revision: 20250130
 ;
 ; Assembled using VASM in Amiga-link mode.

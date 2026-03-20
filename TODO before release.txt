@@ -8,6 +8,12 @@ TODO pre version 3.8
 	* Test if merging did not create new bugs
 => Bugfixes
 	* 
+
+=> Update documentation
+	* E8X sample playback
+	* PluginSetVolume/SetPitch
+	* Replace Sample
+
 => Improve documentation
 	* MixerPlayFX() can't be called from higher priority interrupts
 	* MixerSetReturnVector() is not explained very well

@@ -1,11 +1,11 @@
-; $VER: mixer_wrapper.asm 3.7 (30.01.25)
+; $VER: mixer_wrapper.asm 3.8 (30.01.25)
 ;
 ; mixer_wrapper.asm
 ; Wrapper around mixer.asm for PerformanceTest program.
 ;  
 ;
 ; Author: Jeroen Knoester
-; Version: 3.7
+; Version: 3.8
 ; Revision: 20250130
 ;
 ; Assembled using VASM in Amiga-link mode.
