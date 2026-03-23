@@ -2,21 +2,15 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
-	* combine all separate versions back into one base (main, dev, exp, outrun branch, outrun source),
-	  adding all fixes from each
 	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
-	* Test if merging did not create new bugs
-=> Bugfixes
-	* 
+	* Test if merging did not create new bugs (plugins to be tested)
+	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
 
 => Update documentation
 	* E8X sample playback
 	* PluginSetVolume/SetPitch
 	* Replace Sample
 
-=> Improve documentation
-	* MixerPlayFX() can't be called from higher priority interrupts
-	* MixerSetReturnVector() is not explained very well
 => Features
 	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
 	This should just involve dividing mixer_PAL_buffer_size & mixer_NTSC_buffer_size by the interrupt count pre-rounding.

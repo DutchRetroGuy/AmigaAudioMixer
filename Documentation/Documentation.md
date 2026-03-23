@@ -64,11 +64,18 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 
 Release notes for the Audio Mixer
 #### v3.8
-- (NEW)
+- (NEW) Added E8x sample playback support for use with PT Player 6.5+. This adds MixerSetupE8xSamples, MixerUpdateE8xSamples, MixerEnableE8xSamples and MixerDisableE8xSamples
+- (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
+- (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
+- (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
-- (BUGFIX) Corrected wrong address register used in one of the support functions
-
+- (BUGFIX) Corrected stack behaviour when using plugins
+- (BUGFIX) Corrected mfx_length value in MXEffect structure being overwritten when using plugins
+- (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling
+- (BUGFIX) C header files now use correct types in function definitions and structure definitions
+- (MAINTENANCE) Updated included PT Player to version 6.5
+- (MAINTENANCE) Clarified and corrected (parts of the) documentation
 
 #### v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
@@ -431,6 +438,7 @@ The configuration consists of six sections. In the first section, the mixer type
       - MIXER_ENABLE_CALLBACK
       - MIXER_ENABLE_PLUGINS
 	  - MIXER_ENABLE_RETURN_VECTOR
+	  - MIXER_ENABLE_PTPLAYER_E8X
       - MIXER_SECTION
 	  - MIXER_EXTERNAL_IRQ_DMA
 	  - MIXER_EXTERNAL_BITWISE
@@ -467,6 +475,16 @@ The configuration consists of six sections. In the first section, the mixer type
       ```
       MIXER_ENABLE_RETURN_VECTOR    EQU 1
       ```
+	  
+	  The option *MIXER_ENABLE_PTPLAYER_E8X* can be used to enable support for playing back samples through E8x commands in Protracker. This feature requires PT Player 6.5 or above and is intended to allow the mixer to aid in playing back music.
+	  
+	  Enabling E8x playback support has a small CPU overhead cost. In addition, every time a sample plays through E8x support, there is some additional overhead.
+	  
+	  To enable E8x sample playback support, set the equate to 1:
+	  
+	  ```
+	  MIXER_ENABLE_PTPLAYER_E8X		EQU 1
+	  ```
 
       The option *MIXER_SECTION* can be used to disable adding the mixer to section code,code. By default this option is set to 1 and the mixer is added to section code,code. If set to 0, the mixer is not added to any section.
 
@@ -1166,6 +1184,7 @@ The routine has two parameters:
 
 - D0 - Hardware channel to use (DMAF_AUD0..DMAF_AUD3)
 
+  Note: do not call MixerPlayFX() from interrupts of priority 4 or higher, this can cause crashes and undefined behaviour.
   Note: if *MIXER_SINGLE* is set to 1 in mixer_config.i, the hardware channel given is ignored.  
   Note: if *MIXER_MULTI* or *MIXER_MULTI_PAIRED* are set to 1 in mixer_confi.i and the given channel is not part of the channels set in *mixer_output_channels* the sample will not play.  
   Note: if *MIXER_MULTI_PAIRED* is set to 1 in mixer_config.i, DMAF_AUD2 and DMAF_AUD3 are paired. Add samples intended for the paired channel to DMAF_AUD2 only, samples added to DMAF_AUD3 will be ignored.
@@ -1184,6 +1203,7 @@ The routine has two parameters:
 - D0 - Hardware/mixer channel to use (DMAF_AUD0..DMAF_AUD3 \| MIX_CH0..MIX_CH3).
 
   Note: The routine requires setting exactly one hardware & mixer channel in D0.  
+  Note: do not call MixerPlayChannelX() from interrupts of priority 4 or higher, this can cause crashes and undefined behaviour.
   Note: if *MIXER_SINGLE* is set to 1 in mixer_config.i, the hardware channel given is ignored.  
   Note: if *MIXER_MULTI* or *MIXER_MULTI_PAIRED* are set to 1 in mixer_confi.i and the given channel is not part of the channels set in *mixer_output_channels* the sample will not play.  
   Note: if *MIXER_MULTI_PAIRED* is set to 1 in mixer_config.i, DMAF_AUD2 and DMAF_AUD3 are paired. Add samples intended for the paired channel to DMAF_AUD2 only, samples added to DMAF_AUD3 will be ignored.
@@ -1197,6 +1217,7 @@ This routine stops sample playback on the given hardware/mixer channel mask. Mul
 
 - D0 - Hardware/mixer channel mask DMAF_AUD0..DMAF_AUD3 \| MIX_CH0..MIX_CH3).
 
+  Note: do not call MixerStopFX() from interrupts of priority 4 or higher, this can cause crashes and undefined behaviour.
   Note: if *MIXER_SINGLE* is set to 1 in mixer_config.i, the hardware channel given is ignored.
 
 *D0=MixerGetBufferSize()*  
@@ -1220,9 +1241,10 @@ This routine returns the total number of internal channels the mixer supports fo
 This routine returns the value of the internal mixer buffer size. This is the size of the buffer the mixer uses per HW audio channel assigned to it. Its primary purpose is to give plugins a way to get this value without needing access to the internal mixer structure.
 
 *MixerSetReturnVector(A0=return_function_ptr)*  
-This routine sets the optional vector the mixer can call at to at the end of interrupt execution.
+This routine sets the optional vector the mixer can call at to at the end of interrupt execution. If *MIXER_ENABLE_RETURN_VECTOR* is set to 1 and this routine is called with a non-NULL value, the mixer interrupt handler will call the given function at every interrupt end. The function called can do pretty much everything, including calling MixerPlayFX() and similar functions safely.
 
 Note: this vector should point to a standard routine ending in RTS.
+Note: as with all code run in an interrupt, keeping the time the return vector routine runs low is considered best practice.
 
 *MixerSetIRQDMACallbacks(A0=callback_structure)*  
 This routine sets up the vectors used for callback routines to 
@@ -1265,7 +1287,8 @@ The routine has five parameters:
 
 - D4 - Either 0, or the desired offset into the sample to restart looping at if D3 is set to *MIX_FX_LOOP_OFFSET*.
 
-  Note: this routine is deprecated, use *MixerPlayFX()* instead  
+  Note: this routine is deprecated, use *MixerPlayFX()* instead
+  Note: do not call MixerPlaySample() from interrupts of priority 4 or higher, this can cause crashes and undefined behaviour.  
   Note: if *MIXER_SINGLE* is set to 1 in mixer_config.i, the hardware channel given is ignored.  
   Note: if *MIXER_MULTI* or *MIXER_MULTI_PAIRED* are set to 1 in mixer_confi.i and the given channel is not part of the channels set in *mixer_output_channels* the sample will not play.  
   Note: if *MIXER_MULTI_PAIRED* is set to 1 in mixer_config.i, DMAF_AUD2 and DMAF_AUD3 are paired. Add samples intended for the paired channel to DMAF_AUD2 only, samples added to DMAF_AUD3 will be ignored.
@@ -1290,8 +1313,9 @@ This routine adds a sample to the given hardware/mixer channel combination, usin
 
 - D4 - Either 0, or the desired offset into the sample to restart looping at if D3 is set to *MIX_FX_LOOP_OFFSET*.
 
-  Note: this routine is deprecated, use *MixerPlayFX()* instead  
+  Note: this routine is deprecated, use *MixerPlayChannelFX()* instead  
   Note: The routine requires setting exactly one hardware & mixer channel in D0.  
+  Note: do not call MixerPlayChannelSample() from interrupts of priority 4 or higher, this can cause crashes and undefined behaviour.  
   Note: if *MIXER_SINGLE* is set to 1 in mixer_config.i, the hardware channel given is ignored.  
   Note: if *MIXER_MULTI* or *MIXER_MULTI_PAIRED* are set to 1 in mixer_confi.i and the given channel is not part of the channels set in *mixer_output_channels* the sample will not play. Note: if *MIXER_MULTI_PAIRED* is set to 1 in mixer_config.i, DMAF_AUD2 and DMAF_AUD3 are paired. Add samples intended for the paired channel to DMAF_AUD2 only, samples added to DMAF_AUD3 will be ignored.
 

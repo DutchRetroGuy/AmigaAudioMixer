@@ -1,9 +1,17 @@
 # Release notes for the Audio Mixer
 ## v3.8
-- (NEW) 
+- (NEW) Added E8x sample playback support for use with PT Player 6.5+. This adds MixerSetupE8xSamples, MixerUpdateE8xSamples, MixerEnableE8xSamples and MixerDisableE8xSamples
+- (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
+- (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
+- (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
-- (BUGFIX) Corrected wrong address register used in one of the support functions
+- (BUGFIX) Corrected stack behaviour when using plugins
+- (BUGFIX) Corrected mfx_length value in MXEffect structure being overwritten when using plugins
+- (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling
+- (BUGFIX) C header files now use correct types in function definitions and structure definitions
+- (MAINTENANCE) Updated included PT Player to version 6.5
+- (MAINTENANCE) Clarified and corrected (parts of the) documentation
 
 ## v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
