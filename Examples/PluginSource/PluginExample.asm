@@ -496,7 +496,7 @@ HandleInput
 .pl_down
 		; Change plugin value down
 		move.w	pl_position,d0
-		cmp.w	#24,d0
+		cmp.w	#28,d0
 		beq		.done
 		
 		addq.w	#4,d0
@@ -837,6 +837,7 @@ SetupPluginStructs
 		jmp		.fill_plugin_example_data(pc)
 		jmp		.fill_plugin_pitch_data(pc)
 		jmp		.fill_plugin_pitch_lq_data(pc)
+		jmp		.fill_plugin_pitch_level_data(pc)
 		jmp		.fill_plugin_volume_data(pc)
 		jmp		.fill_plugin_sync_data(pc)
 		jmp		.fill_plugin_repeat_data(pc)
@@ -864,23 +865,25 @@ SetupPluginStructs
 		
 .fill_plugin_pitch_data
 		move.w	#MXPLG_PITCH_STANDARD,mpid_pit_mode(a4)
-		;move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a4)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
-		move.w	#$100,mpid_pit_ratio_fp8(a4)
-		;move.w	#$100,mpid_pit_ratio_fp8(a4)
+		move.w	#$180,mpid_pit_ratio_fp8(a4)
 		bra		.write_plugin_struct
 		
 .fill_plugin_pitch_lq_data
-		;move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a4)
+		move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a4)
+		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
+		move.w	#$180,mpid_pit_ratio_fp8(a4)
+		bra		.write_plugin_struct
+		
+.fill_plugin_pitch_level_data
 		move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a4)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a4)
-		;move.w	#$180,mpid_pit_ratio_fp8(a4)
-		move.w	#15,mpid_pit_ratio_fp8(a4)
+		move.w	#24,mpid_pit_ratio_fp8(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_volume_data
 		move.w	#MXPLG_VOL_SHIFT,mpid_vol_mode(a4)
-		move.w	#8,mpid_vol_volume(a4)
+		move.w	#2,mpid_vol_volume(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_repeat_data
@@ -893,7 +896,7 @@ SetupPluginStructs
 		clr.w	(a0)
 		move.l	a0,mpid_snc_address(a4)
 		move.w	#10,mpid_snc_delay(a4)
-		move.w	#MXPLG_SYNC_LOOP,mpid_snc_mode(a4)
+		move.w	#MXPLG_SYNC_START_AND_LOOP,mpid_snc_mode(a4)
 		move.w	#MXPLG_SYNC_ONE,mpid_snc_type(a4)
 		move.l	(sp)+,a0					; Stack
 		bra		.write_plugin_struct
@@ -1005,13 +1008,13 @@ plugin_sample			dc.b	0,4,8,12,15,19,22,25
 						dc.b	-27,-25,-22,-19,-15,-12,-8,-4
 						
 plugin_init_ptrs		dc.l	0,PluginExampleInit
-						dc.l	MixPluginInitPitch,MixPluginInitPitch
+						dc.l	MixPluginInitPitch,MixPluginInitPitch,MixPluginInitPitch
 						dc.l	MixPluginInitVolume,MixPluginInitSync
 						dc.l	MixPluginInitRepeat
 plugin_ptrs				dc.l	0,PluginExample
-						dc.l	MixPluginPitch,MixPluginPitch,MixPluginVolume
+						dc.l	MixPluginPitch,MixPluginPitch,MixPluginPitch,MixPluginVolume
 						dc.l	MixPluginSync,MixPluginRepeat
-plugin_types			dc.l	0,MIX_PLUGIN_STD,MIX_PLUGIN_STD,MIX_PLUGIN_STD
+plugin_types			dc.l	0,MIX_PLUGIN_STD,MIX_PLUGIN_STD,MIX_PLUGIN_STD,MIX_PLUGIN_STD
 						dc.l	MIX_PLUGIN_STD,MIX_PLUGIN_NODATA
 						dc.l	MIX_PLUGIN_NODATA
 

@@ -3,8 +3,10 @@ TODO pre version 3.8
 
 => Maintenance
 	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
-	* Test if merging did not create new bugs (plugins to be tested)
+	* Test if merging did not create new bugs (performance test to be tested)
 	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
+	* Add PitchLevels to performance test
+	* Update comments/documentation for MixPluginInitPitch to include MXPLG_PITCH_LEVELS
 
 => Update documentation
 	* E8X sample playback

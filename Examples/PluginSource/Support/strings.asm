@@ -268,48 +268,54 @@ acttxt4		dc.w	1					; Count
 pltxt1		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"  off   "
+.line1		dc.b	"   off   "
 			cnop 0,2	; Realign
 .line1_end
 pltxt2		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"example "
+.line1		dc.b	" example "
 			cnop 0,2	; Realign
 .line1_end
 pltxt3		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	" pitch  "
+.line1		dc.b	"  pitch  "
 			cnop 0,2	; Realign
 .line1_end
 pltxt4		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"pitch LQ"
+.line1		dc.b	"pitch LQ "
 			cnop 0,2	; Realign
 .line1_end
 pltxt5		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	" volume "
+.line1		dc.b	"pitch LVL"
 			cnop 0,2	; Realign
 .line1_end
 pltxt6		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	"  sync  "
+.line1		dc.b	" volume  "
 			cnop 0,2	; Realign
 .line1_end
 pltxt7		dc.w	1					; Count
 			dc.w	6,26,0				; Colour, X, Y
 			dc.w	.line1_end-.line1	; Length of text line
-.line1		dc.b	" repeat "
+.line1		dc.b	"  sync   "
+			cnop 0,2	; Realign
+.line1_end
+pltxt8		dc.w	1					; Count
+			dc.w	6,26,0				; Colour, X, Y
+			dc.w	.line1_end-.line1	; Length of text line
+.line1		dc.b	" repeat  "
 			cnop 0,2	; Realign
 .line1_end
 
 chantxt_ptrs	dc.l	chantxt0,chantxt1,chantxt2,chantxt3,chantxt4
 acttxt_ptrs		dc.l	acttxt1,acttxt2,acttxt3,acttxt4
-pltxt_ptrs		dc.l	pltxt1,pltxt2,pltxt3,pltxt4,pltxt5,pltxt6,pltxt7
+pltxt_ptrs		dc.l	pltxt1,pltxt2,pltxt3,pltxt4,pltxt5,pltxt6,pltxt7,pltxt8
 
 ; End of File
