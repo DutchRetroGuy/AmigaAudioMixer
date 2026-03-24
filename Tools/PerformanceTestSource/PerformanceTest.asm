@@ -246,12 +246,18 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 .printh2
 		bsr		PrintFG
 		
+		;DBGBreakPnt $8
+		
 		; Select which page to print
 		lea.l	resscrtxt,a3
-		btst	#1,d0
-		beq.s	.print_page
+		cmp.w	#2,d0
+		blt.s	.print_page
 
 		lea.l	resscrtxt_2,a3
+		cmp.w	#4,d0
+		blt.s	.print_page
+		
+		lea.l	resscrtxt_3,a3
 
 .print_page
 		jsr		PrintFG	
@@ -301,7 +307,7 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 		addq.w	#1,d0
 		move.w	d0,current_page
 		
-		cmp.w	#4,d0
+		cmp.w	#6,d0
 		blt		.show_results
 		
 		moveq	#0,d0
@@ -556,12 +562,12 @@ RunSingleTest
 		; Get MixerGetCounter
 		move.l	mxgetcounter(a1),a3			; MixerGetCounter
 
-		; Loop for 132 frames (to make sure at least 128 have been filled 
+		; Loop for 160 frames (to make sure at least 128 have been filled 
 		; while samples are mixed)
-		move.w	#132,d7
+		move.w	#160,d7
 		mulu	#mixer_output_count,d7
 
-.timing_loop
+;.timing_loop
 		; Add 4 samples to channel 0
 		; A0=sample,D0=hardware_channel.w,D1=signed_length.l,
 		; D2=signed_priority.w,D3=loop_indicator.w,D4=loop_offset.l
@@ -576,6 +582,7 @@ RunSingleTest
 		move.w	#DMAF_AUD0|MIX_CH3,d0
 		jsr		(a2)						; MixerPlayChannelSample
 
+.timing_loop
 		; Check if counter value is equal to D7
 		jsr		(a3)
 		cmp.w	d0,d7
@@ -587,6 +594,10 @@ RunSingleTest
 		bra.s	.timing_loop
 		
 .timing_done
+
+		; Calculate result
+		move.l	mxcalcticks(a1),a2
+		jsr		(a2)						; MixerCalcTicks
 
 		; Disable audio mixer
 		move.l	mxstop(a1),a2				; MixerStop
@@ -604,9 +615,7 @@ RunSingleTest
 		move.w	#DMAF_AUD0|MIX_CH0|MIX_CH1|MIX_CH2|MIX_CH3,d0
 		jsr		(a2)
 
-		; Calculate result
-		move.l	mxcalcticks(a1),a2
-		jsr		(a2)						; MixerCalcTicks
+
 
 		movem.l	(sp)+,d4/d5/d6
 		rts
@@ -1089,7 +1098,15 @@ WriteResults
 		moveq	#48-1,d7
 
 		; Loop over all results
-.lp		
+.lp
+		; Switch to page 3 after reaching 48th position
+		cmp.w	#1,d7
+		bne.s	.tst_24
+		
+		lea.l	resscrtxt_3,a2
+		lea.l	res_offset(a2),a2			; Pointer to 3rd page
+		
+.tst_24
 		; Switch to page 2 after reaching 24th position
 		cmp.w	#23,d7
 		bne.s	.cnt_lp

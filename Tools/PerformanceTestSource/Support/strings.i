@@ -26,6 +26,7 @@ EXREF	MACRO
 	EXREF	titletxt
 	EXREF	resscrtxt
 	EXREF	resscrtxt_2
+	EXREF	resscrtxt_3
 	EXREF	palhtxt
 	EXREF	ntschtxt
 	EXREF	singhtxt
