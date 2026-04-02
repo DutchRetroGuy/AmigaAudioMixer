@@ -43,4 +43,6 @@ EXREF	MACRO
 	
 	EXREF	cntxt1
 	EXREF	cntxt_ptrs
+	
+	EXREF	restxt_ptrs
 ; End of File

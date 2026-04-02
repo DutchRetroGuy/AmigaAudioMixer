@@ -246,20 +246,27 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 .printh2
 		bsr		PrintFG
 		
-		;DBGBreakPnt $8
+		DBGBreakPnt $8
 		
 		; Select which page to print
-		lea.l	resscrtxt,a3
-		cmp.w	#2,d0
-		blt.s	.print_page
-
-		lea.l	resscrtxt_2,a3
-		cmp.w	#4,d0
-		blt.s	.print_page
+		move.w	d0,-(sp)
+		lea.l	restxt_ptrs,a3
+		add.w	d0,d0
+		and.w	#$fffe,d0
+		move.l	0(a3,d0.w),a3
+		move.w	(sp)+,d0
 		
-		lea.l	resscrtxt_3,a3
+;		lea.l	resscrtxt,a3
+;		cmp.w	#2,d0
+;		blt.s	.print_page
 
-.print_page
+;		lea.l	resscrtxt_2,a3
+;		cmp.w	#4,d0
+;		blt.s	.print_page
+		
+;		lea.l	resscrtxt_3,a3
+
+;.print_page
 		jsr		PrintFG	
 		
 		IF MIXER_SINGLE=1

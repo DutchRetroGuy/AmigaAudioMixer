@@ -1686,5 +1686,9 @@ cntxt_ptrs	dc.l	cntxt1,cntxt2,cntxt3,cntxt4
 			dc.l	cntxt41,cntxt42,cntxt43,cntxt44
 			dc.l	cntxt45,cntxt46,cntxt47,cntxt48
 			dc.l	cntxt49
+			
+		; Page pointers
+restxt_ptrs	dc.l	resscrtxt,resscrtxt_2,resscrtxt_3
+	
 
 ; End of File
