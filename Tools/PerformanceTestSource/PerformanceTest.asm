@@ -251,8 +251,9 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 		; Select which page to print
 		move.w	d0,-(sp)
 		lea.l	restxt_ptrs,a3
-		add.w	d0,d0
 		and.w	#$fffe,d0
+		add.w	d0,d0
+		add.w	d0,d0
 		move.l	0(a3,d0.w),a3
 		move.w	(sp)+,d0
 		
