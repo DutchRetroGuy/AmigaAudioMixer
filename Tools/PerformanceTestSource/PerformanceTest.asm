@@ -208,7 +208,7 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 		dbra	d7,.perf_loop
 		
 		; Set up for loop
-		moveq	#9-1,d7
+		moveq	#10-1,d7
 		
 		; Loop over all plugin tests
 .perf_loop_plg
@@ -246,28 +246,16 @@ DMAVal	SET		DMAF_SETCLR|DMAF_MASTER|DMAF_COPPER|DMAF_RASTER|DMAF_BLITTER
 .printh2
 		bsr		PrintFG
 		
-		DBGBreakPnt $8
-		
 		; Select which page to print
 		move.w	d0,-(sp)
 		lea.l	restxt_ptrs,a3
-		and.w	#$fffe,d0
+		asr.w	#1,d0
 		add.w	d0,d0
 		add.w	d0,d0
 		move.l	0(a3,d0.w),a3
 		move.w	(sp)+,d0
-		
-;		lea.l	resscrtxt,a3
-;		cmp.w	#2,d0
-;		blt.s	.print_page
 
-;		lea.l	resscrtxt_2,a3
-;		cmp.w	#4,d0
-;		blt.s	.print_page
-		
-;		lea.l	resscrtxt_3,a3
-
-;.print_page
+		; Print the page
 		jsr		PrintFG	
 		
 		IF MIXER_SINGLE=1
@@ -485,6 +473,9 @@ RunPerformanceTestPlg
 		cmp.w	#19,d0
 		blt.s	.calc_offset
 
+		cmp.w	#22,d0
+		beq.s	.calc_offset
+
 		moveq	#4,d0
 		lea.l	4(a1),a1					; 68020 mixer routines
 		lea.l	4(a3),a3
@@ -655,6 +646,7 @@ RunSingleTestPlg
 		jmp		.setup_pitch_020(pc)
 		jmp		.setup_voltab_020(pc)
 		jmp		.setup_volshift_020(pc)
+		jmp		.setup_pitchlvl(pc)
 		
 .setup_sync
 		lea.l	plsync(a4),a4
@@ -737,10 +729,8 @@ RunSingleTestPlg
 		
 .setup_pitchlq_lp
 		move.w	#MXPLG_PITCH_LOWQUALITY,mpid_pit_mode(a3)
-		;move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a3)
 		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a3)
 		move.w	#$0c0,mpid_pit_ratio_fp8(a3)
-		;move.w	#$16,mpid_pit_ratio_fp8(a3)
 		
 		lea.l	mxplg_max_idata_size(a3),a3
 		dbra	d7,.setup_pitchlq_lp
@@ -787,6 +777,21 @@ RunSingleTestPlg
 
 		lea.l	mxplg_max_idata_size(a3),a3
 		dbra	d7,.setup_volshift_020_lp
+		bra		.set_vars
+		
+.setup_pitchlvl
+		lea.l	plpitch(a4),a4
+		lea.l	plpitch(a5),a5
+		moveq	#MIX_PLUGIN_STD,d4
+		moveq	#16-1,d7
+		
+.setup_pitchlvl_lp
+		move.w	#MXPLG_PITCH_LEVELS,mpid_pit_mode(a3)
+		move.w	#MXPLG_PITCH_NO_PRECALC,mpid_pit_precalc(a3)
+		move.w	#$16,mpid_pit_ratio_fp8(a3)
+		
+		lea.l	mxplg_max_idata_size(a3),a3
+		dbra	d7,.setup_pitchlvl_lp
 
 .set_vars
 		; Set variables for use with the mixer
@@ -1103,12 +1108,12 @@ WriteResults
 
 .loop_setup
 		; Set up for loop
-		moveq	#48-1,d7
+		moveq	#49-1,d7
 
 		; Loop over all results
 .lp
 		; Switch to page 3 after reaching 48th position
-		cmp.w	#1,d7
+		cmp.w	#0,d7
 		bne.s	.tst_24
 		
 		lea.l	resscrtxt_3,a2
@@ -1116,7 +1121,7 @@ WriteResults
 		
 .tst_24
 		; Switch to page 2 after reaching 24th position
-		cmp.w	#23,d7
+		cmp.w	#24,d7
 		bne.s	.cnt_lp
 
 		lea.l	resscrtxt_2,a2
@@ -1260,7 +1265,7 @@ PerfTest_Plg_Vol_Tab			dc.w 0,0,0,0
 PerfTest_Plg_Vol_Shft			dc.w 0,0,0,0
 PerfTest_Plg_Vol_Tab_020		dc.w 0,0,0,0
 PerfTest_Plg_Vol_Shft_020		dc.w 0,0,0,0
-
+PerfTest_Plg_PitchLvl			dc.w 0,0,0,0
 
 		cnop 0,4
 effect_struct			blk.b	mfx_SIZEOF
