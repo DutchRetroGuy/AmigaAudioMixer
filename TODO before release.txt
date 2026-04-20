@@ -12,8 +12,11 @@ TODO pre version 3.8
 	* E8X sample playback
 	* PluginSetVolume/SetPitch
 	* Replace Sample
+	* New features
 
 => Features
+	* Add a flag/routine to detect mixer interrupt is in progress
+	* Add a flag/routine to detect mixer is currently running
 	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
 	This should just involve dividing mixer_PAL_buffer_size & mixer_NTSC_buffer_size by the interrupt count pre-rounding.
 
