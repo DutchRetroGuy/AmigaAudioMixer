@@ -2,18 +2,19 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
+	* Check if removing E8x stuff did not add bugs
 	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
-	* Test if merging did not create new bugs (performance test to be tested)
 	* Update comments/documentation for MixPluginInitPitch to include MXPLG_PITCH_LEVELS
 	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
 	* Make PerformanceTest page selection in WriteResults generic
 
 => Update documentation
-	* E8X sample playback
 	* PluginSetVolume/SetPitch
 	* Replace Sample
 
 => Features
+    * Add a flag/routine to detect mixer interrupt is in progress
+    * Add a flag/routine to detect mixer is currently running
 	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
 	This should just involve dividing mixer_PAL_buffer_size & mixer_NTSC_buffer_size by the interrupt count pre-rounding.
 

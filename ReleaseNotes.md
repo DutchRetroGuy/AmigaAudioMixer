@@ -1,6 +1,5 @@
 # Release notes for the Audio Mixer
 ## v3.8
-- (NEW) Added E8x sample playback support for use with PT Player 6.5+. This adds MixerSetupE8xSamples, MixerUpdateE8xSamples, MixerEnableE8xSamples and MixerDisableE8xSamples
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
 - (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases

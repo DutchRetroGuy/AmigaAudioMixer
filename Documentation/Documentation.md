@@ -64,7 +64,6 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 
 Release notes for the Audio Mixer
 #### v3.8
-- (NEW) Added E8x sample playback support for use with PT Player 6.5+. This adds MixerSetupE8xSamples, MixerUpdateE8xSamples, MixerEnableE8xSamples and MixerDisableE8xSamples
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
 - (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
@@ -438,7 +437,6 @@ The configuration consists of six sections. In the first section, the mixer type
       - MIXER_ENABLE_CALLBACK
       - MIXER_ENABLE_PLUGINS
 	  - MIXER_ENABLE_RETURN_VECTOR
-	  - MIXER_ENABLE_PTPLAYER_E8X
       - MIXER_SECTION
 	  - MIXER_EXTERNAL_IRQ_DMA
 	  - MIXER_EXTERNAL_BITWISE
@@ -475,16 +473,6 @@ The configuration consists of six sections. In the first section, the mixer type
       ```
       MIXER_ENABLE_RETURN_VECTOR    EQU 1
       ```
-	  
-	  The option *MIXER_ENABLE_PTPLAYER_E8X* can be used to enable support for playing back samples through E8x commands in Protracker. This feature requires PT Player 6.5 or above and is intended to allow the mixer to aid in playing back music.
-	  
-	  Enabling E8x playback support has a small CPU overhead cost. In addition, every time a sample plays through E8x support, there is some additional overhead.
-	  
-	  To enable E8x sample playback support, set the equate to 1:
-	  
-	  ```
-	  MIXER_ENABLE_PTPLAYER_E8X		EQU 1
-	  ```
 
       The option *MIXER_SECTION* can be used to disable adding the mixer to section code,code. By default this option is set to 1 and the mixer is added to section code,code. If set to 0, the mixer is not added to any section.
 
