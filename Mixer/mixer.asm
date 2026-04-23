@@ -66,9 +66,6 @@ MIXER_CHAN_INACTIVE	EQU	0
 MIXER_CHAN_ACTIVE	EQU	1
 MIXER_CHAN_LOOP		EQU	-1
 
-MIXER_STOPPED		EQU 0
-MIXER_RUNNING		EQU 1
-
 MIXER_AUD_COLOUR	EQU	$707
 MIXER_IH_COLOUR		EQU	$b0b
 MIXER_CHUPD_COLOUR	EQU	$909
@@ -271,6 +268,10 @@ MixSingIHstart	MACRO
 		lea.l	mxcustombase,a6
 		lea.l	mixer\1+mx_mixer_entries(pc),a1
 		
+		; Update mixer status
+		move.w	-mx_mixer_entries+mx_status(a1),-mx_mixer_entries+mx_prior_status(a1)
+		move.w	#MIXER_IRQ_RUNNING,mx_status(a1)
+		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			; Acknowledge interrupt
 			move.w	mixer\1+mx_irq_bits(pc),intreq(a6)
@@ -315,6 +316,11 @@ MixSingIHend	MACRO
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_IH_COLOUR,$dff180
 		ENDIF
+		
+		; Update mixer status
+		lea.l	mixer\1(pc),a0
+		move.w	mx_prior_status(a0),mx_status(a0)
+
 		movem.l	(sp)+,d0-d7/a0-a6		; Stack
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
@@ -374,6 +380,10 @@ MixMultIHstart	MACRO
 		; Fetch custombase & mixer / mixer entry / IRQ bits
 		lea.l	mxcustombase,a6
 		lea.l	mixer\1+mx_mixer_entries(pc),a1
+		
+		; Update mixer status
+		move.w	-mx_mixer_entries+mx_status(a1),-mx_mixer_entries+mx_prior_status(a1)
+		move.w	#MIXER_IRQ_RUNNING,mx_status(a1)		
 		
 		; Fetch current interrupts and mask out irrelevant ones
 		move.w	intreqr(a6),d4
@@ -508,6 +518,11 @@ MixMultIHend	MACRO
 
 		; End of handler
 .end_handler
+
+		; Update mixer status
+		lea.l	mixer\1(pc),a0
+		move.w	mx_prior_status(a0),mx_status(a0)
+
 		movem.l	(sp)+,d0-d7/a0-a6			; Stack
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			IF MIXER_CIA_TIMER=1
@@ -1939,6 +1954,7 @@ MixerSetup\1
 .fill_mixer_struct
 		moveq	#0,d4
 		move.w	#MIXER_STOPPED,mx_status(a3)
+		move.w	#MIXER_STOPPED,mx_prior_status(a3)
 		move.w	#64,mx_volume(a3)
 		move.w	d3,mx_hw_period(a3)
 		move.w	#mixer_output_channels,d6
@@ -2240,7 +2256,7 @@ MixerInstallHandler\1
 		ENDIF
 		
 		; Update mixer status
-		move.w	#MIXER_RUNNING,mx_status(a1)
+		move.w	#MIXER_IRQ_ENABLED,mx_status(a1)
 		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			movem.l	(sp)+,d1/a1/a6				; Stack
@@ -2466,6 +2482,13 @@ MixerStart\1
 			dbra	d7,.lp
 		ENDIF
 		
+		; Update mixer status
+		tst.w	mx_status(a0)
+		beq.s	.no_update
+
+		move.w	#MIXER_AUDIO_ENABLED,mx_status(a0)
+		
+.no_update		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			movem.l	(sp)+,d0/d1/d7/a0/a6		; Stack
 		ELSE
@@ -2621,6 +2644,14 @@ MixerStop\1
 		lea.l	mxe_SIZEOF(a0),a0
 		dbra	d7,.enlp
 		
+		; Update mixer status
+		lea.l	mixer\1(pc),a0
+		tst.w	mx_status(a0)
+		beq.s	.no_update
+
+		move.w	#MIXER_IRQ_ENABLED,mx_status(a0)
+		
+.no_update		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			movem.l	(sp)+,d6/d7/a0/a6				; Stack
 		ELSE

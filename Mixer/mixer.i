@@ -535,6 +535,13 @@ MIX_CH_BUSY				EQU	1				; Channel is playing a sample
 MIX_PLUGIN_STD			EQU	0				; Standard plugin
 MIX_PLUGIN_NODATA		EQU	1				; Plugin that doesn't update
 											; sample data
+											
+											; Mixer status values:
+MIXER_STOPPED			EQU 0				; mixer interrupt(s) disabled
+MIXER_IRQ_ENABLED		EQU 1				; mixer interrupt(s) enabled
+MIXER_AUDIO_ENABLED		EQU 2				; mixer audio DMA enabled
+MIXER_IRQ_RUNNING		EQU 3				; mixer interrupt running
+
 	IFD BUILD_MIXER_WRAPPER
 mixer_output_channels	EQU	DMAF_AUD0
 	ENDIF
@@ -747,6 +754,7 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_hw_period
 	UWORD	mx_volume
 	UWORD	mx_status
+	UWORD	mx_prior_status
 	UWORD	mx_vidsys
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mx_counter
