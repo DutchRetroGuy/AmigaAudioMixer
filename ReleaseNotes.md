@@ -2,6 +2,7 @@
 ## v3.8
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
 - (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
+- (NEW) Added a new mode for the Pitch plugin (MXPLG_PITCH_LEVELS) that is faster but supports fewer pitch levels
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
