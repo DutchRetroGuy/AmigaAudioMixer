@@ -11,29 +11,20 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_STRINGS_CB
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	preptxt
-	EXREF	titletxt
-	EXREF	maintxt
-	EXREF	palhtxt
-	EXREF	ntschtxt
+	EXREF	BUILD_STRINGS_CB,preptxt
+	EXREF	BUILD_STRINGS_CB,titletxt
+	EXREF	BUILD_STRINGS_CB,maintxt
+	EXREF	BUILD_STRINGS_CB,palhtxt
+	EXREF	BUILD_STRINGS_CB,ntschtxt
 	
-	EXREF	subpreptxt
-	EXREF	substarttxt
-	EXREF	subtxt
+	EXREF	BUILD_STRINGS_CB,subpreptxt
+	EXREF	BUILD_STRINGS_CB,substarttxt
+	EXREF	BUILD_STRINGS_CB,subtxt
 	
-	EXREF	chantxt_ptrs
-	EXREF	acttxt_ptrs
-	EXREF	cbtxt_ptrs
+	EXREF	BUILD_STRINGS_CB,chantxt_ptrs
+	EXREF	BUILD_STRINGS_CB,acttxt_ptrs
+	EXREF	BUILD_STRINGS_CB,cbtxt_ptrs
 ; End of File

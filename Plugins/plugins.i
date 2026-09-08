@@ -419,37 +419,28 @@ MIXER_PLUGINS_I	SET	1
 
 	IFND	BUILD_MIXER_WRAPPER
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_PLUGINS
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; References
-	EXREF	MixPluginInitDummy
-	EXREF	MixPluginInitRepeat
-	EXREF	MixPluginInitSync
-	EXREF	MixPluginInitVolume
-	EXREF	MixPluginInitPitch
+	EXREF	BUILD_PLUGINS,MixPluginInitDummy
+	EXREF	BUILD_PLUGINS,MixPluginInitRepeat
+	EXREF	BUILD_PLUGINS,MixPluginInitSync
+	EXREF	BUILD_PLUGINS,MixPluginInitVolume
+	EXREF	BUILD_PLUGINS,MixPluginInitPitch
 	
-	EXREF	MixPluginDummy
-	EXREF	MixPluginRepeat
-	EXREF	MixPluginSync
-	EXREF	MixPluginVolume
-	EXREF	MixPluginPitch
+	EXREF	BUILD_PLUGINS,MixPluginDummy
+	EXREF	BUILD_PLUGINS,MixPluginRepeat
+	EXREF	BUILD_PLUGINS,MixPluginSync
+	EXREF	BUILD_PLUGINS,MixPluginVolume
+	EXREF	BUILD_PLUGINS,MixPluginPitch
 	
-	EXREF	MixPluginGetMultiplier
-	EXREF	MixerPluginGetMaxInitDataSize
-	EXREF	MixerPluginGetMaxDataSize
-	EXREF	MixPluginPitchRatioPrecalc
+	EXREF	BUILD_PLUGINS,MixPluginGetMultiplier
+	EXREF	BUILD_PLUGINS,MixerPluginGetMaxInitDataSize
+	EXREF	BUILD_PLUGINS,MixerPluginGetMaxDataSize
+	EXREF	BUILD_PLUGINS,MixPluginPitchRatioPrecalc
 	
-	EXREF	MixPluginSetPitch
-	EXREF	MixPluginSetVolume
+	EXREF	BUILD_PLUGINS,MixPluginSetPitch
+	EXREF	BUILD_PLUGINS,MixPluginSetVolume
 	
 	ENDIF
 

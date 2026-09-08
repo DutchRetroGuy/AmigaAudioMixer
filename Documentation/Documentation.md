@@ -1,4 +1,4 @@
-# Audio Mixer 8 documentation
+# Audio Mixer 3.8 documentation
 
 ## Table of Contents
 
@@ -75,6 +75,7 @@ Release notes for the Audio Mixer
 - (BUGFIX) C header files now use correct types in function definitions and structure definitions
 - (MAINTENANCE) Updated included PT Player to version 6.5
 - (MAINTENANCE) Clarified and corrected (parts of the) documentation
+- (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions
 
 #### v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
@@ -578,7 +579,7 @@ As an example, assembling mixer.asm requires the symbol BUILD_MIXER to be set. I
 vasmm68k_mot -nowarn=62 -kick1hunks -Fhunk -m68000 -allmp -I. -IC:\Development\AmigaDev\NDK13\INCLUDES1.3\INCLUDE.I -I.\Mixer -DBUILD_MIXER .\Mixer\mixer.asm -o .\Mixer\mixer.o
 ```
 
-The supplied makefile has been created for use under Windows. A version for systems using UNIX style commands and directories is also supplied, as makefile_unix.mak.
+The supplied makefile has been created for use under Windows. It contains support for UNIX/Linux as well, though this has not been tested.
 
 ### Pre-processing samples
 

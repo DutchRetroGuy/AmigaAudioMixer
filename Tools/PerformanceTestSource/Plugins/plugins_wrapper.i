@@ -12,24 +12,14 @@
 ; TAB size = 4 spaces
 
 ; Includes
-
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_PLUGINS_WRAPPER
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; References
-	EXREF	PLPerfTest_init_routines
-	EXREF	PLPerfTest_routines
+	EXREF	BUILD_PLUGINS_WRAPPER,PLPerfTest_init_routines
+	EXREF	BUILD_PLUGINS_WRAPPER,PLPerfTest_routines
 	
-	EXREF	plrepeat
-	EXREF	plsync
-	EXREF	plvolume
-	EXREF	plpitch
+	EXREF	BUILD_PLUGINS_WRAPPER,plrepeat
+	EXREF	BUILD_PLUGINS_WRAPPER,plsync
+	EXREF	BUILD_PLUGINS_WRAPPER,plvolume
+	EXREF	BUILD_PLUGINS_WRAPPER,plpitch
 ; End of File

@@ -1,4 +1,4 @@
-<h1 id="audio-mixer-37-documentation">Audio Mixer 3.7 documentation</h1>
+<h1 id="audio-mixer-38-documentation">Audio Mixer 3.8 documentation</h1>
 <h2 id="table-of-contents">Table of Contents</h2>
 <ul>
 <li><a href="#overview">Overview</a></li>
@@ -108,6 +108,35 @@ be limited to a much smaller maximum sample size than the total RAM size
 would seem to indicate.</p>
 <h3 id="release-notes">Release Notes</h3>
 <p>Release notes for the Audio Mixer</p>
+<h4 id="v38">v3.8</h4>
+<ul>
+<li>(NEW) Added MixerReplaceSample, which allows an already playing
+sample to be replaced by another sample seamlessly at the same sample
+offset</li>
+<li>(NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch
+and volume levels of samples already playing with either pitch or volume
+plugins</li>
+<li>(NEW) Plugin support for looping rewritten, handles seamless looping
+and edge cases</li>
+<li>(BUGFIX) Both the loop and priority fields in the MXEffect structure
+were inconsistently referred to as either signed or unsigned. This has
+been correct in both documentation and code to correctly identify both
+as signed values consistently</li>
+<li>(BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length
+instead of mch_remaining_length(a4)</li>
+<li>(BUGFIX) Corrected stack behaviour when using plugins</li>
+<li>(BUGFIX) Corrected mfx_length value in MXEffect structure being
+overwritten when using plugins</li>
+<li>(BUGFIX) A2 is no longer trashed when using C interface and separate
+IRQ/DMA handling</li>
+<li>(BUGFIX) C header files now use correct types in function
+definitions and structure definitions</li>
+<li>(MAINTENANCE) Updated included PT Player to version 6.5</li>
+<li>(MAINTENANCE) Clarified and corrected (parts of the)
+documentation</li>
+<li>(MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with
+newer VASM versions</li>
+</ul>
 <h4 id="v372">v3.7.2</h4>
 <ul>
 <li>(BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is
@@ -797,9 +826,9 @@ to be set. If VASM is being used, this is done by specifying
 full VASM command line used to build the mixer object file is as
 follows:</p>
 <pre><code>vasmm68k_mot -nowarn=62 -kick1hunks -Fhunk -m68000 -allmp -I. -IC:\Development\AmigaDev\NDK13\INCLUDES1.3\INCLUDE.I -I.\Mixer -DBUILD_MIXER .\Mixer\mixer.asm -o .\Mixer\mixer.o</code></pre>
-<p>The supplied makefile has been created for use under Windows. A
-version for systems using UNIX style commands and directories is also
-supplied, as makefile_unix.mak.</p>
+<p>The supplied makefile has been created for use under Windows. It
+contains support for UNIX/Linux as well, though this has not been
+tested.</p>
 <h3 id="pre-processing-samples">Pre-processing samples</h3>
 <p>The mixer requires pre-processed samples in order to play back mixed
 sound correctly*. The pre-processing consists of two steps: making sure
@@ -1626,8 +1655,10 @@ priority samples playing), the routine will not play the sample.</p>
 <li><p>A0 - Points to an instance of the <em>MXEffect</em>
 structure</p></li>
 <li><p>D0 - Hardware channel to use (DMAF_AUD0..DMAF_AUD3)</p>
-<p>Note: if <em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the
-hardware channel given is ignored.<br />
+<p>Note: do not call MixerPlayFX() from interrupts of priority 4 or
+higher, this can cause crashes and undefined behaviour. Note: if
+<em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the hardware
+channel given is ignored.<br />
 Note: if <em>MIXER_MULTI</em> or <em>MIXER_MULTI_PAIRED</em> are set to
 1 in mixer_confi.i and the given channel is not part of the channels set
 in <em>mixer_output_channels</em> the sample will not play.<br />
@@ -1657,8 +1688,10 @@ structure</p></li>
 MIX_CH0..MIX_CH3).</p>
 <p>Note: The routine requires setting exactly one hardware &amp; mixer
 channel in D0.<br />
-Note: if <em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the
-hardware channel given is ignored.<br />
+Note: do not call MixerPlayChannelX() from interrupts of priority 4 or
+higher, this can cause crashes and undefined behaviour. Note: if
+<em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the hardware
+channel given is ignored.<br />
 Note: if <em>MIXER_MULTI</em> or <em>MIXER_MULTI_PAIRED</em> are set to
 1 in mixer_confi.i and the given channel is not part of the channels set
 in <em>mixer_output_channels</em> the sample will not play.<br />
@@ -1680,8 +1713,10 @@ parameter:</p>
 <ul>
 <li><p>D0 - Hardware/mixer channel mask DMAF_AUD0..DMAF_AUD3 |
 MIX_CH0..MIX_CH3).</p>
-<p>Note: if <em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the
-hardware channel given is ignored.</p></li>
+<p>Note: do not call MixerStopFX() from interrupts of priority 4 or
+higher, this can cause crashes and undefined behaviour. Note: if
+<em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the hardware
+channel given is ignored.</p></li>
 </ul>
 <p><em>D0=MixerGetBufferSize()</em><br />
 This routine returns the size of the Chip RAM buffer size that needs to
@@ -1722,9 +1757,14 @@ to it. Its primary purpose is to give plugins a way to get this value
 without needing access to the internal mixer structure.</p>
 <p><em>MixerSetReturnVector(A0=return_function_ptr)</em><br />
 This routine sets the optional vector the mixer can call at to at the
-end of interrupt execution.</p>
-<p>Note: this vector should point to a standard routine ending in
-RTS.</p>
+end of interrupt execution. If <em>MIXER_ENABLE_RETURN_VECTOR</em> is
+set to 1 and this routine is called with a non-NULL value, the mixer
+interrupt handler will call the given function at every interrupt end.
+The function called can do pretty much everything, including calling
+MixerPlayFX() and similar functions safely.</p>
+<p>Note: this vector should point to a standard routine ending in RTS.
+Note: as with all code run in an interrupt, keeping the time the return
+vector routine runs low is considered best practice.</p>
 <p><em>MixerSetIRQDMACallbacks(A0=callback_structure)</em><br />
 This routine sets up the vectors used for callback routines to manage
 setting up interrupt vectors and DMA flags. This routine and associated
@@ -1750,7 +1790,8 @@ functionality when the mixer is updated. They are still available for
 backwards compatibility purposes and have been updated with the new
 offset loop mode.</h4>
 <p><em>D0=MixerPlaySample(A0=sample, D0=hardware_channel, D1=length,
-D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)</em><br />
+D2=signed_priority.w, D3=signed_loop_indicator.w,
+D4=loop_offset)</em><br />
 This routine adds a sample to the given hardware channel, using values
 in registers passed to it. The routine automatically determines the best
 mixer channel to play back on based on priority and age. If no
@@ -1773,8 +1814,9 @@ overwritten.</p></li>
 restarting from the offset given in D4.</p></li>
 <li><p>D4 - Either 0, or the desired offset into the sample to restart
 looping at if D3 is set to <em>MIX_FX_LOOP_OFFSET</em>.</p>
-<p>Note: this routine is deprecated, use <em>MixerPlayFX()</em>
-instead<br />
+<p>Note: this routine is deprecated, use <em>MixerPlayFX()</em> instead
+Note: do not call MixerPlaySample() from interrupts of priority 4 or
+higher, this can cause crashes and undefined behaviour.<br />
 Note: if <em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the
 hardware channel given is ignored.<br />
 Note: if <em>MIXER_MULTI</em> or <em>MIXER_MULTI_PAIRED</em> are set to
@@ -1791,7 +1833,8 @@ ignored.</p></li>
 on, or -1 if no free channel could be found.</li>
 </ul>
 <p><em>D0=MixerPlayChannelSample(A0=sample, D0=mixer_channel, D1=length,
-D2=signed_priority.w, D3=loop_indicator.w, D4=loop_offset)</em><br />
+D2=signed_priority.w, D3=signed_loop_indicator.w,
+D4=loop_offset)</em><br />
 This routine adds a sample to the given hardware/mixer channel
 combination, using values in registers passed to it. The routine uses
 the selected hardware/mixer channel to play back on. It checks for
@@ -1814,10 +1857,12 @@ overwritten.</p></li>
 restarting from the offset given in D4.</p></li>
 <li><p>D4 - Either 0, or the desired offset into the sample to restart
 looping at if D3 is set to <em>MIX_FX_LOOP_OFFSET</em>.</p>
-<p>Note: this routine is deprecated, use <em>MixerPlayFX()</em>
+<p>Note: this routine is deprecated, use <em>MixerPlayChannelFX()</em>
 instead<br />
 Note: The routine requires setting exactly one hardware &amp; mixer
 channel in D0.<br />
+Note: do not call MixerPlayChannelSample() from interrupts of priority 4
+or higher, this can cause crashes and undefined behaviour.<br />
 Note: if <em>MIXER_SINGLE</em> is set to 1 in mixer_config.i, the
 hardware channel given is ignored.<br />
 Note: if <em>MIXER_MULTI</em> or <em>MIXER_MULTI_PAIRED</em> are set to

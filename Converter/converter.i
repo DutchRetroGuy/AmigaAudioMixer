@@ -38,19 +38,10 @@
 	IFND	MIXER_CONVERTER_I
 MIXER_CONVERTER_I	SET	1
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_CONVERTER
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; References
-	EXREF	ConvertSampleDivide
+	EXREF	BUILD_CONVERTER,ConvertSampleDivide
 	
 	ENDC	; MIXER_CONVERTER_I
 ; End of File

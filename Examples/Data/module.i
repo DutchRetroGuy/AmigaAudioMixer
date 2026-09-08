@@ -11,20 +11,11 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_MOD
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	module
-	EXREF	lspsam
-	EXREF	lspdat
+	EXREF	BUILD_MOD,module
+	EXREF	BUILD_MOD,lspsam
+	EXREF	BUILD_MOD,lspdat
 
 ; End of File

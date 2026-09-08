@@ -12,82 +12,72 @@
 ; TAB size = 4 spaces
 
 ; Includes
-
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_MIXER
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; References
-	EXREF	PTestSetPlgRoutineOffset
+	EXREF	BUILD_MIXER,PTestSetPlgRoutineOffset
 
-	EXREF	PerfTest_routines
-	EXREF	PerfTest_plg_routines
-	EXREF	PerfTest_32x_modes
-	EXREF	PerfTest_word_modes
-	EXREF	PerfTest_data
-	EXREF	PerfTest_plg_data
+	EXREF	BUILD_MIXER,PerfTest_routines
+	EXREF	BUILD_MIXER,PerfTest_plg_routines
+	EXREF	BUILD_MIXER,PerfTest_32x_modes
+	EXREF	BUILD_MIXER,PerfTest_word_modes
+	EXREF	BUILD_MIXER,PerfTest_data
+	EXREF	BUILD_MIXER,PerfTest_plg_data
 	
 	; Offsets
-	EXREF	mxsetup
-	EXREF	mxinsthandler
-	EXREF	mxstart
-	EXREF	mxplaychsam
-	EXREF	mxstopfx
-	EXREF	mxstop
-	EXREF	mxremhandler
-	EXREF	mxvolume
-	EXREF	mxsetplugindeferredptr
-	EXREF	mxcalcticks
-	EXREF	mxgetinternalbuffersize
-	EXREF	mxresetcounter
-	EXREF	mxgetcounter
+	EXREF	BUILD_MIXER,mxsetup
+	EXREF	BUILD_MIXER,mxinsthandler
+	EXREF	BUILD_MIXER,mxstart
+	EXREF	BUILD_MIXER,mxplaychsam
+	EXREF	BUILD_MIXER,mxstopfx
+	EXREF	BUILD_MIXER,mxstop
+	EXREF	BUILD_MIXER,mxremhandler
+	EXREF	BUILD_MIXER,mxvolume
+	EXREF	BUILD_MIXER,mxsetplugindeferredptr
+	EXREF	BUILD_MIXER,mxcalcticks
+	EXREF	BUILD_MIXER,mxgetinternalbuffersize
+	EXREF	BUILD_MIXER,mxresetcounter
+	EXREF	BUILD_MIXER,mxgetcounter
 	
-	EXREF	mxmixer
-	EXREF	mxmixer_fx_struct
-	EXREF	mxmixer_stored_vbr
-	EXREF	mxmixer_stored_handler
-	EXREF	mxmixer_stored_intena
-	EXREF	mxmixer_stored_cia
-	EXREF	mxmixer_ticks_last
-	EXREF	mxmixer_ticks_best
-	EXREF	mxmixer_ticks_worst
-	EXREF	mxmixer_ticks_average
-	EXREF	mxmixer_ticks_storage_off
-	EXREF	mxmixer_ticks_storage
+	EXREF	BUILD_MIXER,mxmixer
+	EXREF	BUILD_MIXER,mxmixer_fx_struct
+	EXREF	BUILD_MIXER,mxmixer_stored_vbr
+	EXREF	BUILD_MIXER,mxmixer_stored_handler
+	EXREF	BUILD_MIXER,mxmixer_stored_intena
+	EXREF	BUILD_MIXER,mxmixer_stored_cia
+	EXREF	BUILD_MIXER,mxmixer_ticks_last
+	EXREF	BUILD_MIXER,mxmixer_ticks_best
+	EXREF	BUILD_MIXER,mxmixer_ticks_worst
+	EXREF	BUILD_MIXER,mxmixer_ticks_average
+	EXREF	BUILD_MIXER,mxmixer_ticks_storage_off
+	EXREF	BUILD_MIXER,mxmixer_ticks_storage
 	
-	EXREF	mxplgsetup
-	EXREF	mxplginsthandler
-	EXREF	mxplgstart
-	EXREF	mxplgplaychfx
-	EXREF	mxplgstopfx
-	EXREF	mxplgstop
-	EXREF	mxplgremhandler
-	EXREF	mxplgvolume
-	EXREF	mxplgsetplugindeferredptr
-	EXREF	mxplgcalcticks
-	EXREF	mxplggetinternalbuffersize
-	EXREF	mxplgresetcounter
-	EXREF	mxplggetcounter
+	EXREF	BUILD_MIXER,mxplgsetup
+	EXREF	BUILD_MIXER,mxplginsthandler
+	EXREF	BUILD_MIXER,mxplgstart
+	EXREF	BUILD_MIXER,mxplgplaychfx
+	EXREF	BUILD_MIXER,mxplgstopfx
+	EXREF	BUILD_MIXER,mxplgstop
+	EXREF	BUILD_MIXER,mxplgremhandler
+	EXREF	BUILD_MIXER,mxplgvolume
+	EXREF	BUILD_MIXER,mxplgsetplugindeferredptr
+	EXREF	BUILD_MIXER,mxplgcalcticks
+	EXREF	BUILD_MIXER,mxplggetinternalbuffersize
+	EXREF	BUILD_MIXER,mxplgresetcounter
+	EXREF	BUILD_MIXER,mxplggetcounter
 	
-	EXREF	mxplgmixer
-	EXREF	mxplgmixer_fx_struct
-	EXREF	mxplgmixer_stored_vbr
-	EXREF	mxplgmixer_stored_handler
-	EXREF	mxplgmixer_stored_intena
-	EXREF	mxplgmixer_stored_cia
-	EXREF	mxplgmixer_ticks_last
-	EXREF	mxplgmixer_ticks_best
-	EXREF	mxplgmixer_ticks_worst
-	EXREF	mxplgmixer_ticks_average
-	EXREF	mxplgmixer_ticks_storage_off
-	EXREF	mxplgmixer_ticks_storage
+	EXREF	BUILD_MIXER,mxplgmixer
+	EXREF	BUILD_MIXER,mxplgmixer_fx_struct
+	EXREF	BUILD_MIXER,mxplgmixer_stored_vbr
+	EXREF	BUILD_MIXER,mxplgmixer_stored_handler
+	EXREF	BUILD_MIXER,mxplgmixer_stored_intena
+	EXREF	BUILD_MIXER,mxplgmixer_stored_cia
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_last
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_best
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_worst
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_average
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_storage_off
+	EXREF	BUILD_MIXER,mxplgmixer_ticks_storage
 	
 ;-----------------------------------------------------------------------------
 ; Performance test configuration

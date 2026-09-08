@@ -11,28 +11,19 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_COPPERLIST
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	clist1
-	EXREF	pal1
-	EXREF	bpptrs
-	EXREF	bpptrs_o
-	EXREF	shifts
-	EXREF	shifts_o
-	EXREF	sbptrs
-	EXREF	pal2
+	EXREF	BUILD_COPPERLIST,clist1
+	EXREF	BUILD_COPPERLIST,pal1
+	EXREF	BUILD_COPPERLIST,bpptrs
+	EXREF	BUILD_COPPERLIST,bpptrs_o
+	EXREF	BUILD_COPPERLIST,shifts
+	EXREF	BUILD_COPPERLIST,shifts_o
+	EXREF	BUILD_COPPERLIST,sbptrs
+	EXREF	BUILD_COPPERLIST,pal2
 	
-	EXREF	clist_end
-	EXREF	clist_size
+	EXREF	BUILD_COPPERLIST,clist_end
+	EXREF	BUILD_COPPERLIST,clist_size
 
 ; End of File

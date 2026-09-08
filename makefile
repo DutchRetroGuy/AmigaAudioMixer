@@ -59,10 +59,8 @@ CC=vc
 
 # Setup assembler flags
 # NOTE: -nowarn=62 suppresses warnings for unused imported symbols.
-# NOTE: EXREF Macro causes 'repeated macro definition' warnings. 
-#       For now, warning has been suppressed using -nowarn=89
-ASMFLAGS_BASE=-nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68000 -allmp -DBUILD_MIXER_DEBUG
-ASMFLAGS_020=-nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68020 -allmp -DBUILD_MIXER_DEBUG
+ASMFLAGS_BASE=-nowarn=62 -kick1hunks -Fhunk -m68000 -allmp -DBUILD_MIXER_DEBUG
+ASMFLAGS_020=-nowarn=62 -kick1hunks -Fhunk -m68020 -allmp -DBUILD_MIXER_DEBUG
 ASMFLAGS_STARTUP=-no-opt -nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68010 -allmp
 
 # Setup linker flags
@@ -109,18 +107,18 @@ SUPPORTDIR=$(EXAMPLEDIR)$(SLASH)Support
 # Note: this part deals with batch processing build artefacts
 ifeq ($(OS),Windows_NT)
 	# Batch commands for dealing with housekeeping
-	CPDIR_MIXER = for /d %%d in ($(EXAMPLEDIR)$(SLASH)*) do if exist %%d\Mixer $(CP) "$(MIXERDIR)$(SLASH)mixer.asm" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.i" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.h" %%d$(SLASH)Mixer$(SLASH)
+	CPDIR_MIXER = for /d %%d in ($(EXAMPLEDIR)$(SLASH)*) do if exist %%d\Mixer $(CP) "$(MIXERDIR)$(SLASH)mixer.asm" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.i" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)mixer.h" %%d$(SLASH)Mixer$(SLASH) & $(CP) "$(MIXERDIR)$(SLASH)exref.i" %%d$(SLASH)Mixer$(SLASH)
 	CPDIR_PLUGINS = for /d %%d in ($(EXAMPLEDIR)$(SLASH)*) do if exist %%d\Plugins $(CP) "$(PLUGINSDIR)$(SLASH)plugins.asm" %%d$(SLASH)Plugins$(SLASH) & $(CP) "$(PLUGINSDIR)$(SLASH)plugins.i" %%d$(SLASH)Plugins$(SLASH) & $(CP) "$(PLUGINSDIR)$(SLASH)plugins.h" %%d$(SLASH)Plugins$(SLASH)
-	RMDIR_MIXER := $(RM) /S $(EXAMPLEDIR)$(SLASH)mixer.asm $(EXAMPLEDIR)$(SLASH)mixer.i $(EXAMPLEDIR)$(SLASH)mixer.h
+	RMDIR_MIXER := $(RM) /S $(EXAMPLEDIR)$(SLASH)mixer.asm $(EXAMPLEDIR)$(SLASH)mixer.i $(EXAMPLEDIR)$(SLASH)mixer.h $(EXAMPLEDIR)$(SLASH)exref.i
 	RMDIR_PLUGINS := $(RM) /S $(EXAMPLEDIR)$(SLASH)plugins.asm $(EXAMPLEDIR)$(SLASH)plugins.i $(EXAMPLEDIR)$(SLASH)plugins.h
 	
 	# Batch commands for dealing with make clean
 	RM_CLEAN := $(RM) /S $(MAINDIR)\*.o
 else
 	# Batch commands for dealing with housekeeping
-	CPDIR_MIXER := find Examples -type d -name Mixer -exec $(CP) $(MIXERDIR)/mixer.{asm,i,h} "{}" \;
+	CPDIR_MIXER := find Examples -type d -name Mixer -exec $(CP) $(MIXERDIR)/mixer.{asm,i,h}  $(MIXERDIR)/exref.i "{}" \;
 	CPDIR_PLUGINS := find Examples -type d -name Plugins -exec $(CP) $(PLUGINSDIR)/plugins.{asm,i,h} "{}" \;
-	RMDIR_MIXER := $(RM) $(EXAMPLEDIR)/*/Mixer/mixer.{asm,i,h}
+	RMDIR_MIXER := $(RM) $(EXAMPLEDIR)/*/Mixer/mixer.{asm,i,h} $(MIXERDIR)/exref.i
 	RMDIR_PLUGINS := $(RM) $(EXAMPLEDIR)/*/Plugins/plugins.{asm,i,h}
 
 	# Batch commands for dealing with make clean
@@ -261,6 +259,7 @@ housekeeping:
 	$(CP) $(MIXERDIR)$(SLASH)mixer.asm $(PERFTESTDIR)$(SLASH)Mixer
 	$(CP) $(MIXERDIR)$(SLASH)mixer.i $(PERFTESTDIR)$(SLASH)Mixer
 	$(CP) $(MIXERDIR)$(SLASH)mixer.h $(PERFTESTDIR)$(SLASH)Mixer
+	$(CP) $(MIXERDIR)$(SLASH)exref.i $(PERFTESTDIR)$(SLASH)Mixer
 	$(CP) $(PLUGINSDIR)$(SLASH)plugins.asm $(PERFTESTDIR)$(SLASH)Plugins
 	$(CP) $(PLUGINSDIR)$(SLASH)plugins.i $(PERFTESTDIR)$(SLASH)Plugins
 	$(CP) $(PLUGINSDIR)$(SLASH)plugins.h $(PERFTESTDIR)$(SLASH)Plugins
@@ -422,7 +421,7 @@ $(SINGLEMIXERHQDIR)$(SLASH)SingleMixerHQ.o: $(SINGLEMIXERHQDIR)$(SLASH)SingleMix
 $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.o: $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.asm $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer.i $(SINGLEMIXERHQDIR)$(SLASH)Mixer$(SLASH)mixer_config.i
 	$(ASM) $(ASMFLAGS_SHQ) -DBUILD_MIXER $< -o $@
 $(SINGLEMIXERHQDIR)$(SLASH)Support$(SLASH)strings.o: $(SINGLEMIXERHQDIR)$(SLASH)Support$(SLASH)strings.asm $(SINGLEMIXERHQDIR)$(SLASH)Support$(SLASH)strings.i
-	$(ASM) $(ASMFLAGS_SHQ) -DBUILD_STRINGS_SM $< -o $@
+	$(ASM) $(ASMFLAGS_SHQ) -DBUILD_STRINGS_SMHQ $< -o $@
 
 # MultiMixer objects
 $(MULTIMIXERDIR)$(SLASH)MultiMixer.o: $(MULTIMIXERDIR)$(SLASH)MultiMixer.asm $(MULTIMIXERDIR)$(SLASH)MultiMixer.i $(SUPPORTDIR)$(SLASH)debug.i $(GFXDIR)$(SLASH)displaybuffers.i $(GFXDIR)$(SLASH)blitter.i $(GFXDIR)$(SLASH)copperlists.i $(GFXDIR)$(SLASH)font.i $(CONVERTERDIR)$(SLASH)converter.i $(DATADIR)$(SLASH)samples.i $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)mixer.i $(MULTIMIXERDIR)$(SLASH)Mixer$(SLASH)mixer_config.i

@@ -455,62 +455,53 @@ MIXER_I	SET	1
 
 	IFND	BUILD_MIXER_WRAPPER
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_MIXER
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; References
-	EXREF	MixerSetup
-	EXREF	MixerInstallHandler
-	EXREF	MixerRemoveHandler
-	EXREF	MixerStart
-	EXREF	MixerStop
-	EXREF	MixerVolume
+	EXREF	BUILD_MIXER,MixerSetup
+	EXREF	BUILD_MIXER,MixerInstallHandler
+	EXREF	BUILD_MIXER,MixerRemoveHandler
+	EXREF	BUILD_MIXER,MixerStart
+	EXREF	BUILD_MIXER,MixerStop
+	EXREF	BUILD_MIXER,MixerVolume
 
-	EXREF	MixerPlayFX
-	EXREF	MixerPlayChannelFX
-	EXREF	MixerStopFX
+	EXREF	BUILD_MIXER,MixerPlayFX
+	EXREF	BUILD_MIXER,MixerPlayChannelFX
+	EXREF	BUILD_MIXER,MixerStopFX
 	
-	EXREF	MixerPlaySample
-	EXREF	MixerPlayChannelSample
+	EXREF	BUILD_MIXER,MixerPlaySample
+	EXREF	BUILD_MIXER,MixerPlayChannelSample
 	
-	EXREF	MixerGetBufferSize
-	EXREF	MixerGetChannelBufferSize
-	EXREF	MixerGetSampleMinSize
-	EXREF	MixerGetChannelStatus
-	EXREF	MixerGetTotalChannelCount
+	EXREF	BUILD_MIXER,MixerGetBufferSize
+	EXREF	BUILD_MIXER,MixerGetChannelBufferSize
+	EXREF	BUILD_MIXER,MixerGetSampleMinSize
+	EXREF	BUILD_MIXER,MixerGetChannelStatus
+	EXREF	BUILD_MIXER,MixerGetTotalChannelCount
 
-	EXREF	MixerSetReturnVector
-	EXREF	MixerSetIRQDMACallbacks
+	EXREF	BUILD_MIXER,MixerSetReturnVector
+	EXREF	BUILD_MIXER,MixerSetIRQDMACallbacks
 	
-	EXREF	MixerEnableCallback
-	EXREF	MixerDisableCallback
+	EXREF	BUILD_MIXER,MixerEnableCallback
+	EXREF	BUILD_MIXER,MixerDisableCallback
 	
-	EXREF	MixerGetPluginsBufferSize
-	EXREF	MixerSetPluginDeferredPtr
+	EXREF	BUILD_MIXER,MixerGetPluginsBufferSize
+	EXREF	BUILD_MIXER,MixerSetPluginDeferredPtr
 
 	IF MIXER_CIA_TIMER=1
-		EXREF	MixerCalcTicks
+		EXREF	BUILD_MIXER,MixerCalcTicks
 
-		EXREF	mixer_ticks_last
-		EXREF	mixer_ticks_best
-		EXREF	mixer_ticks_worst
-		EXREF	mixer_ticks_average
+		EXREF	BUILD_MIXER,mixer_ticks_last
+		EXREF	BUILD_MIXER,mixer_ticks_best
+		EXREF	BUILD_MIXER,mixer_ticks_worst
+		EXREF	BUILD_MIXER,mixer_ticks_average
 	ENDIF
 	
 	IF MIXER_COUNTER=1
-		EXREF	MixerResetCounter
-		EXREF	MixerGetCounter
+		EXREF	BUILD_MIXER,MixerResetCounter
+		EXREF	BUILD_MIXER,MixerGetCounter
 	ENDIF
 	
-	EXREF	mixer
+	EXREF	BUILD_MIXER,mixer
 	
 	ENDIF	; BUILD_MIXER_WRAPPER
 

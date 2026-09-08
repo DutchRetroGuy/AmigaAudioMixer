@@ -11,38 +11,29 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_STRINGS_PMIX
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	titletxt
-	EXREF	resscrtxt
-	EXREF	resscrtxt_2
-	EXREF	resscrtxt_3
-	EXREF	palhtxt
-	EXREF	ntschtxt
-	EXREF	singhtxt
-	EXREF	multhtxt
-	EXREF	perstxt
-	EXREF	permtxt
-	EXREF	subtxt
-	EXREF	ressbtxt
+	EXREF	BUILD_STRINGS_PMIX,titletxt
+	EXREF	BUILD_STRINGS_PMIX,resscrtxt
+	EXREF	BUILD_STRINGS_PMIX,resscrtxt_2
+	EXREF	BUILD_STRINGS_PMIX,resscrtxt_3
+	EXREF	BUILD_STRINGS_PMIX,palhtxt
+	EXREF	BUILD_STRINGS_PMIX,ntschtxt
+	EXREF	BUILD_STRINGS_PMIX,singhtxt
+	EXREF	BUILD_STRINGS_PMIX,multhtxt
+	EXREF	BUILD_STRINGS_PMIX,perstxt
+	EXREF	BUILD_STRINGS_PMIX,permtxt
+	EXREF	BUILD_STRINGS_PMIX,subtxt
+	EXREF	BUILD_STRINGS_PMIX,ressbtxt
 	
-	EXREF	res_offset
-	EXREF	res_line_offset
-	EXREF	res_offset_2
-	EXREF	res_line_offset_2
+	EXREF	BUILD_STRINGS_PMIX,res_offset
+	EXREF	BUILD_STRINGS_PMIX,res_line_offset
+	EXREF	BUILD_STRINGS_PMIX,res_offset_2
+	EXREF	BUILD_STRINGS_PMIX,res_line_offset_2
 	
-	EXREF	cntxt1
-	EXREF	cntxt_ptrs
+	EXREF	BUILD_STRINGS_PMIX,cntxt1
+	EXREF	BUILD_STRINGS_PMIX,cntxt_ptrs
 	
-	EXREF	restxt_ptrs
+	EXREF	BUILD_STRINGS_PMIX,restxt_ptrs
 ; End of File

@@ -12,20 +12,11 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_DBUFFERS
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; Buffers
-	EXREF	fg_buf1
-	EXREF	sb_buf
+	EXREF	BUILD_DBUFFERS,fg_buf1
+	EXREF	BUILD_DBUFFERS,sb_buf
 
 ; Buffer constants
 display_width		EQU	288

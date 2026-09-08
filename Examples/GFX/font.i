@@ -11,22 +11,13 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_FONT
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	PlotCharCPU
-	EXREF	PlotTextCPU
-	EXREF	PlotInvertedCharCPU
-	EXREF	PlotInvertedTextCPU
-	EXREF	PlotTextMultiCPU
-	EXREF	basicfont
+	EXREF	BUILD_FONT,PlotCharCPU
+	EXREF	BUILD_FONT,PlotTextCPU
+	EXREF	BUILD_FONT,PlotInvertedCharCPU
+	EXREF	BUILD_FONT,PlotInvertedTextCPU
+	EXREF	BUILD_FONT,PlotTextMultiCPU
+	EXREF	BUILD_FONT,basicfont
 ; End of File

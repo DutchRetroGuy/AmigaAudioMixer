@@ -12,24 +12,15 @@
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
 
-; References macro
-	IFND EXREF
-EXREF	MACRO
-		IFD BUILD_BLITTER
-			XDEF \1
-		ELSE
-			XREF \1
-		ENDIF
-		ENDM
-	ENDIF
+	include exref.i
 
 ; External references
-	EXREF	BlitPattern
-	EXREF	BlitCopy
-	EXREF	BlitBob
-	EXREF	BlitClearScreen
+	EXREF	BUILD_BLITTER,BlitPattern
+	EXREF	BUILD_BLITTER,BlitCopy
+	EXREF	BUILD_BLITTER,BlitBob
+	EXREF	BUILD_BLITTER,BlitClearScreen
 	
-	EXREF	DrawSubBuffer
+	EXREF	BUILD_BLITTER,DrawSubBuffer
 	
 ; Macro's
 		; Blitwait macro
