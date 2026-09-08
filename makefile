@@ -58,9 +58,12 @@ LNK=vlink
 CC=vc
 
 # Setup assembler flags
-ASMFLAGS_BASE=-nowarn=62 -kick1hunks -Fhunk -m68000 -allmp -DBUILD_MIXER_DEBUG
-ASMFLAGS_020=-nowarn=62 -kick1hunks -Fhunk -m68020 -allmp -DBUILD_MIXER_DEBUG
-ASMFLAGS_STARTUP=-no-opt -nowarn=62 -kick1hunks -Fhunk -m68010 -allmp
+# NOTE: -nowarn=62 suppresses warnings for unused imported symbols.
+# NOTE: EXREF Macro causes 'repeated macro definition' warnings. 
+#       For now, warning has been suppressed using -nowarn=89
+ASMFLAGS_BASE=-nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68000 -allmp -DBUILD_MIXER_DEBUG
+ASMFLAGS_020=-nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68020 -allmp -DBUILD_MIXER_DEBUG
+ASMFLAGS_STARTUP=-no-opt -nowarn=62 -nowarn=89 -kick1hunks -Fhunk -m68010 -allmp
 
 # Setup linker flags
 LNKFLAGS=$(LIBS) -l amiga -bamigahunk -s -Z
