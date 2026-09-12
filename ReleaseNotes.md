@@ -13,6 +13,7 @@
 - (MAINTENANCE) Updated included PT Player to version 6.5
 - (MAINTENANCE) Clarified and corrected (parts of the) documentation
 - (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions
+- (MAINTENANCE) Updated code to remove several non-EXREF based warnings
 
 ## v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set

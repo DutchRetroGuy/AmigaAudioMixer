@@ -737,7 +737,7 @@ PTAction
 		jsr 	_mt_install_cia
 		
 		; Initialize PT module using PTPlayer
-		lea.l	module,a0
+		lea.l	ptmod,a0
 		moveq	#0,d0						; Song position
 		move.l	d0,a1
 		jsr		_mt_init

@@ -17,7 +17,6 @@
 ; External references
 	EXREF	BUILD_BLITTER,BlitPattern
 	EXREF	BUILD_BLITTER,BlitCopy
-	EXREF	BUILD_BLITTER,BlitBob
 	EXREF	BUILD_BLITTER,BlitClearScreen
 	
 	EXREF	BUILD_BLITTER,DrawSubBuffer

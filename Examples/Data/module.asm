@@ -17,7 +17,7 @@
 		section	gfxdata,data_c
 		cnop	0,2
 
-module		INCBIN	"Examples/Data/SneakyChick.mod"
+ptmod		INCBIN	"Examples/Data/SneakyChick.mod"
 lspsam		INCBIN	"Examples/Data/SneakyChick.lsbank"
 
 		section	data,data

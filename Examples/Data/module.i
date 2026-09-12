@@ -14,7 +14,7 @@
 	include exref.i
 
 ; External references
-	EXREF	BUILD_MOD,module
+	EXREF	BUILD_MOD,ptmod
 	EXREF	BUILD_MOD,lspsam
 	EXREF	BUILD_MOD,lspdat
 
