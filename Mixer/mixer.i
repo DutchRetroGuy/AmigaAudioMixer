@@ -535,6 +535,11 @@ MIXER_IRQ_ENABLED		EQU 1				; mixer interrupt(s) enabled
 MIXER_AUDIO_ENABLED		EQU 2				; mixer audio DMA enabled
 MIXER_IRQ_RUNNING		EQU 3				; mixer interrupt running
 
+MIXER_REPLACE_START		EQU	0				; Replacement sample plays from
+											; starting position
+MIXER_REPLACE_OFFSET	EQU	1				; Replacement sample plays from
+											; current offset
+
 	IFD BUILD_MIXER_WRAPPER
 mixer_output_channels	EQU	DMAF_AUD0
 	ENDIF

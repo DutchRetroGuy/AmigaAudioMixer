@@ -3800,11 +3800,6 @@ MixerGetStatus\1
 		;
 		; Note: only samples of the same size or larger are supported
 		; Note: no range checking is done to verify size requirements are kept
-		; Note: THIS VERSION REPLACES SAMPLES WHILE KEEPING SAMPLE OFFSET
-		;		MEANING THAT A SAMPLE THAT IS REPLACED AFTER 1 SECOND OF PLAYBACK
-		;		WILL START AT 1 SECOND INTO THE NEW SAMPLE AS WELL
-		;
-		;		FOR NON OUTRUN VERSION, THIS NEEDS TO CHANGE
 		;
 		; A0 - Pointer to sample data
 		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
@@ -3814,6 +3809,10 @@ MixerGetStatus\1
 		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
 		;            channel.
 		;      Note: Only one HW channel can be selected at a time.
+		; D1 - Replacement mode. Either MIXER_REPLACE_START to have the
+		;      replacement sample play from the beginning or 
+		;      MIXER_REPLACE_OFFSET to have replacement sample play from the
+		;      same offset as the sample being replaced.
 MixerReplaceSample\1
 		movem.l	d2/d4/d7/a1/a2/a6,-(sp)		; Stack
 		
@@ -3926,7 +3925,16 @@ MixerReplaceSample\1
 			move.l	mch_length(a1),d7
 			sub.l	mch_remaining_length(a1),d7
 		ENDIF
+		
+		; Check replacement mode and set starting offset of replacement sample
+		tst.w	d1
+		beq		.write_pointer
+		
+		; Replacement mode is MIXER_REPLACE_OFFSET, new sample starts at same
+		; offset as sample being replaced.
 		add.l	d7,a0
+		
+.write_pointer
 		move.l	a0,mch_sample_ptr(a1)
 
 		; Test if the mixer interrupts are running

@@ -2,12 +2,14 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
-	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
-	* Check if removing E8x stuff did not add bugs
-	* Check if mixer status values propagate correctly
+	* Change MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
 	* Update comments/documentation for MixPluginInitPitch to include MXPLG_PITCH_LEVELS
 	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
-	
+
+=> Testing
+	* Test MixerReplaceSample functionality	
+	* Test if mixer status values propagate correctly
+	* Test if removing E8x stuff did not add bugs
 
 => Update documentation
 	* PluginSetVolume/SetPitch
