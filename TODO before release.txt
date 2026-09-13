@@ -2,29 +2,22 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
-	* Check if removing E8x stuff did not add bugs
-	* Check is mixer status values propagate correctly
 	* Change MixerReplaceSample, MixPluginSetPitch, MixPluginSetVolume to be generic rather than outrun based
+	* Check if removing E8x stuff did not add bugs
+	* Check if mixer status values propagate correctly
 	* Update comments/documentation for MixPluginInitPitch to include MXPLG_PITCH_LEVELS
 	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
-	* Make PerformanceTest page selection in WriteResults generic
+	
 
 => Update documentation
 	* PluginSetVolume/SetPitch
-	* Replace Sample
-
-=> Features
-    * Add a flag/routine to detect mixer interrupt is in progress
-    * Add a flag/routine to detect mixer is currently running
-	!!!=> left to do is adding a routine to expose mx_status <=!!!
+	* MixerReplaceSample
+	* MixerGetStatus
 	
-	* Add a 'interrupt multiplier' option that allows you to pick the approximate number of interrupts the mixer targets per frame (1 or more)
-	This should just involve dividing mixer_PAL_buffer_size & mixer_NTSC_buffer_size by the interrupt count pre-rounding.
-
-	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/50)&65532)+4
-	becomes
-	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/(50*interrupt_multiplier))&65532)+4
-
-	Or: 
-	mixer_PAL_rate SET 50*mixer_interrupt_multiplier
-	mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65532)+4
+=> Update .i documentation
+	* MixerReplaceSample
+	* MixerGetStatus
+	* PluginSetVolume/SetPitch
+	
+=> Update .html and .txt versions of documentation
+=> Remove TODO before release.txt

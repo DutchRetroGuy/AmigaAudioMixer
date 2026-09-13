@@ -3770,6 +3770,30 @@ MixerGetChannelStatus\1
 .done
 		movem.l	(sp)+,d2/d4/a1				; Stack
 		rts
+		
+		; Routine: MixerGetStatus
+		; This routine will return the status of the mixer. It can be used to
+		; determine both the status of the mixer and for higher priority 
+		; interrupts to verify whether or not they interrupted the mixer
+		; interrupt.
+		;
+		; Note: it only returns a valid result after MixerSetup has been 
+		;       called.
+		;
+		; Returns
+		; D0 - Mixer status:
+		;      - MIXER_STOPPED: mixer interrupt(s) disabled
+		;      - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+		;      - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+		;      - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+MixerGetStatus\1
+		move.l	a0,-(sp)					; Stack
+		lea.l	mixer\1(pc),a0
+		
+		move.w	mx_status(a0),d0			; D0 = mixer status
+				
+		move.l	(sp)+,a0-a2					; Stack
+		rts
 
 		; Routine: MixerReplaceSample
 		; This routine replaces an already playing sample with a new sample.
@@ -4199,18 +4223,20 @@ MixerClearBuffer\1
 		; D0 - length of structure
 		; A0 - Pointer to structure to clear
 MixerClearPluginData\1
-		movem.l	d0/d1/a0,-(sp)				; Stack
-		
-		; Prepare for loop
-		moveq	#0,d1
-		asr.w	#1,d0						; Size is in words
-		subq.w	#1,d0
-		
-		; Loop over words in the structure
-.lp		move.w	d1,(a0)+
-		dbra	d0,.lp
-		
-		movem.l	(sp)+,d0/d1/a0				; Stack
+		IF MIXER_ENABLE_PLUGINS=1
+			movem.l	d0/d1/a0,-(sp)				; Stack
+			
+			; Prepare for loop
+			moveq	#0,d1
+			asr.w	#1,d0						; Size is in words
+			subq.w	#1,d0
+			
+			; Loop over words in the structure
+	.lp		move.w	d1,(a0)+
+			dbra	d0,.lp
+			
+			movem.l	(sp)+,d0/d1/a0				; Stack
+		ENDIF
 		rts
 		
 		; Routine: MixerCalcTicks
@@ -4337,6 +4363,8 @@ _MixerPlaySample\1				EQU MixerPlaySample\1
 _MixerPlayChannelSample\1		EQU MixerPlayChannelSample\1
 _MixerGetSampleMinSize\1		EQU MixerGetSampleMinSize\1
 _MixerGetChannelStatus\1		EQU	MixerGetChannelStatus\1
+_MixerGetStatus\1				EQU	MixerGetStatus\1
+_MixerReplaceSample\1			EQU MixerReplaceSample\1
 _MixerEnableCallback\1			EQU MixerEnableCallback\1
 _MixerDisableCallback\1			EQU	MixerDisableCallback\1
 _MixerGetPluginsBufferSize\1	EQU MixerGetPluginsBufferSize\1
@@ -4363,6 +4391,8 @@ _MixerSetIRQDMACallbacks\1		EQU	MixerSetIRQDMACallbacks
 	XDEF	_MixerPlayChannelSample\1
 	XDEF	_MixerGetSampleMinSize\1
 	XDEF	_MixerGetChannelStatus\1
+	XDEF	_MixerGetStatus\1
+	XDEF	_MixerReplaceSample\1
 	XDEF	_MixerEnableCallback\1
 	XDEF	_MixerDisableCallback\1
 	XDEF	_MixerGetPluginsBufferSize\1

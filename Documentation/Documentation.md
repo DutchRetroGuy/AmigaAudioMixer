@@ -64,6 +64,8 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 
 Release notes for the Audio Mixer
 #### v3.8
+- (NEW) Added MixerGetStatus, which returns the mixer's current status. Can be used to determine if a higher priority interrupt has interrupted the mixer interrupt.
+- (NEW) Added the MIXER_INTERRUPT_RATE configuration option, which selects the approximate number of interrupts the mixer targets per vertical blank. It defaults to 1 and is intended to be used to aid music playback through the mixer. It makes this easier by reducing the maximum latency difference between the tracker playback routine and the mixer.
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
 - (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
@@ -77,6 +79,7 @@ Release notes for the Audio Mixer
 - (MAINTENANCE) Clarified and corrected (parts of the) documentation
 - (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions
 - (MAINTENANCE) Updated code to remove several non-EXREF based warnings
+- (MAINTENANCE) The routine MixerClearPluginData is now omitted when plugins are not enabled
 
 #### v3.7.2
 - (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set

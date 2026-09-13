@@ -252,6 +252,27 @@ MIXER_EXTERNAL_BITWISE	EQU 0
 ; Note: this feature only has an effect if MIXER_EXTERNAL_IRQ_DMA is set to 1.
 MIXER_EXTERNAL_RTE		EQU	0
 
+; Set define below to the target number of mixer interrupts per vertical 
+; blank. The default is 1, for approximately 1/50th of a second between 
+; interrupts (1/60th for NTSC). Increasing this value increases overhead,
+; but lowers latency, which makes it easier to play music using the 
+; mixer.
+;
+; Note: 50/MIXER_INTERUPT_RATE and 60/MIXER_INTERUPT_RATE have to result in
+;       an integer number. Failure to do so will result in an undefined 
+;       number of interrupts per VBLANK. 
+;
+;       Valid numbers include: 1,2,4,5,6 and 10.
+;
+;       It is recommended to stick to lower numbers and only deviate from 1
+;       when lower latencies lead to audible/noticeable differences.
+;
+; Note: the actual rate of mixer interrupts is not exactly the given number
+;       per VBLANK. This is because the mixer processes a static number of
+;       bytes per interrupt and rounding this number does not lead to an
+;       exact multiple of 1/50th or 1/60th of the sample rate.
+MIXER_INTERUPT_RATE		EQU 1
+
 ; Set define below to 1 to include the mixer in section code,code.
 ; If set to 0, the mixer will not be set a specific section (normally this is
 ; not needed, but it can be useful in certain cases)
