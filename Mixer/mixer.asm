@@ -1885,7 +1885,24 @@ mixer_error SET 1
 			ENDIF
 		ENDIF
 	ENDIF
-
+	
+; Check if MIXER_INTERRUPT_RATE is a positive integer in a normal range
+	IF MIXER_INTERRUPT_RATE<=1
+mixer_error	SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+		ENDIF
+	ENDIF
+	
+	IF MIXER_INTERRUPT_RATE>=10
+mixer_error	SET 1
+		IF MIXER_NO_ECHO=0
+			echo
+			echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+		ENDIF
+	ENDIF
+	
 	IF mixer_error=0		
 
 ;-----------------------------------------------------------------------------
@@ -2786,6 +2803,10 @@ MixerChannelWrite\1
 .irq_disabled
 
 		; Start of atomic part
+		tst.w	d6								; Skip plugin handling if 
+												; MIXER_NOREPLACE is not set
+		bpl.s	.set_length
+		
 .write_plugin	
 		IF MIXER_ENABLE_PLUGINS=1
 			; Set pointer to plugin
@@ -2842,6 +2863,7 @@ MixerChannelWrite\1
 			move.l	(sp)+,d7					; Stack
 		ENDIF
 
+.set_length
 		IF mxslength_word=1
 			move.w	d1,mch_length(a1)			; Set length
 			move.w	d1,mch_remaining_length(a1)	; Set remaining length
@@ -3263,6 +3285,7 @@ MixerPlayFX\1
 		; Set HW/Mixer channel in D0
 		or.w	d6,d0					
 
+		moveq	#MIXER_NOREPLACE,d6
 		bsr		MixerChannelWrite\1
 		tst.w	d0							; Set condition codes
 
@@ -3414,6 +3437,7 @@ MixerPlayChannelFX\1
 			move.w	d6,d0					; Restore HW/Mixer channel
 		ENDIF
 		
+		moveq	#MIXER_NOREPLACE,d6
 		bsr		MixerChannelWrite\1
 		tst.w	d0							; Set return value
 
@@ -3800,8 +3824,13 @@ MixerGetStatus\1
 		;
 		; Note: only samples of the same size or larger are supported
 		; Note: no range checking is done to verify size requirements are kept
+		; Note: no changes to the running effect other than sample choice will
+		;       be changed - loop and plugin settings won't update
+		; Note: plugins that change sample length will not update to respect 
+		;       new sample lengths - in this case, only samples of the same
+		;       size are supported.
 		;
-		; A0 - Pointer to sample data
+		; A0 - Pointer to MXEffect structure
 		; D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0|MIX_CH1)
 		;      Supports setting exactly one mixer software channel.
 		;
@@ -3908,8 +3937,13 @@ MixerReplaceSample\1
 .irq_disabled
 	
 		; Start of atomic part
-		tst.l	mch_loop_length(a1)
-		beq.s	.no_loop
+		IF MIXER_WORDSIZED=1
+			tst.w	mch_loop_length(a1)
+			beq.s	.no_loop
+		ELSE
+			tst.l	mch_loop_length(a1)
+			beq.s	.no_loop
+		ENDIF
 		
 		; There is a non-zero loop length
 		move.l	a0,mch_loop_ptr(a1)

@@ -540,6 +540,8 @@ MIXER_REPLACE_START		EQU	0				; Replacement sample plays from
 MIXER_REPLACE_OFFSET	EQU	1				; Replacement sample plays from
 											; current offset
 
+MIXER_NOREPLACE			EQU -1				; Internal constant for MixerChannelWrite
+
 	IFD BUILD_MIXER_WRAPPER
 mixer_output_channels	EQU	DMAF_AUD0
 	ENDIF
@@ -566,24 +568,30 @@ mixer_PAL_period		EQU (mixer_period*mixer_PAL_cycles)/mixer_NTSC_cycles
 ;       get the buffer size, always refer to mixer_buffer_size instead as the
 ;       mixer internally requires multiple buffers to work correctly and
 ;       mixer_buffer_size takes this into account.
-mixer_PAL_rate			SET 50/MIXER_INTERUPT_RATE
-mixer_NTSC_rate			SET 60/MIXER_INTERUPT_RATE
+	IFD MIXER_INTERRUPT_RATE
+mixer_PAL_rate			SET mixer_PAL_cycles/mixer_PAL_period/MIXER_INTERRUPT_RATE/50
+mixer_NTSC_rate			SET mixer_NTSC_cycles/mixer_NTSC_period/MIXER_INTERRUPT_RATE/60
+	ELSE
+	; Fallback in case of missing configuration option
+mixer_PAL_rate			SET mixer_PAL_cycles/mixer_PAL_period/50
+mixer_NTSC_rate			SET mixer_NTSC_cycles/mixer_NTSC_period/60
+	ENDIF
 
 	IFD BUILD_MIXER_WRAPPER
-mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65504)+32
-mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/mixer_NTSC_rate)&65504)+32
+mixer_PAL_buffer_size	SET	(mixer_PAL_rate&65504)+32
+mixer_NTSC_buffer_size	SET	(mixer_NTSC_rate&65504)+32
 	ELSE
 	IF MIXER_68020=0
 		IF MIXER_SIZEX32=1
-mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65504)+32
-mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/mixer_NTSC_rate)&65504)+32
+mixer_PAL_buffer_size	SET	(mixer_PAL_rate&65504)+32
+mixer_NTSC_buffer_size	SET	(mixer_NTSC_rate&65504)+32
 		ELSE
-mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65532)+4
-mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/mixer_NTSC_rate)&65532)+4
+mixer_PAL_buffer_size	SET	(mixer_PAL_rate&65532)+4
+mixer_NTSC_buffer_size	SET	(mixer_NTSC_rate&65532)+4
 		ENDIF
 	ELSE
-mixer_PAL_buffer_size	SET	((mixer_PAL_cycles/mixer_PAL_period/mixer_PAL_rate)&65532)+4
-mixer_NTSC_buffer_size	SET	((mixer_NTSC_cycles/mixer_NTSC_period/mixer_NTSC_rate)&65532)+4
+mixer_PAL_buffer_size	SET	(mixer_PAL_rate&65532)+4
+mixer_NTSC_buffer_size	SET	(mixer_NTSC_rate&65532)+4
 	ENDIF
 	ENDIF
 
