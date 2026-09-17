@@ -1824,7 +1824,7 @@ mixer_error	SET	0
 	IF mixer_output_count=0
 mixer_error SET 1
 		IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: no mixer output channel has been selected"
 		ENDIF
 	ENDIF
@@ -1833,7 +1833,7 @@ mixer_error SET 1
 	IF mixer_sw_channels<1
 mixer_error SET 1
 		IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: number of mixed channels out of range (1-4)"
 		ENDIF
 	ENDIF
@@ -1841,7 +1841,7 @@ mixer_error SET 1
 	IF mixer_sw_channels>4
 mixer_error SET 1
 		IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: number of mixed channels out of range (1-4)"
 		ENDIF
 	ENDIF
@@ -1851,14 +1851,14 @@ mixer_error SET 1
 	IF .mxtype_check=0
 mixer_error SET 1
 		IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: no mixer type selected in mixer_config.i"
 		ENDIF
 	ENDIF
 	IF .mxtype_check>1
 mixer_error SET 1
 		IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: more than one mixer type selected in mixer_config.i"
 		ENDIF
 	ENDIF
@@ -1868,7 +1868,7 @@ mixer_error SET 1
 		IF MIXER_SINGLE=1
 mixer_error SET 1		
 			IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: MIXER_SINGLE only supports one output channel"
 			ENDIF
 		ENDIF
@@ -1880,27 +1880,32 @@ mixer_error SET 1
 		IF MIXER_MULTI_PAIRED=1
 mixer_error SET 1
 			IF MIXER_NO_ECHO=0
-			echo
+			echo ""
 			echo "Error: MIXER_MULTI_PAIRED requires DMAF_AUD2&3 selected"
 			ENDIF
 		ENDIF
 	ENDIF
 	
 ; Check if MIXER_INTERRUPT_RATE is a positive integer in a normal range
-	IF MIXER_INTERRUPT_RATE<=1
+	IFD MIXER_INTERRUPT_RATE
+		IF MIXER_INTERRUPT_RATE<1
 mixer_error	SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+			IF MIXER_NO_ECHO=0
+				echo ""
+				echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+			ENDIF
 		ENDIF
-	ENDIF
 	
-	IF MIXER_INTERRUPT_RATE>=10
+		IF MIXER_INTERRUPT_RATE>10
 mixer_error	SET 1
-		IF MIXER_NO_ECHO=0
-			echo
-			echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+			IF MIXER_NO_ECHO=0
+				echo ""
+				echo "Error: MIXER_INTERRUPT_RATE must be in range 1-10"
+			ENDIF
 		ENDIF
+	ELSE
+		echo ""
+		echo "Error: MIXER_INTERRUPT_RATE is not defined in mixer_config.i"
 	ENDIF
 	
 	IF mixer_error=0		
@@ -2803,12 +2808,13 @@ MixerChannelWrite\1
 .irq_disabled
 
 		; Start of atomic part
-		tst.w	d6								; Skip plugin handling if 
-												; MIXER_NOREPLACE is not set
-		bpl.s	.set_length
 		
 .write_plugin	
 		IF MIXER_ENABLE_PLUGINS=1
+			tst.w	d6							; Skip plugin handling if 
+												; MIXER_NOREPLACE is not set
+			bpl.s	.set_length
+
 			; Set pointer to plugin
 			move.l	d7,-(sp)					; Stack
 			moveq	#0,d7
@@ -3816,7 +3822,7 @@ MixerGetStatus\1
 		
 		move.w	mx_status(a0),d0			; D0 = mixer status
 				
-		move.l	(sp)+,a0-a2					; Stack
+		move.l	(sp)+,a0					; Stack
 		rts
 
 		; Routine: MixerReplaceSample
@@ -4274,7 +4280,7 @@ MixerClearPluginData\1
 			subq.w	#1,d0
 			
 			; Loop over words in the structure
-	.lp		move.w	d1,(a0)+
+.lp			move.w	d1,(a0)+
 			dbra	d0,.lp
 			
 			movem.l	(sp)+,d0/d1/a0				; Stack

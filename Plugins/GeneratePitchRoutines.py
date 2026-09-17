@@ -1,4 +1,4 @@
-# $VER: GeneratePitchRoutines 1.0 (05.02.25)
+# $VER: GeneratePitchRoutines 1.5 (17.09.26)
 #
 # GeneratePitchRoutines.py
 # This file contains the Python 3 script to generate the pitch routines used by the pitch plugin in MXPLG_PITCH_LEVELS
@@ -6,8 +6,8 @@
 # generated.
 #
 # Author: Jeroen Knoester
-# Version: 1.0
-# Revision: 20250211
+# Version: 1.6
+# Revision: 20260917
 
 # Imports
 import math
@@ -107,14 +107,27 @@ def generate_pitch_loop(params: PitchParams):
     instructions = []
 
     # Generate move.b instructions using these exact positions
+    input_pos_prev = 0
     for input_pos in positions:
         if input_pos == 0 and not params.reverse:
             instructions.append("\t\tmove.b\t(a2),(a0)+")
         else:
             if params.reverse:
-                instructions.append(f"\t\tmove.b\t{input_pos}(a2),-(a0)")
+                if input_pos_prev == input_pos:
+                    # instructions.append(f"\t\tmove.b\t{input_pos}(a2),-(a0)")
+                    instructions.append("\t\tmove.b\t(a2),-(a0)")
+                else:
+                    # instructions.append(f"\t\tmove.b\t{input_pos}(a2),-(a0)")
+                    instructions.append("\t\tmove.b\t-(a2),-(a0)")
             else:
-                instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+                if input_pos_prev == input_pos:
+                    # instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+                    instructions.append(f"\t\tmove.b\t(a2),(a0)+")
+                else:
+                    # instructions.append(f"\t\tmove.b\t{input_pos}(a2),(a0)+")
+                    instructions.append(f"\t\tmove.b\t(a2)+,(a0)+")
+
+        input_pos_prev = input_pos
 
     # Reverse instruction order if needed
     if params.reverse:
@@ -123,9 +136,11 @@ def generate_pitch_loop(params: PitchParams):
         output_code.append(f"\t\tbeq\t\t.lp_done_{params.level_num}")
         output_code.append("")
         output_code.append("\t\tlea.l\t1(a0,d7.w),a0")
-        output_code.append("\t\tmove.w\t#128,d5")
+        #output_code.append("\t\tmove.w\t#128,d5")
+        output_code.append("\t\tmove.w\t#64,d5")
         output_code.append("\t\tsub.w\td6,d5")
-        output_code.append("\t\tlsr.w\t#2,d6")
+        #output_code.append("\t\tlsr.w\t#2,d6")
+        output_code.append("\t\tlsr.w\t#1,d6")
         output_code.append(f"\t\tjmp\t\t.jt_table_{params.level_num}(pc,d5.w)")
         output_code.append("")
         output_code.append(f".jt_table_{params.level_num}")
@@ -149,10 +164,10 @@ def generate_pitch_loop(params: PitchParams):
     else:
         if max_pos > 0:
             if max_pos <= 8:
-                output_code.append(f"\t\taddq.w\t#{max_pos},a2")
+                #output_code.append(f"\t\taddq.w\t#{max_pos},a2")
                 output_code.append(f"\t\taddq.l\t#{max_pos},d4")
             else:
-                output_code.append(f"\t\tadd.w\t#{max_pos},a2")
+                #output_code.append(f"\t\tadd.w\t#{max_pos},a2")
                 output_code.append(f"\t\tadd.l\t#{max_pos},d4")
 
     output_code.append(f"\t\tdbra\td2,.{params.loop_label}_{params.level_num}")
@@ -199,7 +214,7 @@ def generate_pitch_routine_68000(pitch_factor, level_num):
     code.append("\t\tmove.w\td2,d6")
     code.append("\t\tand.w\t#$1f,d6")
     code.append("\t\tmove.w\td6,d7")
-    code.append("\t\tadd.w\td6,d6")
+    #code.append("\t\tadd.w\td6,d6")
     code.append("\t\tadd.w\td6,d6")
     code.append(f"\t\tlsr.w\t#{shift_amount},d2")
     code.append(f"\t\tsubq.w\t#1,d2")

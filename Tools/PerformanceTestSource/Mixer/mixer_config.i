@@ -74,5 +74,11 @@ mixer_period			EQU	322		; Period value (124-65535)
 MIXER_PER_IS_NTSC		EQU	0		; Set to 1 if the mixer period value set
 									; above is given for NTSC systems, leave
 									; at 0 if it is given for PAL systems.
+									
+;-----------------------------------------------------------------------------
+; Mixer interrupt rate configuration
+;-----------------------------------------------------------------------------
+MIXER_INTERRUPT_RATE	EQU	1		; Sets the target number of mixer 
+									; interrupts per VBLANK
 	ENDC	; MIXER_CONFIG_I
 ; End of File

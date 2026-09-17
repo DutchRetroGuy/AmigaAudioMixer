@@ -700,7 +700,7 @@ RunSingleTestPlg
 		
 .setup_volshift_lp
 		move.w	#MXPLG_VOL_SHIFT,mpid_vol_mode(a3)
-		move.w	#3,mpid_vol_volume(a3)
+		move.w	#4,mpid_vol_volume(a3)
 		
 		lea.l	mxplg_max_idata_size(a3),a3
 		dbra	d7,.setup_volshift_lp

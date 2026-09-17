@@ -1110,23 +1110,18 @@ MixPluginPitchStandard\1
 		bmi.s	.lp_remainder
 		
 		; Process D7 longwords
-.lp		
-		move.b	0(a2,d4.l),(a0)+
+.lp		move.b	0(a2,d4.w),(a0)+
 		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
-		move.b	0(a2,d4.l),(a0)+
+		addx.w	d2,d4
+		move.b	0(a2,d4.w),(a0)+
 		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
-		move.b	0(a2,d4.l),(a0)+
+		addx.w	d2,d4
+		move.b	0(a2,d4.w),(a0)+
 		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
-		move.b	0(a2,d4.l),(a0)+
+		addx.w	d2,d4
+		move.b	0(a2,d4.w),(a0)+
 		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
+		addx.w	d2,d4
 		dbra	d7,.lp
 		
 .lp_remainder
@@ -1136,10 +1131,9 @@ MixPluginPitchStandard\1
 		bmi.s	.lp_done
 
 		; Process D7 bytes
-.rem_lp	move.b	0(a2,d4.l),(a0)+
+.rem_lp	move.b	0(a2,d4.w),(a0)+
 		add.b	d1,d3
-		addx.l	d6,d4
-		add.l	d2,d4
+		addx.w	d2,d4
 		dbra	d7,.rem_lp
 		
 .lp_done
@@ -1186,7 +1180,6 @@ MixPluginPitchLowQuality\1
 		; Remaining loop set up
 		; A2 = Sample pointer + offset
 		; D5 = bytes to process
-		moveq	#4,d6						; D6 = longword mask
 		moveq	#0,d7
 		move.w	a3,d1						; D1 = FP8.8 low byte
 		move.w	d0,a4						; A4 = total bytes to process
@@ -1196,13 +1189,11 @@ MixPluginPitchLowQuality\1
 		bmi.s	.lp_done
 		
 		; Process D0 longwords
-.lp
-		move.l	0(a2,d4.l),(a0)+
+.lp		move.l	0(a2,d4.l),(a0)+
 		add.b	d1,d3
-		scs		d7
-		and.b	d6,d7
-		add.l	d7,d4
-		add.l	d2,d4
+		bcc.s	.nc
+		addq.w	#4,d4
+.nc		add.w	d2,d4
 		dbra	d0,.lp
 		
 .lp_done
@@ -1318,7 +1309,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_0
@@ -1356,7 +1346,6 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		addq.w	#1,a2
 		addq.l	#1,d4
 		dbra	d2,.lp_0
 
@@ -1365,45 +1354,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_0
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_0(pc,d5.w)
 
 .jt_table_0
 	opt o2-
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_0(pc,d6.w),d6
 		add.w	d6,a2
@@ -1423,7 +1412,6 @@ MixPluginLevels_internal\1
 		move.w	d2,d6
 		and.w	#$1f,d6
 		move.w	d6,d7
-		add.w	d6,d6
 		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
@@ -1446,23 +1434,22 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		addq.w	#2,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#2,d4
 		dbra	d2,.lp_1
 
@@ -1471,45 +1458,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_1
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_1(pc,d5.w)
 
 .jt_table_1
 	opt o2-
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_1(pc,d6.w),d6
 		add.w	d6,a2
@@ -1530,7 +1517,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_2
@@ -1547,28 +1533,27 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		addq.w	#3,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#3,d4
 		dbra	d2,.lp_2
 
@@ -1577,45 +1562,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_2
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_2(pc,d5.w)
 
 .jt_table_2
 	opt o2-
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_2(pc,d6.w),d6
 		add.w	d6,a2
@@ -1636,7 +1621,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_3
@@ -1650,31 +1634,30 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		addq.w	#4,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#4,d4
 		dbra	d2,.lp_3
 
@@ -1683,45 +1666,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_3
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_3(pc,d5.w)
 
 .jt_table_3
 	opt o2-
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_3(pc,d6.w),d6
 		add.w	d6,a2
@@ -1742,7 +1725,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_4
@@ -1755,32 +1737,31 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		addq.w	#5,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#5,d4
 		dbra	d2,.lp_4
 
@@ -1789,45 +1770,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_4
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_4(pc,d5.w)
 
 .jt_table_4
 	opt o2-
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_4(pc,d6.w),d6
 		add.w	d6,a2
@@ -1848,7 +1829,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_5
@@ -1860,33 +1840,32 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		addq.w	#6,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#6,d4
 		dbra	d2,.lp_5
 
@@ -1895,45 +1874,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_5
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_5(pc,d5.w)
 
 .jt_table_5
 	opt o2-
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_5(pc,d6.w),d6
 		add.w	d6,a2
@@ -1954,7 +1933,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_6
@@ -1965,34 +1943,33 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		addq.w	#7,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#7,d4
 		dbra	d2,.lp_6
 
@@ -2001,45 +1978,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_6
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_6(pc,d5.w)
 
 .jt_table_6
 	opt o2-
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_6(pc,d6.w),d6
 		add.w	d6,a2
@@ -2060,7 +2037,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_7
@@ -2070,35 +2046,34 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		addq.w	#8,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		addq.l	#8,d4
 		dbra	d2,.lp_7
 
@@ -2107,45 +2082,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_7
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_7(pc,d5.w)
 
 .jt_table_7
 	opt o2-
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_7(pc,d6.w),d6
 		add.w	d6,a2
@@ -2166,7 +2141,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_8
@@ -2176,35 +2150,34 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		add.w	#9,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		add.l	#9,d4
 		dbra	d2,.lp_8
 
@@ -2213,45 +2186,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_8
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_8(pc,d5.w)
 
 .jt_table_8
 	opt o2-
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_8(pc,d6.w),d6
 		add.w	d6,a2
@@ -2272,7 +2245,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_9
@@ -2282,35 +2254,34 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		add.w	#10,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
 		add.l	#10,d4
 		dbra	d2,.lp_9
 
@@ -2319,45 +2290,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_9
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_9(pc,d5.w)
 
 .jt_table_9
 	opt o2-
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_9(pc,d6.w),d6
 		add.w	d6,a2
@@ -2378,7 +2349,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_10
@@ -2387,36 +2357,35 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		add.w	#11,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#11,d4
 		dbra	d2,.lp_10
 
@@ -2425,45 +2394,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_10
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_10(pc,d5.w)
 
 .jt_table_10
 	opt o2-
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_10(pc,d6.w),d6
 		add.w	d6,a2
@@ -2484,7 +2453,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_11
@@ -2493,36 +2461,35 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		add.w	#12,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#12,d4
 		dbra	d2,.lp_11
 
@@ -2531,45 +2498,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_11
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_11(pc,d5.w)
 
 .jt_table_11
 	opt o2-
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_11(pc,d6.w),d6
 		add.w	d6,a2
@@ -2590,7 +2557,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_12
@@ -2599,36 +2565,35 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		add.w	#13,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#13,d4
 		dbra	d2,.lp_12
 
@@ -2637,45 +2602,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_12
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_12(pc,d5.w)
 
 .jt_table_12
 	opt o2-
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_12(pc,d6.w),d6
 		add.w	d6,a2
@@ -2696,7 +2661,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_13
@@ -2705,36 +2669,35 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		add.w	#14,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#14,d4
 		dbra	d2,.lp_13
 
@@ -2743,45 +2706,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_13
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_13(pc,d5.w)
 
 .jt_table_13
 	opt o2-
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_13(pc,d6.w),d6
 		add.w	d6,a2
@@ -2802,7 +2765,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_14
@@ -2811,36 +2773,35 @@ MixPluginLevels_internal\1
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		add.w	#15,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#15,d4
 		dbra	d2,.lp_14
 
@@ -2849,45 +2810,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_14
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_14(pc,d5.w)
 
 .jt_table_14
 	opt o2-
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_14(pc,d6.w),d6
 		add.w	d6,a2
@@ -2908,7 +2869,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_15
@@ -2916,37 +2876,36 @@ MixPluginLevels_internal\1
 .lp_15
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		add.w	#16,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
 		add.l	#16,d4
 		dbra	d2,.lp_15
 
@@ -2955,45 +2914,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_15
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_15(pc,d5.w)
 
 .jt_table_15
 	opt o2-
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_15(pc,d6.w),d6
 		add.w	d6,a2
@@ -3014,7 +2973,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_16
@@ -3022,37 +2980,36 @@ MixPluginLevels_internal\1
 .lp_16
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		add.w	#17,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#17,d4
 		dbra	d2,.lp_16
 
@@ -3061,45 +3018,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_16
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_16(pc,d5.w)
 
 .jt_table_16
 	opt o2-
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_16(pc,d6.w),d6
 		add.w	d6,a2
@@ -3120,7 +3077,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_17
@@ -3128,37 +3084,36 @@ MixPluginLevels_internal\1
 .lp_17
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		add.w	#18,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#18,d4
 		dbra	d2,.lp_17
 
@@ -3167,45 +3122,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_17
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_17(pc,d5.w)
 
 .jt_table_17
 	opt o2-
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_17(pc,d6.w),d6
 		add.w	d6,a2
@@ -3226,7 +3181,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_18
@@ -3234,37 +3188,36 @@ MixPluginLevels_internal\1
 .lp_18
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		add.w	#19,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#19,d4
 		dbra	d2,.lp_18
 
@@ -3273,45 +3226,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_18
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_18(pc,d5.w)
 
 .jt_table_18
 	opt o2-
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_18(pc,d6.w),d6
 		add.w	d6,a2
@@ -3332,7 +3285,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_19
@@ -3340,37 +3292,36 @@ MixPluginLevels_internal\1
 .lp_19
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		add.w	#20,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#20,d4
 		dbra	d2,.lp_19
 
@@ -3379,45 +3330,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_19
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_19(pc,d5.w)
 
 .jt_table_19
 	opt o2-
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_19(pc,d6.w),d6
 		add.w	d6,a2
@@ -3438,7 +3389,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_20
@@ -3446,37 +3396,36 @@ MixPluginLevels_internal\1
 .lp_20
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		add.w	#21,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#21,d4
 		dbra	d2,.lp_20
 
@@ -3485,45 +3434,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_20
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_20(pc,d5.w)
 
 .jt_table_20
 	opt o2-
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_20(pc,d6.w),d6
 		add.w	d6,a2
@@ -3544,7 +3493,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_21
@@ -3552,37 +3500,36 @@ MixPluginLevels_internal\1
 .lp_21
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		add.w	#22,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#22,d4
 		dbra	d2,.lp_21
 
@@ -3591,45 +3538,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_21
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_21(pc,d5.w)
 
 .jt_table_21
 	opt o2-
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_21(pc,d6.w),d6
 		add.w	d6,a2
@@ -3650,7 +3597,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_22
@@ -3658,37 +3604,36 @@ MixPluginLevels_internal\1
 .lp_22
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		add.w	#23,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#23,d4
 		dbra	d2,.lp_22
 
@@ -3697,45 +3642,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_22
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_22(pc,d5.w)
 
 .jt_table_22
 	opt o2-
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_22(pc,d6.w),d6
 		add.w	d6,a2
@@ -3756,7 +3701,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_23
@@ -3764,37 +3708,36 @@ MixPluginLevels_internal\1
 .lp_23
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		add.w	#24,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#24,d4
 		dbra	d2,.lp_23
 
@@ -3803,45 +3746,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_23
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_23(pc,d5.w)
 
 .jt_table_23
 	opt o2-
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_23(pc,d6.w),d6
 		add.w	d6,a2
@@ -3862,7 +3805,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_24
@@ -3870,37 +3812,36 @@ MixPluginLevels_internal\1
 .lp_24
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		add.w	#25,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#25,d4
 		dbra	d2,.lp_24
 
@@ -3909,45 +3850,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_24
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_24(pc,d5.w)
 
 .jt_table_24
 	opt o2-
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_24(pc,d6.w),d6
 		add.w	d6,a2
@@ -3968,7 +3909,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_25
@@ -3976,37 +3916,36 @@ MixPluginLevels_internal\1
 .lp_25
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		add.w	#26,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#26,d4
 		dbra	d2,.lp_25
 
@@ -4015,45 +3954,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_25
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_25(pc,d5.w)
 
 .jt_table_25
 	opt o2-
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_25(pc,d6.w),d6
 		add.w	d6,a2
@@ -4074,7 +4013,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_26
@@ -4082,37 +4020,36 @@ MixPluginLevels_internal\1
 .lp_26
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		add.w	#27,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#27,d4
 		dbra	d2,.lp_26
 
@@ -4121,45 +4058,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_26
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_26(pc,d5.w)
 
 .jt_table_26
 	opt o2-
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_26(pc,d6.w),d6
 		add.w	d6,a2
@@ -4180,7 +4117,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_27
@@ -4188,37 +4124,36 @@ MixPluginLevels_internal\1
 .lp_27
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		add.w	#28,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#28,d4
 		dbra	d2,.lp_27
 
@@ -4227,45 +4162,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_27
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_27(pc,d5.w)
 
 .jt_table_27
 	opt o2-
-		move.b	27(a2),-(a0)
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_27(pc,d6.w),d6
 		add.w	d6,a2
@@ -4286,7 +4221,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_28
@@ -4294,37 +4228,36 @@ MixPluginLevels_internal\1
 .lp_28
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		add.w	#29,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#29,d4
 		dbra	d2,.lp_28
 
@@ -4333,45 +4266,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_28
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_28(pc,d5.w)
 
 .jt_table_28
 	opt o2-
-		move.b	28(a2),-(a0)
-		move.b	27(a2),-(a0)
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_28(pc,d6.w),d6
 		add.w	d6,a2
@@ -4392,7 +4325,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_29
@@ -4400,37 +4332,36 @@ MixPluginLevels_internal\1
 .lp_29
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		add.w	#30,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2),(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#30,d4
 		dbra	d2,.lp_29
 
@@ -4439,45 +4370,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_29
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_29(pc,d5.w)
 
 .jt_table_29
 	opt o2-
-		move.b	29(a2),-(a0)
-		move.b	28(a2),-(a0)
-		move.b	27(a2),-(a0)
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_29(pc,d6.w),d6
 		add.w	d6,a2
@@ -4498,7 +4429,6 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_30
@@ -4506,37 +4436,36 @@ MixPluginLevels_internal\1
 .lp_30
 		move.b	(a2),(a0)+
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		move.b	30(a2),(a0)+
-		add.w	#31,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#31,d4
 		dbra	d2,.lp_30
 
@@ -4545,45 +4474,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_30
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_30(pc,d5.w)
 
 .jt_table_30
 	opt o2-
-		move.b	30(a2),-(a0)
-		move.b	29(a2),-(a0)
-		move.b	28(a2),-(a0)
-		move.b	27(a2),-(a0)
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_30(pc,d6.w),d6
 		add.w	d6,a2
@@ -4604,45 +4533,43 @@ MixPluginLevels_internal\1
 		and.w	#$1f,d6
 		move.w	d6,d7
 		add.w	d6,d6
-		add.w	d6,d6
 		lsr.w	#5,d2
 		subq.w	#1,d2
 		bmi		.remainder_31
 
 .lp_31
 		move.b	(a2),(a0)+
-		move.b	1(a2),(a0)+
-		move.b	2(a2),(a0)+
-		move.b	3(a2),(a0)+
-		move.b	4(a2),(a0)+
-		move.b	5(a2),(a0)+
-		move.b	6(a2),(a0)+
-		move.b	7(a2),(a0)+
-		move.b	8(a2),(a0)+
-		move.b	9(a2),(a0)+
-		move.b	10(a2),(a0)+
-		move.b	11(a2),(a0)+
-		move.b	12(a2),(a0)+
-		move.b	13(a2),(a0)+
-		move.b	14(a2),(a0)+
-		move.b	15(a2),(a0)+
-		move.b	16(a2),(a0)+
-		move.b	17(a2),(a0)+
-		move.b	18(a2),(a0)+
-		move.b	19(a2),(a0)+
-		move.b	20(a2),(a0)+
-		move.b	21(a2),(a0)+
-		move.b	22(a2),(a0)+
-		move.b	23(a2),(a0)+
-		move.b	24(a2),(a0)+
-		move.b	25(a2),(a0)+
-		move.b	26(a2),(a0)+
-		move.b	27(a2),(a0)+
-		move.b	28(a2),(a0)+
-		move.b	29(a2),(a0)+
-		move.b	30(a2),(a0)+
-		move.b	31(a2),(a0)+
-		add.w	#32,a2
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
+		move.b	(a2)+,(a0)+
 		add.l	#32,d4
 		dbra	d2,.lp_31
 
@@ -4651,45 +4578,45 @@ MixPluginLevels_internal\1
 		beq		.lp_done_31
 
 		lea.l	1(a0,d7.w),a0
-		move.w	#128,d5
+		move.w	#64,d5
 		sub.w	d6,d5
-		lsr.w	#2,d6
+		lsr.w	#1,d6
 		jmp		.jt_table_31(pc,d5.w)
 
 .jt_table_31
 	opt o2-
-		move.b	31(a2),-(a0)
-		move.b	30(a2),-(a0)
-		move.b	29(a2),-(a0)
-		move.b	28(a2),-(a0)
-		move.b	27(a2),-(a0)
-		move.b	26(a2),-(a0)
-		move.b	25(a2),-(a0)
-		move.b	24(a2),-(a0)
-		move.b	23(a2),-(a0)
-		move.b	22(a2),-(a0)
-		move.b	21(a2),-(a0)
-		move.b	20(a2),-(a0)
-		move.b	19(a2),-(a0)
-		move.b	18(a2),-(a0)
-		move.b	17(a2),-(a0)
-		move.b	16(a2),-(a0)
-		move.b	15(a2),-(a0)
-		move.b	14(a2),-(a0)
-		move.b	13(a2),-(a0)
-		move.b	12(a2),-(a0)
-		move.b	11(a2),-(a0)
-		move.b	10(a2),-(a0)
-		move.b	9(a2),-(a0)
-		move.b	8(a2),-(a0)
-		move.b	7(a2),-(a0)
-		move.b	6(a2),-(a0)
-		move.b	5(a2),-(a0)
-		move.b	4(a2),-(a0)
-		move.b	3(a2),-(a0)
-		move.b	2(a2),-(a0)
-		move.b	1(a2),-(a0)
-		move.b	0(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	-(a2),-(a0)
+		move.b	(a2),-(a0)
 	opt o2+
 		move.b	.remainder_table_31(pc,d6.w),d6
 		add.w	d6,a2
@@ -4836,7 +4763,25 @@ MixPluginVolumeTable\1
 	ELSE
 		rts
 	ENDIF
+
+	; The volume shift tables are used in the shift algorithm. Due to
+	; displacement limits, they had to be placed in front of the routine.
+	IF MXPLUGIN_VOLUME=1
+vol_tab_shift_d2\1
+		dc.l	$7f7f7f7f
+		dc.l	$3f3f3f3f
+		dc.l	$1f1f1f1f
+		dc.l	$0f0f0f0f
+		dc.l	$01010101
 		
+vol_tab_shift_d3\1
+		dc.l	$40404040
+		dc.l	$60606060
+		dc.l	$70707070
+		dc.l	$78787878
+		dc.l	$7f7f7f7f
+	ENDIF
+	
 		; Shift based volume
 MixPluginVolumeShift\1
 	IF MXPLUGIN_VOLUME=1
@@ -4868,77 +4813,33 @@ MixPluginVolumeShift\1
 		subq.w	#1,d7
 		bmi.s	.lp_done
 
+		; Preload values for shift code
+		move.w	d6,d5
 		IF MIXER_68020=1
-			; Setup masks for use in the loop
 			IF MXPLUGIN_68020_ONLY=1
-				mc68020
-				jmp		.shift_mask_jptable(pc,d6.w*8)
-				mc68000
+				move.l	vol_tab_shift_d2\1-4(pc,d5.w*4),d2
+				move.l	vol_tab_shift_d3\1-4(pc,d5.w*4),d3
 			ELSE
-				move.w	d6,d5
-				asl.w	#3,d5
-				jmp		.shift_mask_jptable(pc,d5)
+				add.w	d5,d5
+				add.w	d5,d5
+				move.l	vol_tab_shift_d2\1-4(pc,d5.w),d2
+				move.l	vol_tab_shift_d3\1-4(pc,d5.w),d3
 			ENDIF
-
-.shift_mask_jptable
-			nop
-			nop
-			moveq	#$0,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$80808080,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$c0c0c0c0,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$e0e0e0e0,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$f0f0f0f0,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$f8f8f8f8,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$fcfcfcfc,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$fefefefe,d2
-			bra.s	.shift_mask_cnt
-			move.l	#$ffffffff,d2
-
-.shift_mask_cnt
-			moveq	#-1,d3
-			sub.l	d2,d3					; Reverse mask in D3
+		ELSE
+			add.w	d5,d5
+			add.w	d5,d5
+			move.l	vol_tab_shift_d2\1-4(pc,d5.w),d2
+			move.l	vol_tab_shift_d3\1-4(pc,d5.w),d3
 		ENDIF
 		
 .lp_vol	
-		IF MIXER_68020=1
-			move.l	(a2)+,d4
-			btst	#31,d4
-			sne		d5
-			lsl.l	#8,d5
-			btst	#23,d4
-			sne		d5
-			lsl.l	#8,d5
-			btst	#15,d4
-			sne		d5
-			lsl.l	#8,d5
-			btst	#7,d4
-			sne		d5
-			and.l	d2,d5					; Mask for upper bits in D2
-			lsr.l	d6,d4					; D6 = shift value
-			and.l	d3,d4					; Mask for lower bits in d3
-			or.l	d5,d4					; Correct upper bits set in D0
-			move.l	d4,(a0)+
-		ELSE
-			move.b	(a2)+,d5
-			asr.b	d6,d5
-			move.b	d5,(a0)+
-			move.b	(a2)+,d5
-			asr.b	d6,d5
-			move.b	d5,(a0)+
-			move.b	(a2)+,d5
-			asr.b	d6,d5
-			move.b	d5,(a0)+
-			move.b	(a2)+,d5
-			asr.b	d6,d5
-			move.b	d5,(a0)+
-		ENDIF
+		move.l  (a2)+,d5
+		lsr.l   d6,d5					; Four bytes per shift
+		and.l   d2,d5					; Mask bits that shifted in
+		add.l   d3,d5					; Sign-extend each byte: (v+K)^K
+		eor.l   d3,d5					; Second part of sign extension
+		move.l  d5,(a0)+
+
 		dbra	d7,.lp_vol
 			
 .lp_done
@@ -4978,6 +4879,7 @@ MixPluginVolumeShift\1
 		rts
 	ENDIF
 	
+
 		; Routine: MixPluginRepeat
 		; This routine forms the repeat plugin routine. See 
 		; MixPluginInitRepeat for more information.

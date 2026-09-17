@@ -883,7 +883,7 @@ SetupPluginStructs
 
 .fill_plugin_volume_data
 		move.w	#MXPLG_VOL_SHIFT,mpid_vol_mode(a4)
-		move.w	#2,mpid_vol_volume(a4)
+		move.w	#1,mpid_vol_volume(a4)
 		bra		.write_plugin_struct
 
 .fill_plugin_repeat_data

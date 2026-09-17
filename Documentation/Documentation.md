@@ -64,6 +64,9 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 
 Release notes for the Audio Mixer
 #### v3.8
+- (NEW) Added a new mode for the Pitch plugin (MXPLG_PITCH_LEVELS) that is faster than MXPLG_PITCH_STANDARD but supports fewer pitch levels
+- (NEW) Improved the performance of both variants of MixPluginPitch (MXPLG_PITCH_STANDARD and MXPLG_PITCH_LOWQUALITY).
+- (NEW) Significantly improved the performance of MixPluginVolume using the MXPLG_VOL_SHIFT mode.
 - (NEW) Added MixerGetStatus, which returns the mixer's current status. Can be used to determine if a higher priority interrupt has interrupted the mixer interrupt.
 - (NEW) Added the MIXER_INTERRUPT_RATE configuration option, which selects the approximate number of interrupts the mixer targets per vertical blank. It defaults to 1 and is intended to be used to aid music playback through the mixer. It makes this easier by reducing the maximum latency difference between the tracker playback routine and the mixer.
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
@@ -2296,7 +2299,7 @@ Full license information for the PT Player, LSP converter/player and startup cod
 
 With exception of the items listed in the ["Acknowledgements"](#acknowledgements) section of this document, all code, documentation and other files fall under the following license:
 
-Copyright (c) 2023-2024 Jeroen Knoester
+Copyright (c) 2023-2026 Jeroen Knoester
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
