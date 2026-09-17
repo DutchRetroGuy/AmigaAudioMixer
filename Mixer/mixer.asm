@@ -698,7 +698,7 @@ MixJump4	MACRO
 			ENDM
 
 		; Macro: MixBlock4
-		; This macro mixes up to 32 bytes of sample data.
+		; This macro mixes up to 28 bytes of sample data.
 		;
 		; \1 - number of channels
 MixBlock4	MACRO
