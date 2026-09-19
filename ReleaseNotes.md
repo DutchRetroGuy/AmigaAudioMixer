@@ -6,7 +6,6 @@
 - (NEW) Added MixerGetStatus, which returns the mixer's current status. Can be used to determine if a higher priority interrupt has interrupted the mixer interrupt.
 - (NEW) Added the MIXER_INTERRUPT_RATE configuration option, which selects the approximate number of interrupts the mixer targets per vertical blank. It defaults to 1 and is intended to be used to aid music playback through the mixer. It makes this easier by reducing the maximum latency difference between the tracker playback routine and the mixer.
 - (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at either the same sample offset or starting playback from the start.
-- (NEW) Added MixPluginSetPitch and MixPluginSetVolume to change pitch and volume levels of samples already playing with either pitch or volume plugins
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)

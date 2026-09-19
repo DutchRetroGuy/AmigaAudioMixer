@@ -24,9 +24,9 @@ MIXER_PLUGINS_CONFIG_I	SET	1
 ; Set the defines below to 1 for each plugin that is to be included. Set them
 ; to 0 to exclude one or more plugins. Disabling plugins this way will remove
 ; them from the code base, lowering the size of the generated plugins.o file.
-MXPLUGIN_REPEAT				EQU	0
-MXPLUGIN_SYNC				EQU	0
-MXPLUGIN_VOLUME				EQU	0
+MXPLUGIN_REPEAT				EQU	1
+MXPLUGIN_SYNC				EQU	1
+MXPLUGIN_VOLUME				EQU	1
 MXPLUGIN_PITCH				EQU	1
 
 ;-----------------------------------------------------------------------------
