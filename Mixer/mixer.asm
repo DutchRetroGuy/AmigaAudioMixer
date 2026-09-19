@@ -3822,8 +3822,9 @@ MixerGetStatus\1
 		; Routine: MixerReplaceSample
 		; This routine replaces an already playing sample with a new sample.
 		;
-		; Note: only samples of the same size or larger are supported
-		; Note: no range checking is done to verify size requirements are kept
+		; Note: only samples of the same size or larger are supported. If a
+		;       smaller sample is passed, the routine will not replace the
+		;       sample.
 		; Note: no changes to the running effect other than sample choice will
 		;       be changed - loop and plugin settings won't update
 		; Note: plugins that change sample length will not update to respect 
@@ -3939,12 +3940,23 @@ MixerReplaceSample\1
 		ENDIF
 .irq_disabled
 		; Start of atomic part
+
+		; 1. Sanity check on sample length
+		IF mxslength_word=1
+			move.w	mfx_length(a0),d7
+			cmp.w	mch_length(a1),d7
+			bcs.s	.atomic_done
+		ELSE
+			move.l	mfx_length(a0),d7
+			cmp.l	mch_length(a1),d7
+			blt.s	.atomic_done
+		ENDIF
 		
-		; 1. Fetch sample pointer
+		; 2. Fetch sample pointer
 		move.l	mfx_sample_ptr(a0),a0
 
-		; 2. Update loop pointer if needed
-		IF MIXER_WORDSIZED=1
+		; 3. Update loop pointer if needed
+		IF mxslength_word=1
 			tst.w	mch_loop_length(a1)
 			beq.s	.no_loop
 		ELSE
@@ -3956,7 +3968,7 @@ MixerReplaceSample\1
 		move.l	a0,mch_loop_ptr(a1)
 
 .no_loop
-		; 3. Update sample pointer based on remaining length
+		; 4. Update sample pointer based on remaining length
 		IF mxslength_word=1
 			moveq	#0,d7
 			move.w	mch_length(a1),d7
@@ -3976,6 +3988,8 @@ MixerReplaceSample\1
 		
 .write_pointer
 		move.l	a0,mch_sample_ptr(a1)
+.atomic_done
+		; End of Atomic Part
 
 		; Test if the mixer interrupts are running
 		move.w	mixer\1+mx_status(pc),d7
