@@ -54,7 +54,7 @@
 #define MIX_CH3	128			/* Mixer software channel 3 */
 
 #define	MIX_CH_FREE	0		/* Mixer channel is free for use */
-#define	MIC_CH_BUSY	1		/* Mixer channel is busy */
+#define	MIX_CH_BUSY	1		/* Mixer channel is busy */
 
 #define	MIX_PLUGIN_STD    0	/* Plugin is of standard type */
 #define	MIX_PLUGIN_NODATA 1	/* Plugin is of no data type */
@@ -80,7 +80,7 @@ typedef struct MXEffect
 	WORD mfx_priority;		/* Priority indicator (higher is better) */
 	LONG mfx_loop_offset;	/* Offset to loop restart point in case 
 							   MIX_FX_LOOP_OFFSET is set as looping mode */
-	void *mfx_plugin;		/* NULL or a pointer to an instance of 
+	void *mfx_plugin_ptr;	/* NULL or a pointer to an instance of 
 	                           MXPluginList, containing a plugin to use while
 							   playing back the sample */
 } MXEffect;
@@ -127,6 +127,14 @@ ULONG MixerGetBufferSize(void)
 	value without needing access to mixer.i.
 */
 MIX_API ULONG MixerGetBufferSize(void);
+
+/*
+ULONG=MixerGetChannelBufferSize(void);
+	Returns the value of the internal mixer buffer size. Its primary purpose
+	is to give plugins a way to get this value without needing access to the
+	mixer structure.
+*/
+MIX_API ULONG MixerGetChannelBufferSize(void);
 
 /*
 ULONG MixerGetPluginsBufferSize(void)
@@ -328,11 +336,11 @@ void MixerReplaceSample(MXEffect *effect_structure,
 */
 MIX_API void MixerReplaceSample(MIX_REGARG(MXEffect *effect_structure,"a0"),
 								MIX_REGARG(ULONG mixer_channel,"d0"),
-								MIX_REGARS(UWORD replacement_mode, "d1"));
+								MIX_REGARG(UWORD replacement_mode, "d1"));
 
 
 /* 
-ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
+ULONG MixerGetChannelStatus(ULONG mixer_channel);
 	Returns whether or not the hardware/mixer channel given in D0 is in use.
 	If MIXER_SINGLE is set to 1, the hardware channel does not need to be 
 	given in D0.
@@ -340,7 +348,7 @@ ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
 	If the channel is not used, the routine will return MIX_CH_FREE. If the
 	channel is in use, the routine will return MIX_CH_BUSY.
  */
-MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
+MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(ULONG mixer_channel,"d0"));
 
 /*
 UWORD MixerGetStatus(void)
@@ -578,6 +586,22 @@ MIX_API ULONG MixerGetBufferSize(void)
 	return reg_result;
 }
 
+MIX_API ULONG MixerGetChannelBufferSize(void)
+{
+	register volatile ULONG reg_result __asm("d0");
+	__asm__ volatile (
+		"jsr _MixerGetChannelBufferSize"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
 MIX_API ULONG MixerGetPluginsBufferSize(void)
 {
 	register volatile ULONG reg_result __asm("d0");
@@ -743,7 +767,7 @@ MIX_API ULONG MixerPlayFX(MXEffect *effect_structure,
 	return reg_result;
 }
 
-MIX_API ULONG MixerChannelPlayFX(MXEffect *effect_structure,
+MIX_API ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 								 ULONG mixer_channel)
 {
 	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
@@ -751,7 +775,7 @@ MIX_API ULONG MixerChannelPlayFX(MXEffect *effect_structure,
 	register volatile ULONG reg_result __asm("d0");
 
 	__asm__ volatile (
-		"jsr _MixerChannelPlayFX\n"
+		"jsr _MixerPlayChannelFX\n"
 		// OutputOperands
 		: "=r" (reg_result)
 		// InputOperands
@@ -795,8 +819,6 @@ MIX_API void MixerReplaceSample(MXEffect *effect_structure,
 		// Clobbers
 		: "cc"
 	);
-
-	return reg_result;
 }
 
 MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
@@ -829,6 +851,9 @@ MIX_API UWORD MixerGetStatus(void) {
 		// Clobbers
 		: "cc"
 	);
+	
+	return reg_result;
+}
 
 MIX_API void MixerSetReturnVector(void (*return_routine)())
 {
@@ -947,7 +972,7 @@ MIX_API ULONG MixerPlayChannelSample(void *sample,
     register volatile LONG reg_length __asm("d1") = length;
     register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
     register volatile WORD reg_loop_indicator __asm("d3") = loop_indicator;
-    register volatile LONG reg_loop_offset __asm("d4") = reg_loop_offset;
+    register volatile LONG reg_loop_offset __asm("d4") = loop_offset;
     register volatile ULONG reg_result __asm("d0");
 
     __asm__ volatile (
