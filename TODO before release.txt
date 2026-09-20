@@ -2,8 +2,6 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
-	* Check if mixer.h are complete for all functions
-		=> No, several functions miss - add them
 	* Performance improvements from the e-mail
 
 => Testing
