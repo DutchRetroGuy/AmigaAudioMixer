@@ -24,7 +24,7 @@
  * TAB size = 4 spaces
  */
 #ifndef MIXER_PLUGINS_H
-#define MIXER_PLUGIN_H
+#define MIXER_PLUGINS_H
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
@@ -46,9 +46,9 @@
 #endif
 
 /* Constants */
-#define MXPLG_MULTIPLIER_4			EQU	0
-#define MXPLG_MULTIPLIER_32			EQU	1
-#define MXPLG_MULTIPLIER_BUFSIZE	EQU	2
+#define MXPLG_MULTIPLIER_4			0
+#define MXPLG_MULTIPLIER_32			1
+#define MXPLG_MULTIPLIER_BUFSIZE	2
 
 #define MXPLG_PITCH_STANDARD		1
 #define MXPLG_PITCH_LOWQUALITY		2
@@ -121,6 +121,24 @@ typedef struct MXPDSyncInitData
 								   each) */
 } MXPDSyncInitData;
 
+typedef struct MXPDSyncData
+{
+	void *mpd_snc_address;				/* See MXPDSyncInitData */
+ 	LONG mpd_snc_sample_length;			/* Length of sample being played */
+	LONG mpd_snc_sample_loop_offset;	/* Loop offset point */
+	LONG mpd_snc_sample_offset;			/* Offset into the sample being 
+										   played */
+	UWORD mpd_snc_mode;					/* See MXPDSyncInitData */
+	UWORD mpd_snc_type;					/* See MXPDSyncInitData */
+	UWORD mpd_snc_delay;				/* See MXPDSyncInitData */
+	UWORD mpd_snc_counter;				/* Counter, runs up or down depending
+										   on mode */
+	UWORD mpd_snc_started;				/* A non zero value indicates sample
+										   has started playing */
+	UWORD mpd_snc_done;					/* A non-zero value indicates sync 
+										   plugin has finished */
+} MXPDSyncData;
+
 /* Prototypes */
 /* Note, the following functions should only be passed to the mixer via the
    MXPlugin structure and the functions MixerPlayFX()/MixerPlayChannelFX(),
@@ -130,11 +148,13 @@ typedef struct MXPDSyncInitData
    MixPluginInitRepeat()
    MixPluginInitSync()
    MixPluginInitPitch()
+   MixPluginInitVolume()
    
    MixPluginDummy()
    MixPluginRepeat()
    MixPluginSync()
    MixPluginPitch()
+   MixPluginVolume()
    
    Their prototypes are only provided for clarity and to allow them being used
    as function pointers.
@@ -197,7 +217,7 @@ void MixPluginInitSync(void *mxeffect, void *plugin_init_data,
 	Note: the deferred plugin routine for the synchronisation plugin will be
 		  called with the plugin data for the synchronisation plugin in A1.
 		  This data follows the definition of MXPDSyncData, as found in 
-		  plugins.i
+		  plugins.i and plugins.h
 */
 PLG_API void MixPluginInitSync(MIX_REGARG(void *mxeffect, "a0"),
 							   MIX_REGARG(void *plugin_init_data, "a1"),
@@ -321,8 +341,8 @@ LONG MixerPluginGetMaxDataSize(void)
 PLG_API LONG MixerPluginGetMaxDataSize(void);
 
 /*
-ULONG MixPluginRatioPrecalc(MXEffect *effect_structure, UWORD pitch_ratio, 
-                            UWORD shift_value)
+ULONG MixPluginPitchRatioPrecalc(MXEffect *effect_structure, UWORD pitch_ratio, 
+                                 UWORD shift_value)
 	This routine can be used to pre-calculate length and loop offset values
 	for plugins that need these values divided by a FP8.8 ratio.
 	The routine calculates the values using a pointer to a filled MXEffect
@@ -337,9 +357,9 @@ ULONG MixPluginRatioPrecalc(MXEffect *effect_structure, UWORD pitch_ratio,
 		  2^shift factor, at a cost of an ever increasing inaccuracy.
 
 */
-PLG_API ULONG MixPluginRatioPrecalc(MIX_REGARG(MXEffect *effect_structure, "a0"),
-									MIX_REGARG(UWORD pitch_ratio, "d0"),
-									MIX_REGARG(UWORD shift_value, "d1"));
+PLG_API ULONG MixPluginPitchRatioPrecalc(MIX_REGARG(MXEffect *effect_structure, "a0"),
+									     MIX_REGARG(UWORD pitch_ratio, "d0"),
+									     MIX_REGARG(UWORD shift_value, "d1"));
 
 #undef MIX_REGARG
 
@@ -482,7 +502,7 @@ PLG_API void MixPluginSync(void *plugin_data,
 		// OutputOperands
 		:
 		// InputOperands
-		: "r" (reg_plugin_data), "r" , "r" (reg_loop_indicator)
+		: "r" (reg_plugin_data), "r", "r" (reg_loop_indicator)
 		// Clobbers
 		: "cc"
 	);
@@ -534,46 +554,58 @@ PLG_API void MixPluginPitch(void *plugin_output_buffer,
 							
 PLG_API ULONG MixPluginGetMultiplier(void)
 {
+	register volatile ULONG reg_result __asm("d0");
+	
 	__asm__ volatile (
 		"jsr _MixPluginGetMultiplier"
 		// OutputOperands
-		:
+		: "=r" (reg_result)
 		// InputOperands
 		:
 		// Clobbers
 		: "cc"
 	);
+	
+	return reg_result;
 }
 
 PLG_API LONG MixerPluginGetMaxInitDataSize(void)
 {
+	register volatile ULONG reg_result __asm("d0");
+		
 	__asm__ volatile (
 		"jsr _MixerPluginGetMaxInitDataSize"
 		// OutputOperands
-		:
+		: "=r" (reg_result)
 		// InputOperands
 		:
 		// Clobbers
 		: "cc"
 	);
+	
+	return reg_result;
 }
 
 PLG_API LONG MixerPluginGetMaxDataSize(void)
 {
+	register volatile ULONG reg_result __asm("d0");
+	
 	__asm__ volatile (
 		"jsr _MixerPluginGetMaxDataSize"
 		// OutputOperands
-		:
+		: "=r" (reg_result)
 		// InputOperands
 		:
 		// Clobbers
 		: "cc"
 	);
+	
+	return reg_result;
 }
 
-PLG_API ULONG MixPluginRatioPrecalc(MXEffect *effect_structure,
-									UWORD pitch_ratio,
-									UWORD shift_value)
+PLG_API ULONG MixPluginPitchRatioPrecalc(MXEffect *effect_structure,
+									     UWORD pitch_ratio,
+									     UWORD shift_value)
 {
 	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
 	register volatile UWORD reg_pitch_ratio __asm("d0") = pitch_ratio;
@@ -581,9 +613,9 @@ PLG_API ULONG MixPluginRatioPrecalc(MXEffect *effect_structure,
 	register volatile ULONG reg_result __asm("d0");
 
 	__asm__ volatile (
-		"jsr _MixPluginRatioPrecalc\n"
+		"jsr _MixPluginPitchRatioPrecalc\n"
 		// OutputOperands
-		: "r" (reg_result)
+		: "=r" (reg_result)
 		// InputOperands
 		: "r" (reg_effect_structure), "r" (reg_pitch_ratio), 
 			"r" (reg_shift_value)

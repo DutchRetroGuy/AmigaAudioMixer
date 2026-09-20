@@ -388,7 +388,7 @@
 ;   This routine returns the maximum size of any of the built in plugin data
 ;   structures.
 ;
-; MixPluginRatioPrecalc(A0=effect_structure,D0=pitch_ratio,D1=shift_value)
+; MixPluginPitchRatioPrecalc(A0=effect_structure,D0=pitch_ratio,D1=shift_value)
 ;   This routine can be used to pre-calculate length and loop offset values
 ;   for plugins that need these values divided by a FP8.8 ratio.
 ;   The routine calculates the values using a pointer to a filled MXEffect

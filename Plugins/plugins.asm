@@ -353,7 +353,7 @@ MixPluginInitDummy\1
 		;       mfx_loop_offset. If pre-calculated length/loop offset values
 		;       are used, this limit can be higher in some circumstances.
 		;
-		;       See MixPluginRatioPrecalc for more information.
+		;       See MixPluginPitchRatioPrecalc for more information.
 		;
 		; Plugin type: PLUGIN_STD
 		; Plugin init data structure: MXPDPitchInitData

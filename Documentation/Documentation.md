@@ -71,12 +71,14 @@ Release notes for the Audio Mixer
 - (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
 - (NEW) Improved the performance of both variants of MixPluginPitch (MXPLG_PITCH_STANDARD and MXPLG_PITCH_LOWQUALITY).
 - (NEW) Significantly improved the performance of MixPluginVolume using the MXPLG_VOL_SHIFT mode.
+- (BUGFIX) Several problems in mixer.h and plugins.h have been corrected
 - (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
 - (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
 - (BUGFIX) Corrected stack behaviour when using plugins
 - (BUGFIX) Corrected mfx_length value in MXEffect structure being overwritten when using plugins
 - (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling
 - (BUGFIX) C header files now use correct types in function definitions and structure definitions
+- (BUGFIX) Several small errors in documentation/comments were fixed
 - (MAINTENANCE) Updated included PT Player to version 6.5
 - (MAINTENANCE) Clarified and corrected (parts of the) documentation
 - (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions
