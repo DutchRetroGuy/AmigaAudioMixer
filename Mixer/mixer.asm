@@ -1,4 +1,4 @@
-; $VER: mixer.asm 3.8 (14.09.25)
+; $VER: mixer.asm 3.8 (20.09.26)
 ;
 ; mixer.asm
 ; Audio mixing routines
@@ -39,7 +39,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.8
-; Revision: 20250914
+; Revision: 20260920
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -3797,7 +3797,7 @@ MixerGetChannelStatus\1
 		
 		; Routine: MixerGetStatus
 		; This routine will return the status of the mixer. It can be used to
-		; determine both the status of the mixer and for higher priority 
+		; determine both the status of the mixer and by higher priority 
 		; interrupts to verify whether or not they interrupted the mixer
 		; interrupt.
 		;

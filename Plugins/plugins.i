@@ -1,4 +1,4 @@
-; $VER: plugins.i 1.1 (04.02.24)
+; $VER: plugins.i 1.1 (20.09.26)
 ;
 ; plugins.i
 ; Include file for plugins.asm
@@ -404,7 +404,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 1.1
-; Revision: 20240204
+; Revision: 20260920
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -438,9 +438,6 @@ MIXER_PLUGINS_I	SET	1
 	EXREF	BUILD_PLUGINS,MixerPluginGetMaxInitDataSize
 	EXREF	BUILD_PLUGINS,MixerPluginGetMaxDataSize
 	EXREF	BUILD_PLUGINS,MixPluginPitchRatioPrecalc
-	
-	EXREF	BUILD_PLUGINS,MixPluginSetPitch
-	EXREF	BUILD_PLUGINS,MixPluginSetVolume
 	
 	ENDIF
 

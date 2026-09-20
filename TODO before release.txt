@@ -2,8 +2,9 @@ TODO pre version 3.8
 --------------------
 
 => Maintenance
-	* Update comments/documentation for MixPluginInitPitch to include MXPLG_PITCH_LEVELS
-	* Check if mixer.i/mixer.h/plugins.i/plugins.h are complete
+	* Check if mixer.h are complete for all functions
+		=> No, several functions miss - add them
+	* Performance improvements from the e-mail
 
 => Testing
 	* Test MixerReplaceSample functionality	
@@ -13,10 +14,7 @@ TODO pre version 3.8
 => Update documentation
 	* MixerReplaceSample
 	* MixerGetStatus
-	
-=> Update .i documentation
-	* MixerReplaceSample
-	* MixerGetStatus
+	* MixPluginInitPitch: include MXPLG_PITCH_LEVELS
 	
 => Update .html and .txt versions of documentation
 => Remove TODO before release.txt

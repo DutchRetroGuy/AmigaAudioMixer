@@ -59,6 +59,17 @@
 #define	MIX_PLUGIN_STD    0	/* Plugin is of standard type */
 #define	MIX_PLUGIN_NODATA 1	/* Plugin is of no data type */
 
+									/* Mixer status values: */
+#define	MIXER_STOPPED			0	/* mixer interrupt(s) disabled */
+#define	MIXER_IRQ_ENABLED		1	/* mixer interrupt(s) enabled */
+#define	MIXER_AUDIO_ENABLED		2	/* mixer audio DMA enabled */
+#define	MIXER_IRQ_RUNNING		3	/* mixer interrupt running */
+
+#define	MIXER_REPLACE_START		0	/* Replacement sample plays from
+									   starting position */
+#define	MIXER_REPLACE_OFFSET	1	/* Replacement sample plays from
+									   current offset */
+
 /* Types */
 typedef struct MXEffect
 {
@@ -296,6 +307,30 @@ void MixerStopFX(ULONG mixer_channel_mask)
 */
 MIX_API void MixerStopFX(MIX_REGARG(UWORD mixer_channel_mask,"d0"));
 
+/*
+void MixerReplaceSample(MXEffect *effect_structure,
+                        ULONG mixer_channel,
+						UWORD replacement_mode)
+	Replaces an already playing sample on the given channel with a new
+	sample according to the sample pointer in the MXEffect structure passed.
+	The replacement_mode sets the way replacement works: either 
+	MIXER_REPLACE_START to have the replacement sample play from the beginning
+	or MIXER_REPLACE_OFFSET to have replacement sample play from the same 
+	offset as the sample being replaced.
+
+	Note: only samples of the same size or larger are supported. If a smaller
+	      sample is passed, the routine will not replace the sample.
+	Note: no changes to the running effect other than sample choice will be
+	      made - loop and plugin settings won't update
+	Note: plugins that change sample length will not update to respect new
+	      sample lengths - in this case, only samples of the same size are
+	      supported.
+*/
+MIX_API void MixerReplaceSample(MIX_REGARG(MXEffect *effect_structure,"a0"),
+								MIX_REGARG(ULONG mixer_channel,"d0"),
+								MIX_REGARS(UWORD replacement_mode, "d1"));
+
+
 /* 
 ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
 	Returns whether or not the hardware/mixer channel given in D0 is in use.
@@ -306,6 +341,21 @@ ULONG MixerGetChannelStatus(MIX_REGARGS(UWORD mixer_channel,"d0"));
 	channel is in use, the routine will return MIX_CH_BUSY.
  */
 MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
+
+/*
+UWORD MixerGetStatus(void)
+	Returns the status of the mixer. It can be used to determine both the
+	status of the mixer and by higher priority interrupts to verify whether
+	or not they interrupted the mixer interrupt. It returns the mixer status:
+	   - MIXER_STOPPED: mixer interrupt(s) disabled
+	   - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+	   - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+	   - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+
+	Note: it only returns a valid result after MixerSetup has been
+	      called.
+*/
+MIX_API UWORD MixerGetStatus(void);
 
 /*
 void MixerSetReturnVector(MIX_REGARG(void (*return_routine)(), "a0"));
@@ -728,6 +778,27 @@ MIX_API void MixerStopFX(UWORD mixer_channel_mask)
 	);
 }
 
+MIX_API void MixerReplaceSample(MXEffect *effect_structure,
+								 ULONG mixer_channel,
+								 UWORD replacement_mode)
+{
+	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
+	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+	register volatile UWORD reg_replacement_mode __asm("d1") = replacement_mode;
+
+	__asm__ volatile (
+		"jsr _MixerReplaceSample\n"
+		// OutputOperands
+		:
+		// InputOperands
+		: "r" (reg_effect_structure), "r" (reg_mixer_channel), "r" (reg_replacement_mode)
+		// Clobbers
+		: "cc"
+	);
+
+	return reg_result;
+}
+
 MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
 {
 	register volatile UWORD reg_mixer_channel __asm("d0") = mixer_channel;
@@ -745,6 +816,19 @@ MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
 
 	return reg_result;
 }
+
+MIX_API UWORD MixerGetStatus(void) {
+	register volatile UWORD reg_result __asm("d0");
+
+	__asm__ volatile (
+		"jsr _MixerGetStatus"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
 
 MIX_API void MixerSetReturnVector(void (*return_routine)())
 {

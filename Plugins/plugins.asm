@@ -1,4 +1,4 @@
-; $VER: plugins.asm 1.2 (23.06.25)
+; $VER: plugins.asm 1.2 (20.09.26)
 ;
 ; plugins.asm
 ; Audio mixer plugin routines
@@ -9,7 +9,7 @@
 ; 
 ; Author: Jeroen Knoester
 ; Version: 1.2
-; Revision: 20250623
+; Revision: 20260920
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -290,6 +290,10 @@ MixPluginInitDummy\1
 		;    * MXPLG_PITCH_STANDARD   - resamples individual bytes (slowest)
 		;    * MXPLG_PITCH_LOWQUALITY - resamples longwords at a time, is
 		;                               much faster than the standard mode
+		;	 * MXPLG_PITCH_LEVELS     - resamples individual bytes, is the
+		;                               fastest of all but is limited to 
+		;                               only 32 pitch levels and can only 
+		;                               pitch down
 		;
 		; Usage: prefill the following plugin data structure fields
 		;    * mpid_pit_mode       - MXPLG_PITCH_STANDARD or 
@@ -312,6 +316,12 @@ MixPluginInitDummy\1
 		;                            ratio of 0.5 will halve the sample's
 		;                            pitch, while a ratio of 2 will double the
 		;                            pitch (etc).
+		;
+		;                            MXPLG_PITCH_LEVELS, the ratio is instead
+		;                            If mpid_pit_mode is set to 
+		;                            given as a value between 1 and 32, where
+		;                            the value is the numerator in a x/32
+		;                            division.
 		;
 		;    * mpid_pit_length     - if mpid_pit_precalc is set to 
 		;                            MXPLG_PITCH_PRECALC, mpid_pit_length
@@ -5589,9 +5599,6 @@ _MixPluginGetMultiplier\1			EQU MixPluginGetMultiplier\1
 _MixerPluginGetMaxInitDataSize\1	EQU MixerPluginGetMaxInitDataSize\1
 _MixerPluginGetMaxDataSize\1		EQU MixerPluginGetMaxDataSize\1
 
-_MixPluginSetPitch\1				EQU	MixPluginSetPitch\1
-_MixPluginSetVolume\1				EQU	MixPluginSetVolume\1
-
 	XDEF	_MixPluginInitDummy\1
 	XDEF	_MixPluginInitRepeat\1
 	XDEF	_MixPluginInitSync\1
@@ -5609,9 +5616,6 @@ _MixPluginSetVolume\1				EQU	MixPluginSetVolume\1
 	XDEF	_MixerPluginGetMaxDataSize\1
 	XDEF	_MixPluginPitchRatioPrecalc\1
 	
-	XDEF	_MixPluginSetPitch\1
-	XDEF	_MixPluginSetVolume\1
-
 		ENDIF
 	ENDM
 	

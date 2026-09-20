@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.8 (23.06.25)
+; $VER: mixer.i 3.8 (20.09.26)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -204,6 +204,22 @@
 ;
 ;   Note: see MixerPlayChannelFX for an explanation of mixer channels.
 ;
+; MixerReplaceSample(A0=effect_structure,D0=mixer_channel,D1=replacement_mode)
+;   Replaces an already playing sample on the channel given in D0 with a new
+;   sample according to the sample pointer in the MXEffect structure passed in
+;   A0. The value in D1 sets the replacement mode: either MIXER_REPLACE_START 
+;   to have the replacement sample play from the beginning or 
+;   MIXER_REPLACE_OFFSET to have replacement sample play from the same offset
+;   as the sample being replaced.
+;
+;   Note: only samples of the same size or larger are supported. If a smaller
+;         sample is passed, the routine will not replace the sample.
+;   Note: no changes to the running effect other than sample choice will be
+;         made - loop and plugin settings won't update
+;   Note: plugins that change sample length will not update to respect new
+;         sample lengths - in this case, only samples of the same size are
+;         supported.
+;		
 ; D0=MixerPlaySample(A0=sample,D0=hardware_channel,D1=length,
 ;                    D2=signed_priority.w,D3=loop_indicator.w,
 ;                    D4=loop_offset)
@@ -230,6 +246,8 @@
 ;
 ;	Note: loop_offset (D4) is an optional parameter that only needs to contain
 ;	      a value in case MIX_FX_LOOP_OFFSET is set.
+;
+;   Note: this function is deprecated,use MixerPlayFX() instead.
 ;
 ; D0=MixerPlayChannelSample(A0=sample,D0=mixer_channel,D1=length,
 ;                           D2=signed_priority.w,D3=loop_indicator.w, 
@@ -258,6 +276,7 @@
 ;	Note: loop_offset (D4) is an optional parameter that only needs to contain
 ;	      a value in case MIX_FX_LOOP_OFFSET is set.
 ;   Note: see MixerPlayChannelFX for an explanation of mixer channels.
+;   Note: this function is deprecated,use MixerPlayChannelFX() instead.
 ;
 ; D0=MixerGetBufferSize()
 ;	Returns the size of the Chip RAM buffer size that needs to be allocated
@@ -285,6 +304,18 @@
 ;	      mixer_config.i, in which case the minimum sample size will depend on
 ;	      the video system selected when calling MixerSetup (PAL or NTSC).
 ; 	Note: MixerSetup() must have been called prior to calling this routine.
+;
+; D0=MixerGetStatus()
+; Returns the status of the mixer. It can be used to determine both the status
+; of the mixer and by higher priority interrupts to verify whether or not they
+; interrupted the mixer interrupt. It returns the mixer status in D0:
+;      - MIXER_STOPPED: mixer interrupt(s) disabled
+;      - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+;      - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+;      - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+;
+; Note: it only returns a valid result after MixerSetup has been 
+;       called.
 ;
 ; D0=MixerGetChannelStatus(D0=mixer_channel)
 ;	Returns whether or not the hardware/mixer channel given in D0 is in use.
@@ -440,7 +471,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.8
-; Revision: 20250623
+; Revision: 20260920
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces

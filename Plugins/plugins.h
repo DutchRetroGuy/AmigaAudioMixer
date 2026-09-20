@@ -52,6 +52,7 @@
 
 #define MXPLG_PITCH_STANDARD		1
 #define MXPLG_PITCH_LOWQUALITY		2
+#define MXPLG_PITCH_LEVELS			3
 
 #define MXPLG_PITCH_NO_PRECALC		0
 #define MXPLG_PITCH_PRECALC			1
@@ -75,12 +76,13 @@
 /* Types */
 typedef struct MXPDPitchInitData
 {
-	UWORD mpid_pit_mode;		/* Pitch mode to use (MXPLG_PITCH_STANDARD or 
-								   MXPLG_PITCH_LOWQUALITY) */
+	UWORD mpid_pit_mode;		/* Pitch mode to use (MXPLG_PITCH_STANDARD, 
+								   MXPLG_PITCH_LOWQUALITY or MXPLG_PITCH_LEVELS) */
 	UWORD mpid_pit_precalc;		/* Whether or not to use pre-calculated length
 								   values (MXPLG_PITCH_NO_PRECALC or 
 								   MXPLG_PITCH_PRECALC) */
-	UWORD mpid_pit_ratio_fp8;	/* FP8.8 ratio to multiply pitch by */
+	UWORD mpid_pit_ratio_fp8;	/* FP8.8 ratio to multiply pitch by or 1-32 
+								   for MXPLG_PITCH_LEVELS*/
 	LONG mpid_pit_length;		/* If MXPLG_PITCH_PRECALC is set, original 
 								   length of the sample */
 	LONG mpid_pit_loop_offset;	/* If MXPLG_PITCH_PRECALC is set, original 
@@ -222,13 +224,16 @@ PLG_API void MixPluginInitVolume(MIX_REGARG(void *mxeffect, "a0"),
 void MixPluginInitPitch(void *mxeffect, void *plugin_init_data, 
                         void *plugin_data)
 	This plugin changes the pitch of the specified sample by a given ratio. It
-	offers two modes (standard and low quality) and has an option to speed up 
-	the initialisation phase by using some pre-calculated values. The ratio
-	is given as a fixed point 8.8 value and represents the value to use to 
-	multiply the original pitch value (so, 0.5 means playing back at half
-	pitch, 2.0 means playing back at double pitch, etc).
-	The plugin makes use of the MXPDPitchInitData structure to pass its
-	parameters.
+	offers three modes (standard, low quality and based on levels) and has an
+	option to speed up the initialisation phase by using some pre-calculated 
+	values. The ratio is either given as a fixed point 8.8 value that 
+	represents the value to use to multiply the original pitch value (so, 0.5
+	means playing back at half pitch, 2.0 means playing back at double pitch,
+	etc), or as a number between 1 and 32 that represents the numerator of an
+	x/32 division. Which is used depends on the mode. The ratio is used for 
+	standard and low quality modes, the 1-32 number is used for the level 
+	based mode.	The plugin makes use of the MXPDPitchInitData structure to 
+	pass its parameters.
 	See the types above for information how to set up this structure.
 
 	Note: using pre-calculated values for length & offset does not increase 
