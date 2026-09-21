@@ -285,7 +285,7 @@ MixPluginInitDummy\1
 		; Routine: MixPluginInitPitch
 		; This routine is the initialisation routine for the pitch plugin.
 		; The pitch plugin changes the pitch (and duration) of the sample
-		; pointed to in the MXEffect structure. There are two modes for the
+		; pointed to in the MXEffect structure. There are three modes for the
 		; pitch plugin:
 		;    * MXPLG_PITCH_STANDARD   - resamples individual bytes (slowest)
 		;    * MXPLG_PITCH_LOWQUALITY - resamples longwords at a time, is
@@ -296,19 +296,28 @@ MixPluginInitDummy\1
 		;                               pitch down
 		;
 		; Usage: prefill the following plugin data structure fields
-		;    * mpid_pit_mode       - MXPLG_PITCH_STANDARD or 
-		;                            MXPLG_PITCH_LOWQUALITY
+		;    * mpid_pit_mode       - MXPLG_PITCH_STANDARD, 
+		;                            MXPLG_PITCH_LOWQUALITY or
+		;                            MXPLG_PITCH_LEVELS
 		;    * mpid_pit_precalc    - Either MXPLG_PITCH_NO_PRECALC or
 		;                            MXPLG_PITCH_PRECALC. 
+		;                            Sets whether or not the values in the
+		;                            MXPDPitchInitData structure contain
+		;                            pre-calculated values for the altered
+		;                            pitch sample's new length and loop 
+		;                            offset. If set to MXPLG_PITCH_NO_PRECALC,
+		;                            the initialisation routine will calculate
+		;                            the new length & loop offset for the 
+		;                            MXEffect structure in real time, which
+		;                            costs extra CPU time.
 		;
-		;                            TODO: rewrite text, precalc fetches from mpid not mfx
+		;                            Note: in either case, mpid_pit_ratio_fp8
+		;                                  must be set.
 		;
-		;                            Note that in either case, 
-		;                            mpid_pit_ratio_fp8 must be set.
-		;
-		;                            mpid_pit_precalc will not impact the CPU
-		;                            usage of the plugin itself, only the
-		;                            initialisation routine will be impacted.
+		;                            Note: mpid_pit_precalc will not impact 
+		;                                  the CPU usage of the plugin itself,
+		;                                  only the initialisation routine 
+		;                                  will be impacted.
 		;
 		;    * mpid_pit_ratio_fp8  - the ratio to change the pitch by, given 
 		;                            as a 8.8 fixed point math number. The new 
@@ -317,26 +326,26 @@ MixPluginInitDummy\1
 		;                            pitch, while a ratio of 2 will double the
 		;                            pitch (etc).
 		;
-		;                            MXPLG_PITCH_LEVELS, the ratio is instead
 		;                            If mpid_pit_mode is set to 
+		;                            MXPLG_PITCH_LEVELS, the ratio is instead
 		;                            given as a value between 1 and 32, where
 		;                            the value is the numerator in a x/32
 		;                            division.
 		;
 		;    * mpid_pit_length     - if mpid_pit_precalc is set to 
 		;                            MXPLG_PITCH_PRECALC, mpid_pit_length
-		;                            needs to be set to the original length of
-		;                            the sample (not the pre-calculated value
-		;                            from mfx_length).
+		;                            needs to be set to the pre-calculated new
+		;                            length of the sample (not the value from
+		;                            mfx_length).
 		;
-		;                            Does not need to be filled if 
+		;                            Does not need to be filled if
 		;                            mpid_pit_precalc is set to 
 		;                            MXPLG_PITCH_NO_PRECALC.
 		;    * mpid_pit_loop_offset- if mpid_pit_precalc is set to 
 		;                            MXPLG_PITCH_PRECALC, mpid_pit_loop_offset
-		;                            needs to be set to the original loop 
-		;                            offset of the sample (not the pre-
-		;                            calculated value from mfx_loop_offset)
+		;                            needs to be set to the pre-calculated new
+		;                            loop offset of the sample (not the value
+		;                            from mfx_loop_offset)
 		;
 		;                            Does not need to be filled if 
 		;                            mpid_pit_precalc is set to 
@@ -379,6 +388,10 @@ MixPluginInitPitch\1
 		; 0) Check for pre-calc
 		cmp.w	#MXPLG_PITCH_PRECALC,mpid_pit_precalc(a1)
 		beq		.precalc
+		
+		; Store base length & offset in MXPDPitchInitData struct
+		move.l	mfx_length(a0),mpid_pit_length(a1)
+		move.l	mfx_loop_offset(a0),mpid_pit_loop_offset(a1)
 		
 		; 1) Check for MXPLG_PITCH_LEVELS
 		moveq	#MXPLG_PITCH_LEVELS,d0
@@ -426,36 +439,39 @@ MixPluginInitPitch\1
 		move.w	d0,mpd_pit_ratio_fp8(a2)
 
 		; 3) Write original length into plugin data
-		move.l	mfx_length(a0),mpd_pit_sample_length(a2)
-		move.l	mfx_loop_offset(a0),mpd_pit_sample_loop_offset(a2)
+		;move.l	mfx_length(a0),mpd_pit_sample_length(a2)
+		;move.l	mfx_loop_offset(a0),mpd_pit_sample_loop_offset(a2)
 		
 		; 4) Calculate new length value
 		moveq	#2,d1					; Set length shift to 2
 		bsr		MixPluginPitchRatioPrecalc\1
-		move.l	mfx_length(a0),mpd_pit_output_length(a2)
-		move.l	mfx_loop_offset(a0),mpd_pit_output_loop_offset(a2)
+		move.l	mpid_pit_length(a1),mpd_pit_output_length(a2)
+		move.l	mpid_pit_loop_offset(a1),mpd_pit_output_loop_offset(a2)
 
 		; 5) make sure length/offset are multiples of 4
-		move.w	mfx_length+2(a0),d0
+		move.w	mpid_pit_length+2(a1),d0
 		move.w	d0,d1
 		and.w	#$0003,d1
 		beq.s	.check_loop_offset
 		
 		and.w	#$fffc,d0
 		addq.w	#4,d0
-		move.w	d0,mfx_length+2(a0)
+		move.w	d0,mpid_pit_length+2(a1)
 		
 .check_loop_offset
-		move.w	mfx_loop_offset+2(a0),d0
+		move.l	mpid_pit_length(a1),mfx_length(a0)
+		move.w	mpid_pit_loop_offset+2(a1),d0
 		move.w	d0,d1
 		and.w	#$0003,d1
 		beq.s	.check_looping
 		
 		and.w	#$fffc,d0
 		addq.w	#4,d0
-		move.w	d0,mfx_loop_offset+2(a0)
+		move.w	d0,mpid_pit_loop_offset+2(a1)
 
 .check_looping
+		move.l	mpid_pit_loop_offset(a1),mfx_loop_offset(a0)
+
 		; 6) Check if the sample is looping
 		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
 		beq.s	.done
@@ -4574,6 +4590,8 @@ vol_tab_shift_d2\1
 		dc.l	$3f3f3f3f
 		dc.l	$1f1f1f1f
 		dc.l	$0f0f0f0f
+		dc.l	$07070707
+		dc.l	$03030303
 		dc.l	$01010101
 		
 vol_tab_shift_d3\1
@@ -4581,6 +4599,8 @@ vol_tab_shift_d3\1
 		dc.l	$60606060
 		dc.l	$70707070
 		dc.l	$78787878
+		dc.l	$7c7c7c7c
+		dc.l	$7e7e7e7e
 		dc.l	$7f7f7f7f
 	ENDIF
 	
@@ -4997,10 +5017,9 @@ MixerPluginGetMaxDataSize\1
 		; This routine can be used to pre-calculate length and loop offset
 		; values for plugins that need these values divided by a FP8.8 ratio.
 		; The routine calculates the values using a pointer to a filled 
-		; MXEffect structures in A0, the ratio value in D0 and the shift value
-		; in D1.
+		; MXPDPitchInitData structure in A1, the ratio value in D0 and the
+		; shift value in D1.
 		;
-		; Currently this routine is only used by/for MixPluginPitch.
 		;
 		; Note: the shift value passed to the routine is used to scale the
 		;       input to create a greater range than would normally be
@@ -5009,7 +5028,7 @@ MixerPluginGetMaxDataSize\1
 		;       increase these limits by a factor of 2^shift factor, at a cost
 		;       of an ever increasing inaccuracy.
 		;
-		; A0 - Pointer to filled MXEffect structure
+		; A1 - Pointer to filled MXPDPitchInitData structure
 		; D0 - FP8.8 ratio value
 		; D1 - Shift value
 MixPluginPitchRatioPrecalc\1
@@ -5021,19 +5040,8 @@ MixPluginPitchRatioPrecalc\1
 		move.w	d0,d3
 
 		; Fetch length
-		IF MIXER_68020=0
-			IF MIXER_WORDSIZED=1
-				moveq	#0,d0
-				move.w	mfx_length(a0),d0
-				move.l	mfx_loop_offset(a0),d1
-			ELSE
-				move.l	mfx_length(a0),d0
-				move.l	mfx_loop_offset(a0),d1
-			ENDIF
-		ELSE
-			move.l	mfx_length(a0),d0
-			move.l	mfx_loop_offset(a0),d1
-		ENDIF
+		move.l	mpid_pit_length(a1),d0
+		move.l	mpid_pit_loop_offset(a1),d1
 
 		; 1) Check if the ratio is valid
 		tst.w	d3
@@ -5092,8 +5100,8 @@ MixPluginPitchRatioPrecalc\1
 		
 .write_length
 		; 8) write results
-		move.l	d0,mfx_length(a0)
-		move.l	d1,mfx_loop_offset(a0)
+		move.l	d0,mpid_pit_length(a1)
+		move.l	d1,mpid_pit_loop_offset(a1)
 		
 .done
 		movem.l	(sp)+,d0-d3/d5-d7			; Stack

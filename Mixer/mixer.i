@@ -1,4 +1,4 @@
-; $VER: mixer.i 3.8 (20.09.26)
+; $VER: mixer.i 3.8 (21.09.26)
 ;
 ; mixer.i
 ; Include file for mixer.asm
@@ -308,11 +308,19 @@
 ; D0=MixerGetStatus()
 ; Returns the status of the mixer. It can be used to determine both the status
 ; of the mixer and by higher priority interrupts to verify whether or not they
-; interrupted the mixer interrupt. It returns the mixer status in D0:
-;      - MIXER_STOPPED: mixer interrupt(s) disabled
-;      - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
-;      - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
-;      - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+; interrupted the mixer interrupt. 
+;
+; The return value is one of the four main statusses (MIXER_STOPPED, 
+; MIXER_IRQ_ENABLED, MIXER_AUDIO_ENABLED, MIXER_IRQ_RUNNING) combined through
+; a bitwise OR with MIXER_HANDLER_DISABLED if the mixer interrupt handler has
+; been disabled via MixerSetHandlerDisable().
+;
+; It returns the mixer status in D0:
+;   - MIXER_STOPPED: mixer interrupt(s) disabled
+;   - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+;   - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+;   - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+;   - MIXER_HANDLER_DISABLED: mixer interrupt handler is disabled
 ;
 ; Note: it only returns a valid result after MixerSetup has been 
 ;       called.
@@ -329,8 +337,17 @@
 ;	Returns the total number of channels the mixer supports for sample
 ;	playback.
 ;
+; MixerSetHandlerDisable()
+;   Disables the mixer interrupt handler. The interrupts will still occur and
+;   the interrupt handler will still be called, but the mixer will not process
+;   any audio, only acknowledge interrupts and return from them.
 ;
-; If MIXER_ENABLE_RETURN_VECTOR is set to 1, an addition routine is available:
+; MixerSetHandlerEnable()
+;   This routine re-enabled the mixer interrupt handler if it has been 
+;   disabled. Interrupts will resume processing audio.
+;
+;
+; If MIXER_ENABLE_RETURN_VECTOR is set to 1, an additional routine is available:
 ;
 ; MixerSetReturnVector(A0=return_function_ptr)
 ;   This routine sets the optional vector the mixer can call at to at
@@ -471,7 +488,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.8
-; Revision: 20260920
+; Revision: 20260921
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -506,10 +523,13 @@ MIXER_I	SET	1
 	
 	EXREF	BUILD_MIXER,MixerGetBufferSize
 	EXREF	BUILD_MIXER,MixerGetChannelBufferSize
+	
 	EXREF	BUILD_MIXER,MixerGetSampleMinSize
 	EXREF	BUILD_MIXER,MixerGetChannelStatus
 	EXREF	BUILD_MIXER,MixerGetStatus
 	EXREF	BUILD_MIXER,MixerGetTotalChannelCount
+	EXREF	BUILD_MIXER,MixerSetHandlerDisable
+	EXREF	BUILD_MIXER,MixerSetHandlerEnable
 
 	EXREF	BUILD_MIXER,MixerSetReturnVector
 	EXREF	BUILD_MIXER,MixerSetIRQDMACallbacks
@@ -559,17 +579,18 @@ MIX_CH_BUSY				EQU	1				; Channel is playing a sample
 MIX_PLUGIN_STD			EQU	0				; Standard plugin
 MIX_PLUGIN_NODATA		EQU	1				; Plugin that doesn't update
 											; sample data
+
+MIX_REPLACE_START		EQU	0				; Replacement sample plays from
+											; starting position
+MIX_REPLACE_OFFSET		EQU	1				; Replacement sample plays from
+											; current offset
 											
 											; Mixer status values:
 MIXER_STOPPED			EQU 0				; mixer interrupt(s) disabled
 MIXER_IRQ_ENABLED		EQU 1				; mixer interrupt(s) enabled
 MIXER_AUDIO_ENABLED		EQU 2				; mixer audio DMA enabled
 MIXER_IRQ_RUNNING		EQU 3				; mixer interrupt running
-
-MIXER_REPLACE_START		EQU	0				; Replacement sample plays from
-											; starting position
-MIXER_REPLACE_OFFSET	EQU	1				; Replacement sample plays from
-											; current offset
+MIXER_HANDLER_DISABLED	EQU	4				; mixer interrupt handler disabled
 
 	IFD BUILD_MIXER_WRAPPER
 mixer_output_channels	EQU	DMAF_AUD0
@@ -793,6 +814,7 @@ mixer_plugin_buffer_size	EQU	(mixer_PAL_buffer_size*mixer_sw_channels)*mixer_out
 	UWORD	mx_volume
 	UWORD	mx_status
 	UWORD	mx_prior_status
+	UWORD	mx_handler_status
 	UWORD	mx_vidsys
 	IFD BUILD_MIXER_WRAPPER
 		UWORD	mx_counter

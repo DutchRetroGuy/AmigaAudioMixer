@@ -62,46 +62,50 @@ If desired, multiple hardware channels can be assigned to the Audio Mixer, allow
 
 ### Release Notes
 
-Release notes for the Audio Mixer
+# Release notes for the Audio Mixer
 #### v3.8
-- (NEW) Added a new mode for the Pitch plugin (MXPLG_PITCH_LEVELS) that is faster than MXPLG_PITCH_STANDARD but supports fewer pitch levels
-- (NEW) Added MixerGetStatus, which returns the mixer's current status. Can be used to determine if a higher priority interrupt has interrupted the mixer interrupt.
-- (NEW) Added the MIXER_INTERRUPT_RATE configuration option, which selects the approximate number of interrupts the mixer targets per vertical blank. It defaults to 1 and is intended to be used to aid music playback through the mixer. It makes this easier by reducing the maximum latency difference between the tracker playback routine and the mixer.
-- (NEW) Added MixerReplaceSample, which allows an already playing sample to be replaced by another sample seamlessly at the same sample offset
-- (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases
-- (NEW) Improved the performance of both variants of MixPluginPitch (MXPLG_PITCH_STANDARD and MXPLG_PITCH_LOWQUALITY).
-- (NEW) Significantly improved the performance of MixPluginVolume using the MXPLG_VOL_SHIFT mode.
-- (BUGFIX) Several problems in mixer.h and plugins.h have been corrected
-- (BUGFIX) Both the loop and priority fields in the MXEffect structure were inconsistently referred to as either signed or unsigned. This has been correct in both documentation and code to correctly identify both as signed values consistently
-- (BUGFIX) Corrected a reference in MixerSetup to mch_remaining_length instead of mch_remaining_length(a4)
-- (BUGFIX) Corrected stack behaviour when using plugins
-- (BUGFIX) Corrected mfx_length value in MXEffect structure being overwritten when using plugins
-- (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling
-- (BUGFIX) C header files now use correct types in function definitions and structure definitions
-- (BUGFIX) Several small errors in documentation/comments were fixed
-- (MAINTENANCE) Updated included PT Player to version 6.5
-- (MAINTENANCE) Clarified and corrected (parts of the) documentation
-- (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions
-- (MAINTENANCE) Updated code to remove several non-EXREF based warnings
-- (MAINTENANCE) The routine MixerClearPluginData is now omitted when plugins are not enabled
+- (NEW) Added a new mode for the Pitch plugin (*MXPLG_PITCH_LEVELS*) that is faster than *MXPLG_PITCH_STANDARD* but supports fewer pitch levels.
+- (NEW) Added *MixerGetStatus()*, which returns the mixer's current status. Can be used to determine if a higher priority interrupt has interrupted the mixer interrupt.
+- (NEW) Added the *MIXER_INTERRUPT_RATE* configuration option, which selects the approximate number of interrupts the mixer targets per vertical blank. It defaults to 1 and is intended to be used to aid music playback through the mixer. It makes this easier by reducing the maximum latency difference between the tracker playback routine and the mixer.
+- (NEW) Added *MixerReplaceSample()*, which allows an already playing sample to be replaced by another sample seamlessly at either the same sample offset or starting playback from the start.
+- (NEW) Added *MixerSetHandlerDisable()* and *MixerSetHandlerEnable()*, which allow disabling and re-enabling the mixer interrupt handler. When disabled, mixer interrupts keep running, but no longer process any audio. Re-enabling restarts mixing from the point it left off.
+- (NEW) Plugin support for looping rewritten, handles seamless looping and edge cases.
+- (NEW) Improved the performance of both variants of *MixPluginPitch()* (*MXPLG_PITCH_STANDARD* and *MXPLG_PITCH_LOWQUALITY*).
+- (NEW) Significantly improved the performance of *MixPluginVolume()* when using the *MXPLG_VOL_SHIFT* mode.
+- (BUGFIX) Corrected the way *MixPluginPitchRatioPrecalc()* works. It now updates the *MXPDPitchInitData* structure, which makes a lot more sense than updating the *MXEffect* structure.
+- (BUGFIX) Both the loop and priority fields in the *MXEffect* structure were inconsistently referred to as either signed or unsigned. This has been corrected in both documentation and code to correctly identify both as signed values consistently.
+- (BUGFIX) Corrected a reference in *MixerSetup()* to mch_remaining_length(a4) instead of mch_remaining_length.
+- (BUGFIX) Corrected stack behaviour when using plugins.
+- (BUGFIX) Corrected mfx_length value in *MXEffect* structure being overwritten when using plugins.
+- (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling.
+- (BUGFIX) C header files now use the same names for structure members as the assembly includes.
+- (BUGFIX) C header files now use correct types in function definitions and structure definitions.
+- (BUGFIX) Several small errors in documentation/comments were fixed.
+- (BUGFIX) Several small problems in mixer.h and plugins.h have been corrected.
+- (MAINTENANCE) Updated included PT Player to version 6.5.
+- (MAINTENANCE) Clarified, corrected and improved the layout (of parts) of the documentation.
+- (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions.
+- (MAINTENANCE) Updated code to remove several non-EXREF based warnings.
+- (MAINTENANCE) The routine *MixerClearPluginData()* is now omitted when plugins are not enabled.
 
 #### v3.7.2
-- (BUGFIX) MixerPlayFX channel determination fixed when MIXER_68020 is set
+- (BUGFIX) *MixerPlayFX()* channel determination fixed when MIXER_68020 is set.
 
 #### v3.7.1
-- (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now return the correct channel value in D0.
-- (BUGFIX) MixerPlayFX, MixerPlayChannelFX, MixerPlaySample and MixerPlayChannelSample now store the rounded sample length back to the MXEffect structure.
-- (BUGFIX) Tables used by MixPluginVolume have been corrected to take into account the non-signed nature of the register offset used.
+- (BUGFIX) *MixerPlayFX()*, *MixerPlayChannelFX()*, *MixerPlaySample()* and *MixerPlayChannelSample()* now return the correct channel value in D0.
+- (BUGFIX) *MixerPlayFX()*, *MixerPlayChannelFX()*, *MixerPlaySample()* and *MixerPlayChannelSample()* now store the rounded sample length back to the *MXEffect* structure.
+- (BUGFIX) Tables used by *MixPluginVolume()* have been corrected to take into account the non-signed nature of the register offset used.
+
 
 #### v3.7
 - (NEW) The mixer.h and plugins.h file now support Bartman GCC in addition to Bebbo and VBCC.
-- (NEW) A new C based example has been added that showcases using the new external IRQ/DMA option to run the mixer using Amiga OS interrupt handlers. The example is called OSLegalExample.
-- (NEW) A new example has been added that showcases the use of external IRQ/DMA callbacks to handle IRQ and DMA registers. The example is called ExternalIRQExample.
+- (NEW) A new C based example has been added that showcases using the new external IRQ/DMA option to run the mixer using Amiga OS interrupt handlers. The example is called *OSLegalExample*.
+- (NEW) A new example has been added that showcases the use of external IRQ/DMA callbacks to handle IRQ and DMA registers. The example is called *ExternalIRQExample*.
 - (NEW) The mixer now optionally supports using callbacks to handle IRQ and DMA registers, rather than the mixer doing so natively. This option allows for, amongst other things, implementing an OS-legal interrupt server for the mixer, or implementing the mixer as part of another API.
-  - This option is configured to be off by default, use MIXER_EXTERNAL_IRQ_DMA to enable it.
-  - The callbacks can be set by calling MixerSetIRQDMACallbacks().
-- (NEW) The mixer now supports calling a routine at the end of interrupt processing, to allow user code to execute actions as close to the mixer interrupt loop as possible. This option is configured to be off by default, use MIXER_ENABLE_RETURN_VECTOR to enable it.
-  - The vector for this routine can be set by calling MixerSetReturnVector().
+  - This option is configured to be off by default, use *MIXER_EXTERNAL_IRQ_DMA* to enable it.
+  - The callbacks can be set by calling *MixerSetIRQDMACallbacks()*.
+- (NEW) The mixer now supports calling a routine at the end of interrupt processing, to allow user code to execute actions as close to the mixer interrupt loop as possible. This option is configured to be off by default, use *MIXER_ENABLE_RETURN_VECTOR* to enable it.
+  - The vector for this routine can be set by calling *MixerSetReturnVector()*.
 - (BUGFIX) Performance test now correctly uses 68020 routines for 68020 plugin tests.
 - (BUGFIX) Fixed a potential issue with the include guard in mixer_config.i
 - (MAINTENANCE) mixer.asm, mixer.i, mixer.h, plugins.asm, plugins.i. plugins.h are now kept in only one directory, their main ones. Any duplicates needed for building the examples are now temporarily placed in the example directories and cleaned updated afterwards.
@@ -113,13 +117,13 @@ Release notes for the Audio Mixer
 - (NEW) The mixer now supports a high quality mixing mode, which does not require pre-processed samples, but rather uses standard 8-bit samples. Note that this mode uses significantly more CPU time.
 - (NEW) The mixer now supports the use of plugin routines which will be called during sample playback. These routines can alter the data being played back, or work as synchronisation/control routines for timing and other purposes. There are several plugins provided by default. It is also possible to create custom plugins for use with the mixer.
   - The following plugins are provided:
-   - MixPluginRepeat - repeats a sample after a given delay
-   - MixPluginSync - sets a trigger when a given condition occurs
-   - MixPluginVolume - changes the volume of the sample playing back
-   - MixPluginPitch - changes the pitch of the sample playing back
+   - *MixPluginRepeat* - repeats a sample after a given delay
+   - *MixPluginSync* - sets a trigger when a given condition occurs
+   - *MixPluginVolume* - changes the volume of the sample playing back
+   - *MixPluginPitch* - changes the pitch of the sample playing back
 - (NEW) The mixer now has the option of calling a callback function whenever a non-looping sample ends playing.
-- (NEW) New loop mode added, MIX_FX_LOOP_OFFSET, which allows samples to loop from an offset into the sample rather than from the start of the sample.
-- (NEW) Added function MixerGetChannelStatus(), which returns whether or not the given channel is in use by the mixer.
+- (NEW) New loop mode added, *MIX_FX_LOOP_OFFSET*, which allows samples to loop from an offset into the sample rather than from the start of the sample.
+- (NEW) Added function *MixerGetChannelStatus()*, which returns whether or not the given channel is in use by the mixer.
 - (NEW) Added an optional counter of number of mixer interrupts that have executed since the counter started. Counter can be reset with *MixerResetCounter()* and read using *MixerGetCounter()*.
 - (NEW) A new example has been added to show HQ mode. The example is named SingleMixerHQExample.
 - (NEW) New examples have been added to show callback and plugin use. The examples are named CallbackExample and PluginExample.
@@ -1010,6 +1014,32 @@ For 68020+ based systems, it's recommended to store samples on 4 byte boundaries
 - MIX_CH_FREE / MIX_CH_BUSY  
   These two constants are used by MixerGetChannelStatus() to indicate whether a given internal mixer channel is free, or busy playing back a sample.
 
+- MIX_REPLACE_START / MIX_REPLACE_OFFSET
+  These two constants are used to indicate to MixerReplaceSample() how to replace the sample that is playing.
+  
+  - MIX_REPLACE_START
+    the replacement sample starts playback from it's starting position
+  - MIX_REPLACE_OFFSET
+    the replacement sample starts playback from the same offset as the currently playing sample is playing
+
+- MIXER_STOPPED / MIXER_IRQ_ENABLED / MIXER_AUDIO_ENABLED / MIXER_IRQ_RUNNING / MIXER_HANDLER_DISABLED
+  These five constants are used by MixerGetStatus() to indicate current the mixer status.
+  
+  - MIXER_STOPPED
+    The mixer is stopped, and the mixer interrupts are disabled
+  - MIXER_IRQ_ENABLED
+    The mixer interrupt is enabled, mixer audio DMA is not enabled
+  - MIXER_AUDIO_ENABLED
+    The mixer interrupt is running and mixer audio DMA is running
+  - MIXER_IRQ_RUNNING
+    The mixer interrupt handler is currently running. This status is only seen if MixerGetStatus() is ran from a higher level interrupt or from a deferred plugin action or callback.
+	
+	Note: the MIXER_IRQ_RUNNING status will be switched off slightly before the actual end of the mixer interrupt handler due to the way the stack is maintained. The return vector, if enabled, will be called after the status has changed but before the interrupt has ended. The mixer counter update and CIA performance measuring, if enabled, will also still run after the status change.
+  - MIXER_HANDLER_DISABLED
+    The mixer interrupt handler has been disabled by MixerSetHandlerDisable().
+	
+	Note: MIXER_HANDLER_DISABLED is the only status value which can co-exist with other statusses.
+
 #### Variable info follows:
 
 - mixer_buffer_size  
@@ -1209,6 +1239,24 @@ The routine has a return value:
 
 - D0 - returns the hardware & mixer channel the sample will play on, or -1 if no free channel could be found.
 
+*MixerReplaceSample(A0=effect_structure, D0=mixer_channel)*
+This routine replaces an already playing sample with a new sample.
+
+Note: only samples of the same size or larger are supported. If a smaller sample is passed, the routine will not replace the sample.
+Note: no changes to the running effect other than sample choice will be changed - loop and plugin settings won't update
+Note: plugins that change sample length will not update to respect new sample lengths - in this case, only samples of the same size are supported.
+
+The routine has three parameters:
+- A0 - Pointer to MXEffect structure
+- D0 - Hardware channel/mixer channel (f.ex. DMAF_AUD0\|MIX_CH1). Supports setting exactly one mixer software channel.
+
+  Note: if MIXER_SINGLE=1, hardware channel selection is ignored.
+  Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid channel.
+  Note: Only one HW channel can be selected at a time.
+
+- D1 - Replacement mode. Either MIX_REPLACE_START to have the replacement sample play from the beginning or MIX_REPLACE_OFFSET to have replacement sample play from the same offset as the sample being replaced.
+  Note: if MIX_FX_LOOP_OFFSET set, the loop offset will not change relative to the length of the new sample.
+
 *MixerStopFX(D0=mixer_channel_mask)*  
 This routine stops sample playback on the given hardware/mixer channel mask. Multiple hardware/mixer channels can be set at the same time, samples on all given channels will be stopped. This routine has one parameter:
 
@@ -1228,11 +1276,30 @@ Normally this value is 4, but optimisation options in mixer_config.i can can inc
 Note: this routine is usually not needed as the minimum sample size is implied by the mixer_config.i setup. Its primary function is to give the correct value in case *MIXER_SIZEXBUF* has been set to 1 in mixer_config.i, in which case the minimum sample size will depend on the video system selected when calling *MixerSetup()* (PAL or NTSC).  
 Note: *MixerSetup()* must have been called prior to calling this routine.
 
+*D0=MixerGetStatus()*
+This routine returns the status of the mixer. It can be used to determine both the status of the mixer and by higher priority interrupts to verify whether or not they interrupted the mixer interrupt. The return value is one of the four main statusses (MIXER_STOPPED, MIXER_IRQ_ENABLED, MIXER_AUDIO_ENABLED, MIXER_IRQ_RUNNING) combined through a bitwise OR with MIXER_HANDLER_DISABLED if the mixer interrupt handler has been disabled via MixerSetHandlerDisable().
+
+The routine has a return value:
+- D0 - Mixer status:
+  - MIXER_STOPPED: mixer interrupt(s) disabled
+  - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+  - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+  - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+  - MIXER_HANDLER_DISABLED: mixer interrupt handler is disabled (this value is combined with the previous four statuses through a bitwise OR)
+
+Note: it only returns a valid result after MixerSetup has been called.
+
 *D0=MixerGetChannelStatus()*  
 This routine returns whether or not the hardware/mixer channel given in D0 is in use for sample playback. If *MIXER_SINGLE* is set to 1, the hardware channel does not need to be given in D0. If the channel is not used, the routine will return *MIX_CH_FREE*. If the channel is in use, the routine will return *MIX_CH_BUSY*.
 
 *D0=MixerGetTotalChannelCount()*  
 This routine returns the total number of internal channels the mixer supports for sample playback. That is to say, the value of *mixer_sw_channels* multiplied by the number of assigned HW audio channels.
+
+*MixerSetHandlerDisable()*
+Disables the mixer interrupt handler. The interrupts will still occur and the interrupt handler will still be called, but the mixer will not process any audio, only acknowledge interrupts and return from them.
+
+*MixerSetHandlerEnable()*
+This routine re-enabled the mixer interrupt handler if it has been disabled. Interrupts will resume processing audio.
 
 *D0=MixerGetChannelBufferSize()*  
 This routine returns the value of the internal mixer buffer size. This is the size of the buffer the mixer uses per HW audio channel assigned to it. Its primary purpose is to give plugins a way to get this value without needing access to the internal mixer structure.
@@ -1572,19 +1639,19 @@ Structure info follows:
   The MXPDPitchInitData structure has the following members:
 
   - mpid_pit_mode  
-    The mode to use for the pitch plugin. Either *MXPLG_PITCH_STANDARD* or *MXPLG_PITCH_LOWQUALITY*. The latter is much faster, but also results in lower quality output.
+    The mode to use for the pitch plugin. Either *MXPLG_PITCH_STANDARD*, *MXPLG_PITCH_LOWQUALITY* or *MXPLG_PITCH_LEVELS*. *MXPLG_PITCH_LOWQUALITY* is faster than *MXPLG_PITCH_STANDARD*, but also results in lower quality output. *MXPLG_PITCH_LEVELS* is fastest, but only supports 32 distinct pitch levels.
 
   - mpid_pit_precalc  
     Whether or not the values in the *MXEffect* structure contain pre-calculated values for the altered pitch sample's new length and loop offset. Set using either *MXPLG_PITCH_NO_PRECALC* or *MXPLG_PITCH_PRECALC*. If set to the former, the initialisation routine will calculate the new length & loop offset for the *MXEffect* structure in real time, which costs extra CPU time. (note that the plugin routine itself is unaffected)
 
   - mpid_pit_ratio_fp8  
-    The ratio to change the pitch by, given as a 8.8 fixed point math number. The new sample pitch will be multiplied so a ratio of 0.5 will halve the sample's pitch, while a ratio of 2.0 will double the pitch (etc).
+    The ratio to change the pitch by, given as a 8.8 fixed point math number. The new sample pitch will be multiplied so a ratio of 0.5 will halve the sample's pitch, while a ratio of 2.0 will double the pitch (etc). If mpid_pit_mode is set to *MXPLG_PITCH_LEVELS*, the ratio is instead given as a value between 1 and 32, where the value is the numerator in a x/32 division.
 
   - mpid_pit_length  
-    If *MXPLG_PITCH_PRECALC* is set, this field has to contain the original length of the sample, without pitch shift.
+    If *MXPLG_PITCH_PRECALC* is set, this field has to contain the new length of the sample, with pitch shift. Does not need to be filled if mpid_pit_precalc is set to *MXPLG_PITCH_NO_PRECALC*.
 
   - mpid_pit_loop_offset  
-    If *MXPLG_PITCH_PRECALC* is set, this field has to contain the original loop offset of the sample, without pitch shift.
+    If *MXPLG_PITCH_PRECALC* is set, this field has to contain the new loop offset of the sample, with pitch shift. Does not need to be filled if mpid_pit_precalc is set to *MXPLG_PITCH_NO_PRECALC*.
 
 - MXPDVolumeInitData  
   This structure contains the initialisation data for the volume change plugin
@@ -1664,10 +1731,8 @@ Support routine info follows:
 
   Returns either *MXPLG_MULTIPLIER_4*, *MXPLG_MULTIPLIER_32* or *MXPLG_MULTIPLIER_BUFSIZE*.
 
-- *MixPluginRatioPrecalc(A0=effect_structure, D0=pitch_ratio, D1=shift_value)*  
-  This routine can be used to pre-calculate length and loop offset values for plugins that need these values divided by a FP8.8 ratio. The routine calculates the values using a pointer to a filled *MXEffect* structure in A0, the ratio value in D0 and the shift value in D1.
-
-  Currently this routine is only used by/for *MixPluginPitch()*.
+- *MixPluginPitchRatioPrecalc(A0=effect_structure, D0=pitch_ratio, D1=shift_value)*  
+  This routine can be used to pre-calculate length and loop offset values for plugins that need these values divided by a FP8.8 ratio. The routine calculates the values using a pointer to a filled *MXPDPitchInitData* structures in A1, the ratio value in D0 and the shift value in D1.
 
   Note: the shift value passed to the routine is used to scale the input to create a greater range than would normally be allowed. At a shift of zero, the routine supports input & output values of up to 65535. Increasing the shift value will increase these limits by a factor of 2^shift factor, at a cost of an ever increasing inaccuracy.
 
@@ -1705,7 +1770,8 @@ Built in plugin info follows:
     - mpl_init_data_ptr  
       Pointer to instance of structure *MXPDRepeatInitData*
 
-  - *MixPluginInitSync()* / MixPluginSync()  
+  - *MixPluginInitSync()* / *MixPluginSync()*
+
     This plugin is used to give synchronisation/timing information to the program playing back samples using the mixer. If offers various modes and types of this information. When the mode/type of the synchronisation plugin triggers, it either writes a value to a given address, or calls the routine at this address as a deferred plugin routine. The plugin makes use of the *MXPDSyncInitData* structure to pass its parameters.
 
     See the section Structures above for information how to set up this structure.
@@ -1742,7 +1808,7 @@ Built in plugin info follows:
 
   - *MixPluginInitPitch()* / *MixPluginPitch()*
 
-    This plugin changes the pitch of the specified sample by a given ratio. It offers two modes (standard and low quality) and has an option to speed up the initialisation phase by using some pre-calculated values. The ratio is given as a fixed point 8.8 value and represents the value to use to multiply the original pitch value (so, 0.5 means playing back at half pitch, 2.0 means playing back at double pitch, etc). The plugin makes use of the *MXPDPitchInitData* structure to pass its parameters.
+	This plugin changes the pitch of the specified sample by a given ratio. It offers three modes (standard, low quality and level based) and has an option to speed up the initialisation phase by using some pre-calculated values. The ratio is given as a fixed point 8.8 value and represents the value to use to multiply the original pitch value (so, 0.5 means playing back at half pitch, 2.0 means playing back at double pitch, etc). If mpid_pit_mode is set to *MXPLG_PITCH_LEVELS*, the ratio is instead given as a value between 1 and 32, where the value is the numerator in a x/32 division. The plugin makes use of the *MXPDPitchInitData* structure to pass its parameters.
 
     See the section Structures above for information how to set up this structure.
 
@@ -2288,7 +2354,7 @@ The mixer examples use some code made by others and use music and samples made b
   - <https://freesound.org/people/skymary/sounds/412017/>
 
   The full text of the CC0 license can be found here: <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
-- The mixer examples use PT Player 6.3 by Frank Wille, who has released this ProTracker player under a public domain license.
+- The mixer examples use PT Player 6.5 by Frank Wille, who has released this ProTracker player under a public domain license.
 - The mixer examples use LSP 1.10 by Arnaud Carré, who has released this ProTracker converter/player under the MIT license.
 - The mixer plugins use unsigned 32 to 32 bit long division code by agermose on the AmigaGameDev discord.
 - The mixer examples use startup code by Henrik Erlandsson, who has released this code under the MIT license.

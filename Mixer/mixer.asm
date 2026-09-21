@@ -1,4 +1,4 @@
-; $VER: mixer.asm 3.8 (20.09.26)
+; $VER: mixer.asm 3.8 (21.09.26)
 ;
 ; mixer.asm
 ; Audio mixing routines
@@ -39,7 +39,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 3.8
-; Revision: 20260920
+; Revision: 20260921
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
@@ -65,6 +65,9 @@ mxciabase			EQU	$bfe000				; mx prefix to keep one namespace
 MIXER_CHAN_INACTIVE	EQU	0
 MIXER_CHAN_ACTIVE	EQU	1
 MIXER_CHAN_LOOP		EQU	-1
+
+MIXER_ENABLED		EQU	0
+MIXER_DISABLED		EQU	1
 
 MIXER_AUD_COLOUR	EQU	$707
 MIXER_IH_COLOUR		EQU	$b0b
@@ -272,6 +275,10 @@ MixSingIHstart	MACRO
 		move.w	-mx_mixer_entries+mx_status(a1),-mx_mixer_entries+mx_prior_status(a1)
 		move.w	#MIXER_IRQ_RUNNING,mx_status(a1)
 		
+		; Test if handler is enabled
+		tst.w	-mx_mixer_entries+mx_handler_status(a1)
+		bne		.singihend 							; Handler disabled, early exit
+		
 		IF MIXER_EXTERNAL_IRQ_DMA=0
 			; Acknowledge interrupt
 			move.w	mixer\1+mx_irq_bits(pc),intreq(a6)
@@ -313,6 +320,7 @@ MixSingIHstart	MACRO
 		; case MIXER_SINGLE=1. Implemented as a macro for performance reasons
 		; and to prevent double code.				
 MixSingIHend	MACRO
+.singihend
 		IF MIXER_TIMING_BARS=1
 			move.w	#MIXER_IH_COLOUR,$dff180
 		ENDIF
@@ -383,7 +391,11 @@ MixMultIHstart	MACRO
 		
 		; Update mixer status
 		move.w	-mx_mixer_entries+mx_status(a1),-mx_mixer_entries+mx_prior_status(a1)
-		move.w	#MIXER_IRQ_RUNNING,mx_status(a1)		
+		move.w	#MIXER_IRQ_RUNNING,mx_status(a1)
+
+		; Test if handler is enabled
+		tst.w	-mx_mixer_entries+mx_handler_status(a1)
+		bne		.end_handler			; Handler disabled, early exit		
 		
 		; Fetch current interrupts and mask out irrelevant ones
 		move.w	intreqr(a6),d4
@@ -1981,6 +1993,7 @@ MixerSetup\1
 		move.w	d3,mx_hw_period(a3)
 		move.w	#mixer_output_channels,d6
 		move.w	d6,mx_hw_channels(a3)
+		move.w	#MIXER_ENABLED,mx_handler_status(a3)
 		IF MIXER_ENABLE_CALLBACK=1
 			move.l	d4,mx_callback_ptr(a3)
 		ENDIF
@@ -3799,7 +3812,12 @@ MixerGetChannelStatus\1
 		; This routine will return the status of the mixer. It can be used to
 		; determine both the status of the mixer and by higher priority 
 		; interrupts to verify whether or not they interrupted the mixer
-		; interrupt.
+		; interrupt. 
+		;
+		; The return value is one of the four main statusses (MIXER_STOPPED,
+		; MIXER_IRQ_ENABLED, MIXER_AUDIO_ENABLED, MIXER_IRQ_RUNNING) combined
+		; through a bitwise OR with MIXER_HANDLER_DISABLED if the mixer 
+		; interrupt handler has been disabled via MixerSetHandlerDisable().
 		;
 		; Note: it only returns a valid result after MixerSetup has been 
 		;       called.
@@ -3810,11 +3828,15 @@ MixerGetChannelStatus\1
 		;      - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
 		;      - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
 		;      - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+		;      - MIXER_HANDLER_DISABLED: mixer interrupt handler is disabled
 MixerGetStatus\1
 		move.l	a0,-(sp)					; Stack
 		lea.l	mixer\1(pc),a0
 		
-		move.w	mx_status(a0),d0			; D0 = mixer status
+		move.w	mx_handler_status(a0),d0	; D0 = mixer handler status
+		add.w	d0,d0
+		add.w	d0,d0
+		or.w	mx_status(a0),d0			; D0 = mixer status
 				
 		move.l	(sp)+,a0					; Stack
 		rts
@@ -3839,9 +3861,9 @@ MixerGetStatus\1
 		;      Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid
 		;            channel.
 		;      Note: Only one HW channel can be selected at a time.
-		; D1 - Replacement mode. Either MIXER_REPLACE_START to have the
+		; D1 - Replacement mode. Either MIX_REPLACE_START to have the
 		;      replacement sample play from the beginning or 
-		;      MIXER_REPLACE_OFFSET to have replacement sample play from the
+		;      MIX_REPLACE_OFFSET to have replacement sample play from the
 		;      same offset as the sample being replaced.
 		;
 		;      Note: if MIX_FX_LOOP_OFFSET set, the loop offset will not
@@ -4043,6 +4065,32 @@ MixerReplaceSample\1
 .done
 		movem.l	(sp)+,d0/d2/d4/d7/a0-a2/a6		; Stack
 
+		rts
+		
+		; Routine: MixerSetHandlerDisable
+		; This routine disables the mixer interrupt handler. The interrupts
+		; will still occur and the interrupt handler will still be called, but
+		; the mixer will not process any audio, only acknowledge interrupts
+		; and return from them.
+MixerSetHandlerDisable\1
+		move.l	a0,-(sp)	; Stack
+
+		lea.l	mixer\1(pc),a0
+		move.w	#MIXER_DISABLED,mx_handler_status(a0)
+
+		move.l	(sp)+,a0	; Stack
+		rts
+
+		; Routine: MixerSetHandlerEnable
+		; This routine re-enabled the mixer interrupt handler if it has been
+		; disabled. Interrupts will resume processing audio.
+MixerSetHandlerEnable\1
+		move.l	a0,-(sp)	; Stack
+
+		lea.l	mixer\1(pc),a0
+		move.w	#MIXER_ENABLED,mx_handler_status(a0)
+
+		move.l	(sp)+,a0	; Stack
 		rts
 		
 		; Routine: MixerSetReturnVector
@@ -4427,6 +4475,8 @@ _MixerGetSampleMinSize\1		EQU MixerGetSampleMinSize\1
 _MixerGetChannelStatus\1		EQU	MixerGetChannelStatus\1
 _MixerGetStatus\1				EQU	MixerGetStatus\1
 _MixerReplaceSample\1			EQU MixerReplaceSample\1
+_MixerSetHandlerDisable\1		EQU MixerSetHandlerDisable\1
+_MixerSetHandlerEnable\1		EQU MixerSetHandlerEnable\1
 _MixerEnableCallback\1			EQU MixerEnableCallback\1
 _MixerDisableCallback\1			EQU	MixerDisableCallback\1
 _MixerGetPluginsBufferSize\1	EQU MixerGetPluginsBufferSize\1
@@ -4455,6 +4505,8 @@ _MixerSetIRQDMACallbacks\1		EQU	MixerSetIRQDMACallbacks
 	XDEF	_MixerGetChannelStatus\1
 	XDEF	_MixerGetStatus\1
 	XDEF	_MixerReplaceSample\1
+	XDEF	_MixerSetHandlerDisable\1
+	XDEF	_MixerSetHandlerEnable\1
 	XDEF	_MixerEnableCallback\1
 	XDEF	_MixerDisableCallback\1
 	XDEF	_MixerGetPluginsBufferSize\1

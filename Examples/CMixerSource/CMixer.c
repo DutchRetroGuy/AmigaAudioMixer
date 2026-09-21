@@ -278,28 +278,28 @@ int main()
 	effect1.mfx_loop = MIX_FX_LOOP;
 	effect1.mfx_priority = 1;
 	effect1.mfx_loop_offset = 0;
-	effect1.mfx_plugin = NULL;
+	effect1.mfx_plugin_ptr = NULL;
 	
 	effect2.mfx_length = sample2_size;
 	effect2.mfx_sample_ptr = sample2;
 	effect2.mfx_loop = MIX_FX_LOOP;
 	effect2.mfx_priority = 1;
 	effect2.mfx_loop_offset = 0;
-	effect2.mfx_plugin = NULL;
+	effect2.mfx_plugin_ptr = NULL;
 	
 	effect3.mfx_length = sample3_size;
 	effect3.mfx_sample_ptr = sample3;
 	effect3.mfx_loop = MIX_FX_LOOP;
 	effect3.mfx_priority = 1;
 	effect3.mfx_loop_offset = 0;
-	effect3.mfx_plugin = NULL;
+	effect3.mfx_plugin_ptr = NULL;
 	
 	effect4.mfx_length = sample4_size;
 	effect4.mfx_sample_ptr = sample4;
 	effect4.mfx_loop = MIX_FX_LOOP;
 	effect4.mfx_priority = 1;
 	effect4.mfx_loop_offset = 0;
-	effect4.mfx_plugin = NULL;
+	effect4.mfx_plugin_ptr = NULL;
 	
 	/* Play four samples on loop
 	 *
@@ -334,10 +334,10 @@ int main()
 	plugin.mpl_init_data_ptr = &pitch_init_data;
 	
 	/* Set up MXEffect structure */
-	effect1.mfx_plugin = &plugin;
-	effect2.mfx_plugin = &plugin;
-	effect3.mfx_plugin = &plugin;
-	effect4.mfx_plugin = &plugin;
+	effect1.mfx_plugin_ptr = &plugin;
+	effect2.mfx_plugin_ptr = &plugin;
+	effect3.mfx_plugin_ptr = &plugin;
+	effect4.mfx_plugin_ptr = &plugin;
 	
 	/* play all four samples in loop */
 	MixerPlayFX(&effect1,DMAF_AUD2);
@@ -355,7 +355,7 @@ int main()
 	
 	/* Set up MXEffect structure for a single sample to play */\
 	effect1.mfx_loop = MIX_FX_ONCE;
-	effect1.mfx_plugin = NULL;
+	effect1.mfx_plugin_ptr = NULL;
 	
 	/* Set up callback function */
 	MixerEnableCallback(callback_function);

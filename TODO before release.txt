@@ -3,16 +3,25 @@ TODO pre version 3.8
 
 => Maintenance
 	* Performance improvements from the e-mail
+	
+=> Bug fixes
+	* precalc does not work correctly in all cases, levels based being one of them
+	* Deal with currently identified bugs
+	* Synchronise plugins.i/.asm/.h and mixer.i/.asm/.h
+	* Then synchronise plugins and mixer documentation in code files
+	* Then synchronise documentation vs code
 
 => Testing
 	* Test MixerReplaceSample functionality	
+	* Test MixerSetHandlerDisable / MixerSetHandlerEnable functionality
 	* Test if mixer status values propagate correctly
 	* Test if removing E8x stuff did not add bugs
 
 => Update documentation
-	* MixerReplaceSample
-	* MixerGetStatus
-	* MixPluginInitPitch: include MXPLG_PITCH_LEVELS
+	* Update performance figures post performance improvements
+	  (this needs the 030 from my parents home)
+	  
+=> Proofread full documentation
 	
 => Update .html and .txt versions of documentation
 => Remove TODO before release.txt

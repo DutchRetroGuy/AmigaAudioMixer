@@ -14,7 +14,7 @@
  *
  * Author: Jeroen Knoester
  * Version: 3.8
- * Revision: 20260320
+ * Revision: 20260321
  *
  * TAB size = 4 spaces
  */
@@ -59,16 +59,17 @@
 #define	MIX_PLUGIN_STD    0	/* Plugin is of standard type */
 #define	MIX_PLUGIN_NODATA 1	/* Plugin is of no data type */
 
+#define	MIX_REPLACE_START		0	/* Replacement sample plays from
+									   starting position */
+#define	MIX_REPLACE_OFFSET		1	/* Replacement sample plays from
+									   current offset */
+
 									/* Mixer status values: */
 #define	MIXER_STOPPED			0	/* mixer interrupt(s) disabled */
 #define	MIXER_IRQ_ENABLED		1	/* mixer interrupt(s) enabled */
 #define	MIXER_AUDIO_ENABLED		2	/* mixer audio DMA enabled */
 #define	MIXER_IRQ_RUNNING		3	/* mixer interrupt running */
-
-#define	MIXER_REPLACE_START		0	/* Replacement sample plays from
-									   starting position */
-#define	MIXER_REPLACE_OFFSET	1	/* Replacement sample plays from
-									   current offset */
+#define MIXER_HANDLER_DISABLED	4	/* mixer interrupt handler disabled */
 
 /* Types */
 typedef struct MXEffect
@@ -354,16 +355,40 @@ MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(ULONG mixer_channel,"d0"));
 UWORD MixerGetStatus(void)
 	Returns the status of the mixer. It can be used to determine both the
 	status of the mixer and by higher priority interrupts to verify whether
-	or not they interrupted the mixer interrupt. It returns the mixer status:
-	   - MIXER_STOPPED: mixer interrupt(s) disabled
-	   - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
-	   - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
-	   - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+	or not they interrupted the mixer interrupt.
+	
+	The return value is one of the four main statusses (MIXER_STOPPED,
+	MIXER_IRQ_ENABLED, MIXER_AUDIO_ENABLED, MIXER_IRQ_RUNNING) combined
+	through a bitwise OR with MIXER_HANDLER_DISABLED if the mixer 
+	interrupt handler has been disabled via MixerSetHandlerDisable().
+	
+	Mixer status values:
+	      - MIXER_STOPPED: mixer interrupt(s) disabled
+	      - MIXER_IRQ_ENABLED: mixer interrupt(s) enabled
+	      - MIXER_AUDIO_ENABLED: mixer audio DMA enabled
+	      - MIXER_IRQ_RUNNING: mixer interrupt is currently busy
+	      - MIXER_HANDLER_DISABLED: mixer interrupt handler is disabled
 
 	Note: it only returns a valid result after MixerSetup has been
 	      called.
 */
 MIX_API UWORD MixerGetStatus(void);
+
+/*
+UWORD MixerSetHandlerDisable(void)
+	Disables the mixer interrupt handler. The interrupts will still occur and
+	the interrupt handler will still be called, but the mixer will not process
+	any audio, only acknowledge interrupts and return from them.
+*/
+MIX_API UWORD MixerSetHandlerDisable(void);
+
+/*
+UWORD MixerSetHandlerEnable(void)
+	This routine re-enabled the mixer interrupt handler if it has been 
+	disabled. Interrupts will resume processing audio.
+*/
+MIX_API UWORD MixerSetHandlerEnable(void);
+
 
 /*
 void MixerSetReturnVector(MIX_REGARG(void (*return_routine)(), "a0"));
@@ -853,6 +878,32 @@ MIX_API UWORD MixerGetStatus(void) {
 	);
 	
 	return reg_result;
+}
+
+MIX_API void MixerSetHandlerDisable(void) 
+{
+	__asm__ volatile (
+		"jsr _MixerSetHandlerDisable"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
+
+MIX_API void MixerSetHandlerEnable(void) 
+{
+	__asm__ volatile (
+		"jsr _MixerSetHandlerEnable"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
 }
 
 MIX_API void MixerSetReturnVector(void (*return_routine)())

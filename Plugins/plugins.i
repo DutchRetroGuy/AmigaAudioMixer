@@ -1,4 +1,4 @@
-; $VER: plugins.i 1.1 (20.09.26)
+; $VER: plugins.i 1.1 (21.09.26)
 ;
 ; plugins.i
 ; Include file for plugins.asm
@@ -168,9 +168,13 @@
 ;
 ; MXPDPitchInitData
 ;	* mpid_pit_mode        - The mode to use for the pitch plugin. Either 
-;                            MXPLG_PITCH_STANDARD or MXPLG_PITCH_LOWQUALITY.
-;                            The latter is much faster, but also results in
-;                            lower quality output.
+;                            MXPLG_PITCH_STANDARD, MXPLG_PITCH_LOWQUALITY or
+;                            MXPLG_PITCH_LEVELS.
+;                            MXPLG_PITCH_LOWQUALITY is faster than 
+;                            MXPLG_PITCH_STANDARD, but also results in
+;                            lower quality output. MXPLG_PITCH_LEVELS is
+;                            fastest, but only supports 32 distinct pitch
+;                            levels.
 ;	* mpid_pit_precalc     - Whether or not the values in the MXEffect 
 ;                            structure contain pre-calculated values for the
 ;                            altered pitch sample's new length and loop 
@@ -179,19 +183,24 @@
 ;                            initialisation routine will calculate the new
 ;                            length & loop offset for the MXEffect structure
 ;                            in real time, which costs extra CPU time. 
-;                            (note that the plugin routine itself is 
+;                            (note that the plugin routine itself is
 ;                             unaffected)
 ;	* mpid_pit_ratio_fp8   - The ratio to change the pitch by, given as a 8.8
 ;                            fixed point math number. The new sample pitch 
 ;                            will be multiplied so a ratio of 0.5 will halve 
 ;                            the sample's pitch, while a ratio of 2.0 will
 ;                            double the pitch (etc).
+;
+;                            If mpid_pit_mode is set to MXPLG_PITCH_LEVELS,
+;                            the ratio is instead given as a value between 1
+;                            and 32, where the value is the numerator in a 
+;                            x/32 division.
 ;	* mpid_pit_length      - If MXPLG_PITCH_PRECALC is set, this field has to
-;                            contain the original length of the sample, 
-;                            without pitch shift.
+;                            contain the new length of the sample, with pitch
+;                            shift.
 ;	* mpid_pit_loop_offset - If MXPLG_PITCH_PRECALC is set, this field has to
-;                            contain the original loop offset of the sample, 
-;                            without pitch shift.
+;                            contain the new loop offset of the sample, with 
+;                            pitch shift.
 ;
 ; MXPDVolumeInitData
 ;	* mpid_vol_mode        - The mode to use for the volume plugin. Either
@@ -289,6 +298,7 @@
 ; MixPluginInitRepeat() / MixPluginRepeat()
 ;   This plugin repeats playback of the sample specified after a given delay.
 ;   It makes use of the MXPDRepeatInitData structure to pass its parameter.
+;
 ;   See the section Structures above for information how to set up this
 ;   structure.
 ;
@@ -307,6 +317,7 @@
 ;   routine at this address as a deferred plugin routine.
 ;   The plugin makes use of the MXPDSyncInitData structure to pass its
 ;   parameters.
+;
 ;   See the section Structures above for information how to set up this
 ;   structure.
 ;  
@@ -336,6 +347,7 @@
 ;   number of software channels per hardware channel).
 ;   The plugin makes use of the MXPDVolumeInitData structure to pass its
 ;   parameters.
+;
 ;   See the section Structures above for information how to set up this
 ;   structure.
 ;
@@ -348,13 +360,19 @@
 ;
 ; MixPluginInitPitch() / MixPluginPitch()
 ;   This plugin changes the pitch of the specified sample by a given ratio. It
-;   offers two modes (standard and low quality) and has an option to speed up 
-;   the initialisation phase by using some pre-calculated values. The ratio
-;   is given as a fixed point 8.8 value and represents the value to use to 
-;   multiply the original pitch value (so, 0.5 means playing back at half
-;   pitch, 2.0 means playing back at double pitch, etc).
+;   offers three modes (standard, low quality and level based) and has an 
+;   option to speed up the initialisation phase by using some pre-calculated
+;   values. The ratio is given as a fixed point 8.8 value and represents the
+;   value to use to multiply the original pitch value (so, 0.5 means playing
+;   back at half pitch, 2.0 means playing back at double pitch, etc).
+;
+;   If mpid_pit_mode is set to MXPLG_PITCH_LEVELS, the ratio is instead given
+;   as a value between 1 and 32, where the value is the numerator in a x/32 
+;   division.
+;
 ;   The plugin makes use of the MXPDPitchInitData structure to pass its
 ;   parameters.
+;
 ;   See the section Structures above for information how to set up this
 ;   structure.
 ;
@@ -388,13 +406,12 @@
 ;   This routine returns the maximum size of any of the built in plugin data
 ;   structures.
 ;
-; MixPluginPitchRatioPrecalc(A0=effect_structure,D0=pitch_ratio,D1=shift_value)
+; MixPluginPitchRatioPrecalc(A1=plugin_init_data_structure,D0=pitch_ratio,D1=shift_value)
 ;   This routine can be used to pre-calculate length and loop offset values
 ;   for plugins that need these values divided by a FP8.8 ratio.
-;   The routine calculates the values using a pointer to a filled MXEffect
-;   structures in A0, the ratio value in D0 and the shift value in D1.
-;
-;   Currently this routine is only used by/for MixPluginPitch().
+;   The routine calculates the values using a pointer to a filled 
+;   MXPDPitchInitData structures in A1, the ratio value in D0 and the shift
+;   value in D1.
 ;
 ;   Note: the shift value passed to the routine is used to scale the input to
 ;         create a greater range than would normally be allowed. At a shift of
@@ -404,7 +421,7 @@
 ;
 ; Author: Jeroen Knoester
 ; Version: 1.1
-; Revision: 20260920
+; Revision: 20260921
 ;
 ; Assembled using VASM in Amiga-link mode.
 ; TAB size = 4 spaces
