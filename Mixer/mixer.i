@@ -58,10 +58,17 @@
 ;						  MIX_FX_LOOP to play a sample that loops forever, or
 ;						  MIX_FX_LOOP_OFFSET to play a sample that repeats 
 ;						  playback at a given offset in the sample.
+;
+;                         Note: a looping sample will not be overwritten by 
+;                               any new sample requested to be played through 
+;                               MixerPlayFX(), MixerPlayChannelFX(), 
+;                               MixerPlaySample() or MixerPlayChannelSample(). 
+;                               Only MixerStopFX() or MixerStop() will stop
+;                               playback of looping samples.
 ;	* mfx_priority		- Determines the priority of the sample to play. 
-;						  Samples of higher priority can overwrite already 
-;						  playing, non-looping, samples of lower priority if 
-;						  no free mixer channel can be found.
+;						  Samples of equal or higher priority can overwrite
+;                         already playing, non-looping, samples of lower 
+;                         priority if no free mixer channel can be found.
 ;	* mfx_loop_offset	- If loop mode is MIX_FX_LOOP_OFFSET, this determines
 ;						  the offset in bytes the sample will restart playback
 ;						  from when the end of the sample is reached. Must be
@@ -141,17 +148,14 @@
 ;	Starts mixer playback (initially playing back silence). MixerSetup and 
 ;	MixerInstallHandler must have been called prior to calling this routine.
 ;
-;   Note: if MIXER_CIA_TIMER is set to 1, this routine also starts the CIA 
-;         timer to measure performance metrics.
+;	Note: MixerSetup & MixerInstallHandler must have been called prior
+;         to calling this routine.
+;   Note: if MIXER_CIA_TIMER is set to 1, this routine also clears the
+;         stored CIA timer results.
 ;
 ; MixerStop()
 ;	Stops mixer playback. MixerSetup and MixerInstallHandler must have been 
 ;   called prior to calling this routine.
-;
-;   Note: if MIXER_CIA_TIMER is set to 1, this routine also stops the CIA
-;         timer used to measure performance metrics. The results are found in
-;         mixer_ticks_last, mixer_ticks_best and mixer_ticks_worst (these 
-;         variables are not available if MIXER_CIA_TIMER is set to 0).
 ;
 ; MixerVolume(D0=volume.w)
 ;   Set the desired hardware output volume used by the mixer (valid values are
@@ -177,8 +181,9 @@
 ;   the hardware and mixer channel given in D0. If MIXER_SINGLE is set to 1, 
 ;   the hardware channel does not need to be given in D0, but the mixer 
 ;   channel must still be set. Determines whether to play back the sample 
-;   based on priority and age. If the channel isn't free (for instance due to
-;   a higher priority sample playing), the routine will not play the sample.
+;   based on priority and channel availability. If the channel isn't free (for
+;   instance due to a higher priority sample playing), the routine will not 
+;   play the sample.
 ;
 ;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
 ;   no free channel could be found.
@@ -207,9 +212,9 @@
 ; MixerReplaceSample(A0=effect_structure,D0=mixer_channel,D1=replacement_mode)
 ;   Replaces an already playing sample on the channel given in D0 with a new
 ;   sample according to the sample pointer in the MXEffect structure passed in
-;   A0. The value in D1 sets the replacement mode: either MIXER_REPLACE_START 
+;   A0. The value in D1 sets the replacement mode: either MIX_REPLACE_START 
 ;   to have the replacement sample play from the beginning or 
-;   MIXER_REPLACE_OFFSET to have replacement sample play from the same offset
+;   MIX_REPLACE_OFFSET to have replacement sample play from the same offset
 ;   as the sample being replaced.
 ;
 ;   Note: only samples of the same size or larger are supported. If a smaller
@@ -232,14 +237,15 @@
 ;   Other values that need to be set are D1, which sets the length of the 
 ;   sample (signed long, unless MIXER_WORDSIZED is set to 1, in which case the
 ;   length is an unsigned word). D2 gives the desired priority of the sample.
-;   Samples of higher priority can overwrite already playing samples of lower
-;   priority if no free mixer channel can be found. D3 has to contain either 
-;   MIX_FX_ONCE for samples that need to play once, or one of MIX_FX_LOOP or 
-;	MIX_FX_LOOP_OFFSET for samples that should loop forever. MIX_FX_LOOP loops
-;	back to the start of the sample, MIX_FX_LOOP_OFFSET restarts at the given
-;	loop offset in D4 (signed long, unless MIXER_WORDSIZED is set to 1, in 
-;	which case the length is an unsigned word). Looping samples can only be
-;	stopped by either calling MixerStop or MixerStopFX.
+;   Samples of equal or higher priority can overwrite already playing samples 
+;   of lower priority if no free mixer channel can be found. D3 has to contain
+;   either MIX_FX_ONCE for samples that need to play once, or one of 
+;   MIX_FX_LOOP or MIX_FX_LOOP_OFFSET for samples that should loop forever.
+;   MIX_FX_LOOP loops back to the start of the sample, MIX_FX_LOOP_OFFSET 
+;   restarts at the given loop offset in D4 (signed long, unless 
+;   MIXER_WORDSIZED is set to 1, in which case the loop offset is an unsigned
+;   word). Looping samples can only be stopped by either calling MixerStop or
+;   MixerStopFX.
 ;
 ;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
 ;   no free channel could be found.
@@ -255,20 +261,21 @@
 ;   Adds the sample pointed to by A0 on the hardware/mixer channel given in 
 ;   D0. If MIXER_SINGLE is set to 1, the hardware channel does not need to be 
 ;   given in D0. Determines whether to play back the sample based on priority
-;   and age. If the channel isn't free (for instance due to a higher priority
-;   sample playing), the routine will not play the sample.
+;   and channel availability and age. If the channel isn't free (for instance
+;   due to a higher priority sample playing), the routine will not play the 
+;   sample.
 ;
 ;   Other values that need to be set are D1, which sets the length of the 
 ;   sample (signed long, unless MIXER_WORDSIZED is set to 1, in which case the
 ;   length is an unsigned word). D2 gives the desired priority of the sample.
-;   Samples of higher priority can overwrite already playing samples of lower
-;   priority if no free mixer channel can be found. D3 has to contain either 
-;   MIX_FX_ONCE for samples that need to play once, or one of MIX_FX_LOOP or 
-;	MIX_FX_LOOP_OFFSET for samples that should loop forever. MIX_FX_LOOP loops
-;	back to the start of the sample, MIX_FX_LOOP_OFFSET restarts at the given
-;	loop offset in D4 (signed long, unless MIXER_WORDSIZED is set to 1, in 
-;	which case the length is an unsigned word). Looping samples can only be 
-;	stopped by either calling MixerStop or MixerStopFX.
+;   Samples of equal or higher priority can overwrite already playing samples
+;   of lower priority. D3 has to contain either MIX_FX_ONCE for samples that 
+;   need to play once, or one of MIX_FX_LOOP or MIX_FX_LOOP_OFFSET for samples
+;   that should loop forever. MIX_FX_LOOP loops back to the start of the 
+;   sample, MIX_FX_LOOP_OFFSET restarts at the given loop offset in D4 (signed
+;   long, unless MIXER_WORDSIZED is set to 1, in which case the loop offset is
+;   an unsigned word). Looping samples can only be stopped by either calling
+;   MixerStop or MixerStopFX.
 ;
 ;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
 ;   no free channel could be found.

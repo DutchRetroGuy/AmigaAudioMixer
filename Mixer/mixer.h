@@ -82,7 +82,7 @@ typedef struct MXEffect
 	LONG mfx_loop_offset;	/* Offset to loop restart point in case 
 							   MIX_FX_LOOP_OFFSET is set as looping mode */
 	void *mfx_plugin_ptr;	/* NULL or a pointer to an instance of 
-	                           MXPluginList, containing a plugin to use while
+	                           MXPlugin, containing a plugin to use while
 							   playing back the sample */
 } MXEffect;
 
@@ -282,9 +282,9 @@ ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 	the the hardware and mixer channel given in mixer_channel. If MIXER_SINGLE
 	is set to 1 in mixer_config.i, the hardware	channel bits can be left zero,
 	but the mixer channel bit must still be	set. Determines whether to play 
-	back the sample based on priority and age. If the channel isn't free (for
-	instance due to a higher priority sample playing), the routine will not 
-	play the sample.
+	back the sample based on priority and channel availability. If the channel
+	isn't free (for instance due to a higher priority sample playing), the 
+	routine will not play the sample.
 
 	Returns the hardware & mixer channel the sample will play on,	or -1 if 
 	no free channel could be found.
@@ -303,7 +303,7 @@ MIX_API ULONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
 								 MIX_REGARG(ULONG mixer_channel,"d0"));
 
 /*
-void MixerStopFX(ULONG mixer_channel_mask)
+void MixerStopFX(UWORD mixer_channel_mask)
 	Stops playback on the given hardware/mixer channel combination in 
 	channel_mask. If MIXER_SINGLE is set to 1 in mixer_config.i, the hardware
 	channel bits can be left zero, but the mixer channel bits must still be 
@@ -323,8 +323,8 @@ void MixerReplaceSample(MXEffect *effect_structure,
 	Replaces an already playing sample on the given channel with a new
 	sample according to the sample pointer in the MXEffect structure passed.
 	The replacement_mode sets the way replacement works: either 
-	MIXER_REPLACE_START to have the replacement sample play from the beginning
-	or MIXER_REPLACE_OFFSET to have replacement sample play from the same 
+	MIX_REPLACE_START to have the replacement sample play from the beginning
+	or MIX_REPLACE_OFFSET to have replacement sample play from the same 
 	offset as the sample being replaced.
 
 	Note: only samples of the same size or larger are supported. If a smaller
@@ -341,7 +341,7 @@ MIX_API void MixerReplaceSample(MIX_REGARG(MXEffect *effect_structure,"a0"),
 
 
 /* 
-ULONG MixerGetChannelStatus(ULONG mixer_channel);
+ULONG MixerGetChannelStatus(UWORD mixer_channel);
 	Returns whether or not the hardware/mixer channel given in D0 is in use.
 	If MIXER_SINGLE is set to 1, the hardware channel does not need to be 
 	given in D0.
@@ -349,7 +349,7 @@ ULONG MixerGetChannelStatus(ULONG mixer_channel);
 	If the channel is not used, the routine will return MIX_CH_FREE. If the
 	channel is in use, the routine will return MIX_CH_BUSY.
  */
-MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(ULONG mixer_channel,"d0"));
+MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
 
 /*
 UWORD MixerGetStatus(void)
@@ -375,19 +375,19 @@ UWORD MixerGetStatus(void)
 MIX_API UWORD MixerGetStatus(void);
 
 /*
-UWORD MixerSetHandlerDisable(void)
+void MixerSetHandlerDisable(void)
 	Disables the mixer interrupt handler. The interrupts will still occur and
 	the interrupt handler will still be called, but the mixer will not process
 	any audio, only acknowledge interrupts and return from them.
 */
-MIX_API UWORD MixerSetHandlerDisable(void);
+MIX_API void MixerSetHandlerDisable(void);
 
 /*
-UWORD MixerSetHandlerEnable(void)
+void MixerSetHandlerEnable(void)
 	This routine re-enabled the mixer interrupt handler if it has been 
 	disabled. Interrupts will resume processing audio.
 */
-MIX_API UWORD MixerSetHandlerEnable(void);
+MIX_API void MixerSetHandlerEnable(void);
 
 
 /*
@@ -518,7 +518,7 @@ MIX_API void MixerSetPluginDeferredPtr(MIX_REGARG(void (*deferred_function_ptr)(
 
 /*
 ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
-                      WORD signed_priority,UWORD loop_indicator, 
+                      WORD signed_priority,WORD loop_indicator, 
 					  LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware channel given in
 	hardware_channel. If MIXER_SINGLE is set to 1 in mixer_config.i, the
@@ -554,27 +554,28 @@ MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
 
 /*
 ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
-                             WORD signed_priority,UWORD loop_indicator, 
+                             WORD signed_priority,WORD loop_indicator, 
 							 LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware/mixer channel given
 	in mixer_channel. If MIXER_SINGLE is set to 1 in mixer_config.i, the 
 	hardware channel bits do not need to be set, but the mixer channel bit 
 	must still be given. Determines whether to play back the sample based on
-	priority and age. If the channel isn't free (for instance due to a higher 
-	priority sample playing), the routine will not play the sample.
+	priority and channel availability. If the channel isn't free (for instance
+	due to a higher priority sample playing), the routine will not play the 
+	sample.
 
 	Other values that need to be set are length, which sets the length of the 
 	sample (signed long, unless MIXER_WORDSIZED is set to 1 in mixer_config.i,
 	in which case the length is an unsigned word). Set the desired priority of
-	the sample in signed_priority. Samples of higher priority can overwrite 
-	already playing samples of lower priority if no free mixer channel can be
-	found. The loop_indicator has to contain either MIX_FX_ONCE for samples 
-	that need to play once, or one of MIX_FX_LOOP or MIX_FX_LOOP_OFFSET for 
-	samples that should loop forever. MIX_FX_LOOP loops	back to the start of 
-	the sample, MIX_FX_LOOP_OFFSET restarts at the value given for loop_offset
-	(signed long, unless MIXER_WORDSIZED is set to 1, in which case 
-	loop_offset is an unsigned word). Looping samples can only be stopped by 
-	either calling MixerStop() or MixerStopFX().
+	the sample in signed_priority. Samples of equal or higher priority can 
+	overwrite already playing samples of lower priority. The loop_indicator 
+	has to contain either MIX_FX_ONCE for samples that need to play once, or
+	one of MIX_FX_LOOP or MIX_FX_LOOP_OFFSET for samples that should loop 
+	forever. MIX_FX_LOOP loops back to the start of the sample, 
+	MIX_FX_LOOP_OFFSET restarts at the value given for loop_offset (signed 
+	long, unless MIXER_WORDSIZED is set to 1, in which case loop_offset is an
+	unsigned word). Looping samples can only be stopped by either calling 
+	MixerStop() or MixerStopFX().
 
 	Returns the hardware & mixer channel the sample will play on, or -1 if no
 	free channel could be found.

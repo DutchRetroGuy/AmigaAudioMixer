@@ -28,8 +28,8 @@
 ;          MIXER_SIZEXBUF_NTSC is 0 or 1)
 ;       *) if MIXER_SIZEX32 and MIXER_SIZEXBUF are set to one, the samples
 ;          need to be a multiple of the PAL/NTSC buffer size and a multiple of
-;          32 bytes in length (depending on whether ot not MIXER_SIZEXBUF_NTSC
-;          is 0 or 1)
+;          32 bytes in length (depending on the video system passed to 
+;          MixerSetup())
 ;
 ;       The file mixer.i contains the equates mixer_PAL_multiple and 
 ;       mixer_NTSC_multiple which give the exaxt multiple requirements for
@@ -3027,6 +3027,8 @@ MixerChannelWrite\1
 		;
 		; Fails if no applicable mixer channel is free.
 		;
+		; *DEPCRECATED* - use MixerPlayFX instead
+		;
 		; Note: this routine does not check if the HW channel selected is 
 		;       available to the mixer, if an unused HW channel is 
 		;       selected, no sample will be played back. This only applies if
@@ -3103,6 +3105,8 @@ MixerPlaySample\1
 		;
 		; Fails if the selected hardware/mixer channel combination is not 
 		; free.
+		;
+		; *DEPCRECATED* - use MixerPlayChannelFX instead
 		;
 		; Note: this routine does not check if the HW channel selected is 
 		;       available to the mixer, if an unused HW channel is 
@@ -3687,7 +3691,7 @@ MixerGetBufferSize\1
 		; without needing access to the mixer structure.
 		;
 		; Returns
-		; D0 - value of mixer_buffer_size
+		; D0 - value of internal mixer buffer size
 		IFD BUILD_MIXER_POSTFIX
 			XDEF MixerGetChannelBufferSize\1
 		ENDIF
@@ -3762,9 +3766,6 @@ MixerGetChannelStatus\1
 		
 		; Fetch the correct mixer entry
 		bsr		MixerFetchEntry\1
-		
-		; Clear output
-		moveq	#0,d0
 		
 		IF MIXER_SINGLE=1
 			; Set HW channel to correct channel for single mixing
