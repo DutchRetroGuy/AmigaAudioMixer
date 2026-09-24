@@ -132,7 +132,8 @@
 ;	also be gotten by calling MixerGetTotalChannelCount().
 ;
 ;   Note: on 68020+ systems, it is advisable to align the various buffers to a
-;         4 byte boundary for optimal performance.
+;         4 byte boundary for optimal performance. On 68000, the buffers must
+;         be at least aligned on a word boundary.
 ; 
 ; MixerInstallHandler(A0=VBR,D0=save_vector.w)
 ;	Sets up the mixer interrupt handler. MixerSetup must be called prior to
@@ -154,8 +155,8 @@
 ;         stored CIA timer results.
 ;
 ; MixerStop()
-;	Stops mixer playback. MixerSetup and MixerInstallHandler must have been 
-;   called prior to calling this routine.
+;	Stops mixer playback. MixerSetup, MixerInstallHandler and MixerStart must
+;   have been called prior to calling this routine.
 ;
 ; MixerVolume(D0=volume.w)
 ;   Set the desired hardware output volume used by the mixer (valid values are
@@ -169,12 +170,13 @@
 ;   channel is free (for instance due to higher priority samples playing), the
 ;   routine will not play the sample.
 ;
-;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
-;   no free channel could be found.
+;   D0 returns the hardware & mixer channel the sample will play on, or 
+;   MIX_NOT_PLAYED if no free channel could be found.
 ;
 ;   Note: the MXEffect structure definition can be found at the bottom of 
 ;         mixer.i, values are as described in the Structures section of the 
 ;	      API.
+;   Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 ;
 ; D0=MixerPlayChannelFX(A0=effect_structure,D0=mixer_channel)
 ;   Adds the sample defined in the MXEffect structure pointed to by A0 on the 
@@ -185,12 +187,13 @@
 ;   instance due to a higher priority sample playing), the routine will not 
 ;   play the sample.
 ;
-;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
-;   no free channel could be found.
+;   D0 returns the hardware & mixer channel the sample will play on, or 
+;   MIX_NOT_PLAYED if no free channel could be found.
 ;
 ;   Note: the MXEffect structure definition can be found at the bottom of 
 ;         mixer.i, values are as described in the Structures section of the 
 ;	      API.
+;   Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 ;   Note: a mixer channel refers to the internal virtual channels the mixer 
 ;         uses to mix samples together. By exposing these virtual channels, 
 ;         more fine grained control over playback becomes possible.
@@ -224,6 +227,9 @@
 ;   Note: plugins that change sample length will not update to respect new
 ;         sample lengths - in this case, only samples of the same size are
 ;         supported.
+;   Note: if MIX_FX_LOOP_OFFSET is set and MIX_REPLACE_OFFSET is chosen, the
+;         loop offset will not change relative to the length of the new
+;         sample.
 ;		
 ; D0=MixerPlaySample(A0=sample,D0=hardware_channel,D1=length,
 ;                    D2=signed_priority.w,D3=loop_indicator.w,
@@ -247,9 +253,10 @@
 ;   word). Looping samples can only be stopped by either calling MixerStop or
 ;   MixerStopFX.
 ;
-;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
-;   no free channel could be found.
+;   D0 returns the hardware & mixer channel the sample will play on, or 
+;   MIX_NOT_PLAYED if no free channel could be found.
 ;
+;   Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 ;	Note: loop_offset (D4) is an optional parameter that only needs to contain
 ;	      a value in case MIX_FX_LOOP_OFFSET is set.
 ;
@@ -277,9 +284,10 @@
 ;   an unsigned word). Looping samples can only be stopped by either calling
 ;   MixerStop or MixerStopFX.
 ;
-;   D0 returns the hardware & mixer channel the sample will play on, or -1 if
-;   no free channel could be found.
+;   D0 returns the hardware & mixer channel the sample will play on, or 
+;   MIX_NOT_PLAYED if no free channel could be found.
 ;
+;   Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 ;	Note: loop_offset (D4) is an optional parameter that only needs to contain
 ;	      a value in case MIX_FX_LOOP_OFFSET is set.
 ;   Note: see MixerPlayChannelFX for an explanation of mixer channels.
@@ -417,7 +425,7 @@
 ;		
 ;		Note: this will always pass the INTREQ value for a single channel.
 ;   * mxicb_set_dmacon
-;     - Function pointer to routine that enables audio DMA.
+;     - Function pointer to routine that sets the given audio DMA value.
 ;       Parameter: D0 = DMACON value
 ;		
 ;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
@@ -483,14 +491,21 @@
 ;   calls of the mixer interrupt handler. Results are found in 
 ;   mixer_ticks_average.
 ;
+;   The average is calculated over a rolling 128 frame period when this 
+;   routine is called.
+;
 ; If MIXER_COUNTER is set to 1, two additional routines are available:
 ;
 ; MixerResetCounter()
 ;   This routine sets the mixer interrupt counter to 0.
 ;
+;   Note: only functions if MIXER_COUNTER is set to 1
+;
 ; D0=MixerGetCounter()
 ;   This routine gets the current value of the mixer interrupt counter. The
 ;   counter is word sized.
+;
+;   Note: only functions if MIXER_COUNTER is set to 1
 ;
 ;
 ; Author: Jeroen Knoester
@@ -582,6 +597,8 @@ MIX_CH3					EQU	128				; Mixer software channel 3
 
 MIX_CH_FREE				EQU	0				; Channel is not playing a sample
 MIX_CH_BUSY				EQU	1				; Channel is playing a sample
+
+MIX_NOT_PLAYED			EQU	-1				; No sample was played
 
 MIX_PLUGIN_STD			EQU	0				; Standard plugin
 MIX_PLUGIN_NODATA		EQU	1				; Plugin that doesn't update

@@ -152,7 +152,7 @@ CIAStop		MACRO
 		addq.w	#2,d1
 
 		cmp.w	#256,d1
-		ble.s	.\@_no_avg_reset
+		blt.s	.\@_no_avg_reset
 		
 		; Reset average counter
 		moveq	#0,d1
@@ -352,10 +352,10 @@ MixSingIHend	MACRO
 			move.l	mixer_stored_vector\1(pc),d0
 			beq.s	.rte
 
-			movem.l	d1-d6/a0-a6,-(sp)
+			movem.l	d1-d7/a0-a6,-(sp)
 			move.l	mixer_stored_vector\1(pc),a0
 			jsr		(a0)
-			movem.l	(sp)+,d1-d6/a0-a6
+			movem.l	(sp)+,d1-d7/a0-a6
 .rte
 			move.l	(sp)+,d0
 		ENDIF
@@ -1998,7 +1998,7 @@ MixerSetup\1
 			move.l	d4,mx_callback_ptr(a3)
 		ENDIF
 		IF MIXER_ENABLE_RETURN_VECTOR=1
-			lea.l	mixer_stored_vector(pc)\1,a4
+			lea.l	mixer_stored_vector\1(pc),a4
 			move.l	d4,(a4)
 		ENDIF
 		IF MIXER_EXTERNAL_IRQ_DMA=1
@@ -2194,6 +2194,12 @@ MixerInstallHandler\1
 			ENDIF
 			; Path for mask based resetting of IRQ bits
 			IF MIXER_EXTERNAL_BITWISE=0
+				move.w	intenar(a6),d1
+				and.w	#%11110000000,d1		; Audio = bits 7-10
+				or.w	#$8000,d1
+				lea.l	mixer_stored_intena\1(pc),a2
+				move.w	d1,(a2)
+			
 				move.w	#%11110000000,d0
 				move.l	mxicb_disable_irq(a2),a2
 
@@ -2305,8 +2311,10 @@ MixerInstallHandler\1
 		; This routine disables & removes the audio interrupt.
 		; It also restores the old handler if previously stored.
 		;
-		; Note: MixerSetup & MixerInstallHandler must have been called prior to calling
-		;       this routine.
+		; Note: MixerSetup & MixerInstallHandler must have been called prior
+		;       to calling this routine.
+		; Note: MixerStop should be called prior to calling this routine to 
+		;       make sure audio DMA is stopped.
 		; Note: if MIXER_CIA_TIMER is set to 1, this routine also restores the
 		;       saved CIA state.
 		; Note: if MIXER_CIA_TIMER & MIXER_CIA_KBOARD_RES are set to 1, this
@@ -2477,7 +2485,7 @@ MixerStart\1
 				; Set all IRQ bits using REPT
 				REPT 4
 				IF .mixer_curr_chan&1=1
-					lea.l	mixer_irqdma_vectors(pc),a1
+					lea.l	mixer_irqdma_vectors\1(pc),a1
 					move.l	mxicb_set_irq_bits(a1),a1
 					move.w	#$c000|.mixer_curr_bit,d0
 					jsr		(a1)
@@ -3055,7 +3063,8 @@ MixerChannelWrite\1
 		;
 		; Returns
 		; D0 - Either:
-		;      *) -1, if the sample can't be played (f.ex. due to priority)
+		;      *) MIX_NOT_PLAYED, if the sample can't be played (f.ex. due to
+		;         priority)
 		;      *) Hardware/mixer channel combination the sample will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
 MixerPlaySample\1
@@ -3140,7 +3149,8 @@ MixerPlaySample\1
 		;
 		; Returns
 		; D0 - Either:
-		;      *) -1, if the sample can't be played (f.ex. due to priority)
+		;      *) MIX_NOT_PLAYED, if the sample can't be played (f.ex. due to
+		;         priority)
 		;      *) Hardware/mixer channel combination the sample will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
 MixerPlayChannelSample\1
@@ -3211,7 +3221,8 @@ MixerPlayChannelSample\1
 		;
 		; Returns
 		; D0 - Either:
-		;      *) -1, if the FX can't be played (f.ex. due to priority)
+		;      *) MIX_NOT_PLAYED, if the FX can't be played (f.ex. due to 
+		;         priority)
 		;      *) Hardware/software channel combination the FX will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH2)
 		IFD BUILD_MIXER_POSTFIX
@@ -3278,7 +3289,7 @@ MixerPlayFX\1
 		bne.s	.prio_found
 		
 		; No channels are free
-		moveq	#-1,d0
+		moveq	#MIX_NOT_PLAYED,d0
 		bra		.done
 		
 .prio_found
@@ -3352,7 +3363,8 @@ MixerPlayFX\1
 		;
 		; Returns
 		; D0 - Either:
-		;      *) -1, if the FX can't be played (f.ex. due to priority)
+		;      *) MIX_NOT_PLAYED, if the FX can't be played (f.ex. due to 
+		;         priority)
 		;      *) Hardware/software channel combination the FX will be played
 		;         on. (f.ex. DMAF_AUD0|MIX_CH1)
 		IFD BUILD_MIXER_POSTFIX
@@ -3435,7 +3447,7 @@ MixerPlayChannelFX\1
 		
 		; Channel is not free
 .not_free
-		moveq	#-1,d0
+		moveq	#MIX_NOT_PLAYED,d0
 		bra		.done
 		
 .play_fx
@@ -3698,6 +3710,7 @@ MixerGetBufferSize\1
 MixerGetChannelBufferSize\1
 		move.l	a0,-(sp)					; Stack
 		lea.l	mixer\1(pc),a0
+		moveq	#0,d0
 		move.w	mx_buffer_size(a0),d0
 		move.l	(sp)+,a0					; Stack
 		rts
@@ -3834,6 +3847,7 @@ MixerGetStatus\1
 		move.l	a0,-(sp)					; Stack
 		lea.l	mixer\1(pc),a0
 		
+		moveq	#0,d0
 		move.w	mx_handler_status(a0),d0	; D0 = mixer handler status
 		add.w	d0,d0
 		add.w	d0,d0
@@ -4105,7 +4119,7 @@ MixerSetHandlerEnable\1
 MixerSetReturnVector\1
 		IF MIXER_ENABLE_RETURN_VECTOR=1
 			move.l	a1,-(sp)
-			lea.l	mixer_stored_vector(pc)\1,a1
+			lea.l	mixer_stored_vector\1(pc),a1
 			move.l	a0,(a1)
 			move.l	(sp)+,a1
 		ENDIF
@@ -4165,7 +4179,8 @@ MixerSetReturnVector\1
 		;		Note: this will always pass the INTREQ value for a single
 		;             channel.
 		;   * mxicb_set_dmacon
-		;     - Function pointer to routine that enables audio DMA.
+		;     - Function pointer to routine that sets the given audio DMA 
+		;       value.
 		;       Parameter: D0 = DMACON value
 		;		
 		;		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits
@@ -4481,13 +4496,13 @@ _MixerSetHandlerEnable\1		EQU MixerSetHandlerEnable\1
 _MixerEnableCallback\1			EQU MixerEnableCallback\1
 _MixerDisableCallback\1			EQU	MixerDisableCallback\1
 _MixerGetPluginsBufferSize\1	EQU MixerGetPluginsBufferSize\1
-_MixerGetTotalChannelCount\1	EQU MixerGetTotalChannelCount
-_MixerSetPluginDeferredPtr\1	EQU MixerSetPluginDeferredPtr
-_MixerGetChannelBufferSize\1	EQU MixerGetChannelBufferSize
-_MixerResetCounter\1			EQU	MixerResetCounter
-_MixerGetCounter\1				EQU	MixerGetCounter
-_MixerSetReturnVector\1			EQU MixerSetReturnVector
-_MixerSetIRQDMACallbacks\1		EQU	MixerSetIRQDMACallbacks
+_MixerGetTotalChannelCount\1	EQU MixerGetTotalChannelCount\1
+_MixerSetPluginDeferredPtr\1	EQU MixerSetPluginDeferredPtr\1
+_MixerGetChannelBufferSize\1	EQU MixerGetChannelBufferSize\1
+_MixerResetCounter\1			EQU	MixerResetCounter\1
+_MixerGetCounter\1				EQU	MixerGetCounter\1
+_MixerSetReturnVector\1			EQU MixerSetReturnVector\1
+_MixerSetIRQDMACallbacks\1		EQU	MixerSetIRQDMACallbacks\1
 
 
 	XDEF	_MixerGetBufferSize\1

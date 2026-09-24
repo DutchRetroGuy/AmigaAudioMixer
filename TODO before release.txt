@@ -5,6 +5,14 @@ TODO pre version 3.8
 	* Performance improvements from the e-mail
 	
 => Bug fixes
+	* MixerReplaceSample: loop offset is changed to 0 when it should be:
+		* delta = old value - old sample pointer
+		* new value = new sample pointer + delta
+	* Callback return value: mixer.asm says the callback must return 0 in D0,
+	  or non-zero if it started a new sample on the same channel. mixer.i and 
+	  mixer.h don't.
+	* Callback return value with MIXER_SIZEXBUF=1: MixUpdateChannelBufSize 
+	  ignores callback return value
 	* precalc does not work correctly in all cases, levels based being one of them
 	* Deal with currently identified bugs
 	* Synchronise plugins.i/.asm/.h and mixer.i/.asm/.h

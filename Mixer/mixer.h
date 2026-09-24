@@ -14,7 +14,7 @@
  *
  * Author: Jeroen Knoester
  * Version: 3.8
- * Revision: 20260321
+ * Revision: 20260921
  *
  * TAB size = 4 spaces
  */
@@ -56,6 +56,8 @@
 #define	MIX_CH_FREE	0		/* Mixer channel is free for use */
 #define	MIX_CH_BUSY	1		/* Mixer channel is busy */
 
+#define MIX_NOT_PLAYED ((LONG)-1) /* No sample was played */
+
 #define	MIX_PLUGIN_STD    0	/* Plugin is of standard type */
 #define	MIX_PLUGIN_NODATA 1	/* Plugin is of no data type */
 
@@ -91,7 +93,7 @@ typedef struct MXEffect
 typedef struct MXPlugin
 {
 	UWORD mpl_plugin_type;		/* Type of plugin (MIX_PLUGIN_STD or 
-								   MIX_PLUGIN_NODATE) */
+								   MIX_PLUGIN_NODATA) */
 	void (*mpl_init_ptr)();		/* Pointer to initialisation function for the
 								   plugin */
 	void (*mpl_plugin_ptr)();	/* Pointer to plugin function */
@@ -188,9 +190,9 @@ void MixerSetup(void *buffer,void *plugin_buffer,void *plugin_data,
 
 	If the video system is unknown, set video_system to MIX_PAL.
 	  
-	If MIXER_ENABLE_PLUGINS is set to 0 in mixer.config, set other parameters
-	to NULL or 0 respectively. If MIXER_ENABLE_PLUGINS is set to 1, instead
-	fill these parameters as follows:
+	If MIXER_ENABLE_PLUGINS is set to 0 in mixer_config.i, set other 
+	parameters to NULL or 0 respectively. If MIXER_ENABLE_PLUGINS is set to 1,
+	instead fill these parameters as follows:
 	  
 	- plugin_buffer must point to a block of memory in any type of RAM at
 	  least mixer_plugin_buffer_size bytes in size.
@@ -208,7 +210,8 @@ void MixerSetup(void *buffer,void *plugin_buffer,void *plugin_data,
 	  MixerGetTotalChannelCount().
 
 	Note: on 68020+ systems, it is advisable to align the various buffers to a
-	       4 byte boundary for optimal performance.
+	       4 byte boundary for optimal performance. On 68000, the buffers must
+		   be at least aligned on a word boundary.
 */
 MIX_API void MixerSetup (MIX_REGARG(void *buffer, "a0"),
 						 MIX_REGARG(void *plugin_buffer, "a1"),
@@ -245,8 +248,8 @@ MIX_API void MixerStart(void);
 
 /* 
 void MixerStop(void)
-	Stops mixer playback. MixerSetup() and MixerInstallHandler() must have
-	been called prior to calling this function.
+	Stops mixer playback. MixerSetup(), MixerInstallHandler() and MixerStop()
+	must have been called prior to calling this function.
 */
 MIX_API void MixerStop(void);
 
@@ -258,8 +261,8 @@ void MixerVolume(UWORD volume)
 MIX_API void MixerVolume(MIX_REGARG(UWORD volume,"d0"));
 
 /* 
-ULONG MixerPlayFX(MXEffect *effect_structure,
-                  ULONG hardware_channel)
+LONG MixerPlayFX(MXEffect *effect_structure,
+                  UWORD hardware_channel)
 	Adds the sample defined in the MXEffect pointed to by effect_structure on
 	the the hardware channel given in hardware_channel. If MIXER_SINGLE is set
 	to 1 in mixer_config.i, the hardware channel can be left a 0. Determines
@@ -267,17 +270,18 @@ ULONG MixerPlayFX(MXEffect *effect_structure,
 	applicable channel is free (for instance due to higher priority samples 
 	playing), the routine will not play the sample.
 
-	Returns the hardware & mixer channel the sample will play on, or -1 if no
-	free channel could be found.
+	Returns the hardware & mixer channel the sample will play on, or 
+	MIX_NOT_PLAYED if no free channel could be found.
 
 	Note: the MXEffect definition can be found at the top of this file.
+	Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 */
-MIX_API ULONG MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
-						  MIX_REGARG(ULONG hardware_channel,"d0"));
+MIX_API LONG MixerPlayFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+						  MIX_REGARG(UWORD hardware_channel,"d0"));
 
 /* 
-ULONG MixerPlayChannelFX(MXEffect *effect_structure,
-                         ULONG mixer_channel)
+LONG MixerPlayChannelFX(MXEffect *effect_structure,
+                         UWORD mixer_channel)
 	Adds the sample defined in the MXEffect pointed to by effect_structure on
 	the the hardware and mixer channel given in mixer_channel. If MIXER_SINGLE
 	is set to 1 in mixer_config.i, the hardware	channel bits can be left zero,
@@ -286,11 +290,12 @@ ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 	isn't free (for instance due to a higher priority sample playing), the 
 	routine will not play the sample.
 
-	Returns the hardware & mixer channel the sample will play on,	or -1 if 
-	no free channel could be found.
+	Returns the hardware & mixer channel the sample will play on, or 
+	MIX_NOT_PLAYED if no free channel could be found.
 
 	Note: the MXEffect definition can be found at the top of of this file, 
           values are as described at the MixerPlaySample() routine.
+	Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 	Note: a mixer channel refers to the internal virtual channels the mixer
 	      uses to mix samples together. By exposing these virtual channels,
 	      more fine grained control over playback becomes possible.
@@ -299,18 +304,18 @@ ULONG MixerPlayChannelFX(MXEffect *effect_structure,
 	      maximum number of software channels available as defined in 
 	      mixer_config.i.
 */
-MIX_API ULONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
-								 MIX_REGARG(ULONG mixer_channel,"d0"));
+MIX_API LONG MixerPlayChannelFX(MIX_REGARG(MXEffect *effect_structure,"a0"),
+								 MIX_REGARG(UWORD mixer_channel,"d0"));
 
 /*
 void MixerStopFX(UWORD mixer_channel_mask)
 	Stops playback on the given hardware/mixer channel combination in 
-	channel_mask. If MIXER_SINGLE is set to 1 in mixer_config.i, the hardware
-	channel bits can be left zero, but the mixer channel bits must still be 
-	set. If MIXER_MULTI or MIXER_MULTI_PAIRED are set to 1 in mixer_config.i,
-	multiple hardware channels can be selected at the same time. In this case
-	the playback is stopped on the given mixer channels across all selected 
-	hardware channels.
+	mixer_channel_mask. If MIXER_SINGLE is set to 1 in mixer_config.i, the
+	hardware channel bits can be left zero, but the mixer channel bits must 
+	still be set. If MIXER_MULTI or MIXER_MULTI_PAIRED are set to 1 in 
+	mixer_config.i, multiple hardware channels can be selected at the same 
+	time. In this case the playback is stopped on the given mixer channels
+	across all selected hardware channels.
 
 	Note: see MixerPlayChannelFX() for an explanation of mixer channels.
 */
@@ -318,7 +323,7 @@ MIX_API void MixerStopFX(MIX_REGARG(UWORD mixer_channel_mask,"d0"));
 
 /*
 void MixerReplaceSample(MXEffect *effect_structure,
-                        ULONG mixer_channel,
+                        UWORD mixer_channel,
 						UWORD replacement_mode)
 	Replaces an already playing sample on the given channel with a new
 	sample according to the sample pointer in the MXEffect structure passed.
@@ -334,9 +339,12 @@ void MixerReplaceSample(MXEffect *effect_structure,
 	Note: plugins that change sample length will not update to respect new
 	      sample lengths - in this case, only samples of the same size are
 	      supported.
+	Note: if MIX_FX_LOOP_OFFSET is set and MIX_REPLACE_OFFSET is chosen, the
+	      loop offset will not change relative to the length of the new 
+		  sample.
 */
 MIX_API void MixerReplaceSample(MIX_REGARG(MXEffect *effect_structure,"a0"),
-								MIX_REGARG(ULONG mixer_channel,"d0"),
+								MIX_REGARG(UWORD mixer_channel,"d0"),
 								MIX_REGARG(UWORD replacement_mode, "d1"));
 
 
@@ -352,7 +360,7 @@ ULONG MixerGetChannelStatus(UWORD mixer_channel);
 MIX_API ULONG MixerGetChannelStatus(MIX_REGARG(UWORD mixer_channel,"d0"));
 
 /*
-UWORD MixerGetStatus(void)
+ULONG MixerGetStatus(void)
 	Returns the status of the mixer. It can be used to determine both the
 	status of the mixer and by higher priority interrupts to verify whether
 	or not they interrupted the mixer interrupt.
@@ -372,7 +380,7 @@ UWORD MixerGetStatus(void)
 	Note: it only returns a valid result after MixerSetup has been
 	      called.
 */
-MIX_API UWORD MixerGetStatus(void);
+MIX_API ULONG MixerGetStatus(void);
 
 /*
 void MixerSetHandlerDisable(void)
@@ -397,8 +405,10 @@ void MixerSetReturnVector(MIX_REGARG(void (*return_routine)(), "a0"));
 
 	Note: this vector should point to a standard routine ending in RTS.
 	Note: this routine should be called after MixerSetup() has been run.
+	Note: this routine is only available if the configuration option 
+	      MIXER_ENABLE_RETURN_VECTOR is set to 1.
  */
-MIX_API void MixerSetReturnVector(MIX_REGARG(void (*irq_routine)(), "a0"));
+MIX_API void MixerSetReturnVector(MIX_REGARG(void (*return_routine)(), "a0"));
 
 /*
 void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
@@ -452,7 +462,7 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
 		
 		Note: this will always pass the INTREQ value for a single channel.
 	* mxicb_set_dmacon
-	  - Function pointer to routine that enables audio DMA.
+	  - Function pointer to routine that sets the given audio DMA value.
 		Parameter: D0 = DMACON value
 		
 		Note: if MIXER_EXTERNAL_BITWISE is set to 1, the relevant bits are
@@ -473,7 +483,7 @@ void MixerSetIRQDMACallbacks(MIX_REGARGS(MXIRQDMACallbacks *callbacks,"a0"));
 MIX_API void MixerSetIRQDMACallbacks(MIX_REGARG(MXIRQDMACallbacks *callbacks,"a0"));
 
 /*
-void MixerEnableCallback(void *callback_function_ptr)
+void MixerEnableCallback(ULONG *(callback_function_ptr)())
 	This function enables the callback function and sets it to the given 
 	function pointer. 
 
@@ -517,7 +527,24 @@ MIX_API void MixerSetPluginDeferredPtr(MIX_REGARG(void (*deferred_function_ptr)(
 									   MIX_REGARG(void *mxchannel_ptr,"a2"));
 
 /*
-ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
+void MixerResetCounter(void)
+	This routine sets the mixer interrupt counter to 0.
+
+	Note: only functions if MIXER_COUNTER is set to 1 in mixer_config.i
+*/
+MIX_API void MixerResetCounter(void);
+
+/*
+UWORD MixerGetCounter(void)
+	This routine gets the current value of the mixer interrupt counter. The
+	counter is word sized.
+
+	Note: only functions if MIXER_COUNTER is set to 1 in mixer_config.i
+*/
+MIX_API UWORD MixerGetCounter(void);
+
+/*
+LONG MixerPlaySample(void *sample,UWORD hardware_channel,LONG length,
                       WORD signed_priority,WORD loop_indicator, 
 					  LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware channel given in
@@ -540,20 +567,21 @@ ULONG MixerPlaySample(void *sample,ULONG hardware_channel,LONG length,
 	loop_offset is an unsigned word). Looping samples can only be stopped by 
 	either calling MixerStop() or MixerStopFX().
 
-	Returns the hardware & mixer channel the sample will play on, or -1 if no
-	free channel could be found.
+	Returns the hardware & mixer channel the sample will play on, or 
+	MIX_NOT_PLAYED if no free channel could be found.
 	
 	Note: this function is deprecated,use MixerPlayFX() instead.
+	Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 */
-MIX_API ULONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
-							  MIX_REGARG(ULONG hardware_channel,"d0"),
+MIX_API LONG MixerPlaySample(MIX_REGARG(void *sample,"a0"),
+							  MIX_REGARG(UWORD hardware_channel,"d0"),
 							  MIX_REGARG(LONG length,"d1"),
 							  MIX_REGARG(WORD signed_priority,"d2"),
 							  MIX_REGARG(WORD loop_indicator,"d3"),
 							  MIX_REGARG(LONG loop_offset,"d4"));
 
 /*
-ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
+LONG MixerPlayChannelSample(void *sample,UWORD mixer_channel,LONG length,
                              WORD signed_priority,WORD loop_indicator, 
 							 LONG loop_offset)
 	Adds the sample pointed to by sample on the hardware/mixer channel given
@@ -577,14 +605,15 @@ ULONG MixerPlayChannelSample(void *sample,ULONG mixer_channel,LONG length,
 	unsigned word). Looping samples can only be stopped by either calling 
 	MixerStop() or MixerStopFX().
 
-	Returns the hardware & mixer channel the sample will play on, or -1 if no
-	free channel could be found.
+	Returns the hardware & mixer channel the sample will play on, or 
+	MIX_NOT_PLAYED if no free channel could be found.
 
 	Note: see MixerPlayChannelFX() for an explanation of mixer channels.
 	Note: this function is deprecated,use MixerPlayChannelFX() instead.
+	Note: if MIXER_MULTI_PAIRED=1, DMAF_AUD3 is not a valid hardware channel.
 */
-MIX_API ULONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
-									 MIX_REGARG(ULONG hardware_channel,"d0"),
+MIX_API LONG MixerPlayChannelSample(MIX_REGARG(void *sample,"a0"),
+									 MIX_REGARG(UWORD mixer_channel,"d0"),
 									 MIX_REGARG(LONG length,"d1"),
 									 MIX_REGARG(WORD signed_priority,"d2"),
 									 MIX_REGARG(WORD loop_indicator,"d3"),
@@ -773,12 +802,12 @@ MIX_API void MixerVolume(UWORD volume)
 	);
 }
 
-MIX_API ULONG MixerPlayFX(MXEffect *effect_structure, 
-						  ULONG hardware_channel) 
+MIX_API LONG MixerPlayFX(MXEffect *effect_structure, 
+						 UWORD hardware_channel) 
 {
 	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
-	register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
-	register volatile ULONG reg_result __asm("d0");
+	register volatile UWORD reg_hardware_channel __asm("d0") = hardware_channel;
+	register volatile LONG reg_result __asm("d0");
 
 	__asm__ volatile (
 		"jsr _MixerPlayFX\n"
@@ -793,12 +822,12 @@ MIX_API ULONG MixerPlayFX(MXEffect *effect_structure,
 	return reg_result;
 }
 
-MIX_API ULONG MixerPlayChannelFX(MXEffect *effect_structure,
-								 ULONG mixer_channel)
+MIX_API LONG MixerPlayChannelFX(MXEffect *effect_structure,
+								UWORD mixer_channel)
 {
 	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
-	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
-	register volatile ULONG reg_result __asm("d0");
+	register volatile UWORD reg_mixer_channel __asm("d0") = mixer_channel;
+	register volatile LONG reg_result __asm("d0");
 
 	__asm__ volatile (
 		"jsr _MixerPlayChannelFX\n"
@@ -829,11 +858,11 @@ MIX_API void MixerStopFX(UWORD mixer_channel_mask)
 }
 
 MIX_API void MixerReplaceSample(MXEffect *effect_structure,
-								 ULONG mixer_channel,
+								 UWORD mixer_channel,
 								 UWORD replacement_mode)
 {
 	register volatile MXEffect *reg_effect_structure __asm("a0") = effect_structure;
-	register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+	register volatile UWORD reg_mixer_channel __asm("d0") = mixer_channel;
 	register volatile UWORD reg_replacement_mode __asm("d1") = replacement_mode;
 
 	__asm__ volatile (
@@ -865,8 +894,8 @@ MIX_API ULONG MixerGetChannelStatus(UWORD mixer_channel)
 	return reg_result;
 }
 
-MIX_API UWORD MixerGetStatus(void) {
-	register volatile UWORD reg_result __asm("d0");
+MIX_API ULONG MixerGetStatus(void) {
+	register volatile ULONG reg_result __asm("d0");
 
 	__asm__ volatile (
 		"jsr _MixerGetStatus"
@@ -982,21 +1011,51 @@ MIX_API void MixerSetPluginDeferredPtr(void (*deferred_function_ptr)(),
 	);
 }
 
+MIX_API void MixerResetCounter(void) 
+{
+	__asm__ volatile (
+		"jsr _MixerResetCounter"
+		// OutputOperands
+		:
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+}
 
-MIX_API ULONG MixerPlaySample(void *sample, 
-							  ULONG hardware_channel,
-							  LONG length, 
-							  WORD signed_priority,
-							  WORD loop_indicator, 
-							  LONG loop_offset)
+MIX_API UWORD MixerGetCounter(void) 
+{
+	register volatile UWORD reg_result __asm("d0");
+	
+	__asm__ volatile (
+		"jsr _MixerGetCounter"
+		// OutputOperands
+		: "=r" (reg_result)
+		// InputOperands
+		:
+		// Clobbers
+		: "cc"
+	);
+	
+	return reg_result;
+}
+
+
+MIX_API LONG MixerPlaySample(void *sample, 
+							 UWORD hardware_channel,
+							 LONG length, 
+							 WORD signed_priority,
+							 WORD loop_indicator, 
+							 LONG loop_offset)
 {
     register volatile void *reg_sample __asm("a0") = sample;
-    register volatile ULONG reg_hardware_channel __asm("d0") = hardware_channel;
+    register volatile UWORD reg_hardware_channel __asm("d0") = hardware_channel;
     register volatile LONG reg_length __asm("d1") = length;
     register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
     register volatile WORD reg_loop_indicator __asm("d3") = loop_indicator;
     register volatile LONG reg_loop_offset __asm("d4") = loop_offset;
-    register volatile ULONG reg_result __asm("d0");
+    register volatile LONG reg_result __asm("d0");
 
     __asm__ volatile (
         "jsr _MixerPlaySample\n"
@@ -1012,20 +1071,20 @@ MIX_API ULONG MixerPlaySample(void *sample,
     return reg_result;
 }
 
-MIX_API ULONG MixerPlayChannelSample(void *sample, 
-									 ULONG mixer_channel, 
-									 LONG length, 
-									 WORD signed_priority,
-									 WORD loop_indicator, 
-									 LONG loop_offset)
+MIX_API LONG MixerPlayChannelSample(void *sample, 
+									UWORD mixer_channel, 
+									LONG length, 
+									WORD signed_priority,
+									WORD loop_indicator, 
+									LONG loop_offset)
 {
     register volatile void *reg_sample __asm("a0") = sample;
-    register volatile ULONG reg_mixer_channel __asm("d0") = mixer_channel;
+    register volatile UWORD reg_mixer_channel __asm("d0") = mixer_channel;
     register volatile LONG reg_length __asm("d1") = length;
     register volatile WORD reg_signed_priority __asm("d2") = signed_priority;
     register volatile WORD reg_loop_indicator __asm("d3") = loop_indicator;
     register volatile LONG reg_loop_offset __asm("d4") = loop_offset;
-    register volatile ULONG reg_result __asm("d0");
+    register volatile LONG reg_result __asm("d0");
 
     __asm__ volatile (
         "jsr _MixerPlayChannelSample\n"
