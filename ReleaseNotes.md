@@ -16,8 +16,8 @@
 - (BUGFIX) A2 is no longer trashed when using C interface and separate IRQ/DMA handling.
 - (BUGFIX) C header files now use the same names for structure members as the assembly includes.
 - (BUGFIX) C header files now use correct types in function definitions and structure definitions.
-- (BUGFIX) Several small errors in documentation/comments were fixed.
-- (BUGFIX) Several small problems in mixer.h and plugins.h have been corrected.
+- (BUGFIX) Many small errors in documentation/comments were fixed.
+- (BUGFIX) Several problems in mixer.h and plugins.h have been corrected.
 - (MAINTENANCE) Updated included PT Player to version 6.5.
 - (MAINTENANCE) Clarified, corrected and improved the layout (of parts) of the documentation.
 - (MAINTENANCE) Adjusted EXREF macro to no longer cause warnings with newer VASM versions.
