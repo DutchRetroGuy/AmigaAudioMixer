@@ -15,10 +15,9 @@ TODO pre version 3.8
 	  ignores callback return value
 	* precalc does not work correctly in all cases, levels based being one of them
 	* Deal with currently identified bugs
-	* Synchronise plugins.i/.asm/.h and mixer.i/.asm/.h
-	* Type inconsistencies in .h and .h vs .asm
-	* Then synchronise plugins and mixer documentation in code files
-	* Then synchronise documentation vs code
+	* Synchronise plugins.i/.asm/.h
+	* Synchronise plugins and mixer documentation in code files
+	* Synchronise documentation vs code
 
 => Testing
 	* Test MixerReplaceSample functionality	
