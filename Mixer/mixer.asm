@@ -226,6 +226,7 @@ MixChkChan	MACRO
 		; found priority so far.
 		cmp.w	mch_priority(a1),d4
 		bgt.s	.new_best_chan\1
+		blt.s	.not_free\1	
 		
 		; Check if the age of the current channel is higher than the best age
 		; found so far.
@@ -236,7 +237,7 @@ MixChkChan	MACRO
 		; Set current channel as best found so far
 		move.w	mch_priority(a1),d4			; Best priority found
 		move.w	mch_age(a1),d5				; Reset best age found
-		IF \1=1
+		IF MIXER_68020=1
 			moveq	#0,d6
 			bset	d7,d6					; Best channel found
 		ELSE
@@ -3233,7 +3234,11 @@ MixerPlayFX\1
 			move.w	#MIXER_OTHER_COLOUR,$dff180
 		ENDIF
 		move.w	d2,-(sp)
-		movem.l	d1/d4-d7/a1/a2/a6,-(sp)		; Stack
+		IF MIXER_68020=1
+			movem.l	d1/d3-d7/a1/a2/a6,-(sp)		; Stack
+		ELSE
+			movem.l	d1/d4-d7/a1/a2/a6,-(sp)		; Stack
+		ENDIF
 
 		; Fetch the correct mixer entry
 		bsr		MixerFetchEntry\1
@@ -3319,7 +3324,11 @@ MixerPlayFX\1
 		tst.w	d0							; Set condition codes
 
 .done
-		movem.l	(sp)+,d1/d4-d7/a1/a2/a6		; Stack
+		IF MIXER_68020=1
+			movem.l	(sp)+,d1/d3-d7/a1/a2/a6		; Stack
+		ELSE
+			movem.l	(sp)+,d1/d4-d7/a1/a2/a6		; Stack
+		ENDIF
 		move.w	(sp)+,d2
 
 		IF MIXER_TIMING_BARS=1
