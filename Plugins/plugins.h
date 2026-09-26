@@ -19,7 +19,7 @@
  *
  * Author: Jeroen Knoester
  * Version: 1.2
- * Revision: 202501029
+ * Revision: 20260921
  *
  * TAB size = 4 spaces
  */
@@ -94,7 +94,7 @@ typedef struct MXPDVolumeInitData
 	UWORD mpid_vol_mode;		/* Volume mode to use (MXPLG_VOL_TABLE or 
 								   MXPLG_VOL_SHIFT) */
 	UWORD mpid_vol_volume;		/* Volume or shift level to use. If 
-								   MXPLG_VOL_TABLE is set: 0-16 (16 = max). If 
+								   MXPLG_VOL_TABLE is set: 0-15 (16 = max). If 
 								   MXPLG_VOL_SHIFT is set: 0-7 (0 = max) */
 } MXPDVolumeInitData;
  
@@ -207,6 +207,12 @@ void MixPluginInitSync(void *mxeffect, void *plugin_init_data,
 	routine at this address as a deferred plugin routine.
 	The plugin makes use of the MXPDSyncInitData structure to pass its
 	parameters.
+	
+	Note: due to the way the mixer works, the sync plugin will always trigger
+	      1 mixer tick (which is roughly 1 frame) prior to the sample playback
+		  reaching the set sync delay. This is true irrespective of the chosen
+		  sync settings.
+	
 	See the types above for information how to set up this structure.
 
 	Deferred plugin routines have the following function prototype:
@@ -231,7 +237,8 @@ void MixPluginInitVolume(void *mxeffect, void *plugin_init_data,
 	using lookup tables, it supports 16 volume levels: 0 = silence, 15 = 
 	maximum volume. In case of using shifts, 0 represents maximum volume and
 	silence is represented by either 8, 7 or 6 (depending on the configured
-	number of software channels per hardware channel).
+	number of software channels per hardware channel and whether or not 
+	MIXER_HQ_MODE is enabled).
 	The plugin makes use of the MXPDVolumeInitData structure to pass its
 	parameters.
 	See the types above for information how to set up this structure.
@@ -293,6 +300,7 @@ void MixPluginSync(void *plugin_data, UWORD loop_indicator)
 	Plugin routine for the synchronisation plugin. See MixPluginInitSync().
 */
 PLG_API void MixPluginSync(MIX_REGARG(void *plugin_data, "a1"),
+						   MIX_REGARG(UWORD bytes_to_process, "d0"),
 						   MIX_REGARG(UWORD loop_indicator, "d1"));
 
 /*
@@ -492,9 +500,11 @@ PLG_API void MixPluginRepeat(void *plugin_data,
 }
 
 PLG_API void MixPluginSync(void *plugin_data,
+						   UWORD bytes_to_process,
 						   UWORD loop_indicator)
 {
 	register volatile void *reg_plugin_data __asm("a1") = plugin_data;
+	register volatile UWORD reg_bytes_to_process __asm("d0") = bytes_to_process;
 	register volatile UWORD reg_loop_indicator __asm("d1") = loop_indicator;
 
 	__asm__ volatile (
@@ -502,7 +512,7 @@ PLG_API void MixPluginSync(void *plugin_data,
 		// OutputOperands
 		:
 		// InputOperands
-		: "r" (reg_plugin_data), "r", "r" (reg_loop_indicator)
+		: "r" (reg_plugin_data), "r" (reg_bytes_to_process), "r" (reg_loop_indicator)
 		// Clobbers
 		: "cc"
 	);

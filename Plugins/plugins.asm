@@ -1,4 +1,5 @@
 ; $VER: plugins.asm 1.2 (20.09.26)
+; $VER: plugins.asm 1.2 (20.09.26)
 ;
 ; plugins.asm
 ; Audio mixer plugin routines
@@ -404,6 +405,7 @@ MixPluginInitPitch\1
 		; Fetch correct FP8.8 ratio
 		lea.l	MixPluginLevels_pitch_table\1(pc),a0
 		move.w	mpid_pit_ratio_fp8(a1),d2
+		subq.w	#1,d2						; Correct level range to be 0-31
 		moveq	#0,d0
 		move.w	d2,d0
 		add.w	d0,d0
@@ -449,6 +451,7 @@ MixPluginInitPitch\1
 		move.l	mpid_pit_loop_offset(a1),mpd_pit_output_loop_offset(a2)
 
 		; 5) make sure length/offset are multiples of 4
+		; TODO: check if this is even needed?
 		move.w	mpid_pit_length+2(a1),d0
 		move.w	d0,d1
 		and.w	#$0003,d1
@@ -596,7 +599,7 @@ MixPluginInitVolume\1
 		cmp.w	#MIX_FX_ONCE,mfx_loop(a0)
 		beq.s	.done
 
-		; Looping samples with pitch plugin get length = mixer buffer size
+		; Looping samples with volume plugin get length = mixer buffer size
 		moveq	#0,d0
 		move.l	d0,mfx_loop_offset(a0)
 		IFD BUILD_MIXER_POSTFIX
@@ -827,9 +830,9 @@ MixPluginDummy\1
 		;   A0 - Pointer to the output buffer to use
 		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
-		;   D1 - Loop indicator. Set to 1 if the sample has to restart when
-		;        reaching its end. Restart has to be from the loop offset
-		;        point
+		;   D1 - Loop indicator. Set to a non-zero value if the sample has to
+		;        restart when reaching its end. Restart has to be from the 
+		;        loop offset point
 MixPluginPitch\1
 	IF MXPLUGIN_PITCH=1
 		move.l	d7,-(sp)
@@ -4470,9 +4473,9 @@ MixPluginLevels_internal\1
 		;   A0 - Pointer to the output buffer to use
 		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
-		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
-		;        loop offset (or at its start in case the loop offset is not
-		;        set)	
+		;   D1 - Loop indicator. Set to a non-zero value if the sample has to
+		;        restart when reaching its end. Restart has to be from the 
+		;        loop offset point	
 MixPluginVolume\1
 	IF MXPLUGIN_VOLUME=1
 		move.l	d7,-(sp)
@@ -4617,7 +4620,22 @@ MixPluginVolumeShift\1
 		
 		; Check for silence (= volume 8)
 		move.w	mpd_vol_volume(a1),d6
-		cmp.w	#8,d6
+		IF MIXER_HQ_MODE=1
+			cmp.w	#8,d6
+		ELSE
+			IF mixer_sw_channels=1
+				cmp.w	#8,d6
+			ENDIF
+			IF mixer_sw_channels=2
+				cmp.w	#7,d6
+			ENDIF
+			IF mixer_sw_channels=3
+				cmp.w	#7,d6
+			ENDIF
+			IF mixer_sw_channels=4
+				cmp.w	#6,d6
+			ENDIF
+		ENDIF
 		beq		.vol_silence
 	
 		; Generic setup for non-silent volumes
@@ -4711,9 +4729,9 @@ MixPluginVolumeShift\1
 		;
 		;   A1 - Pointer to the plugin data structure
 		;	A2 - Pointer to the MXChannel structure for the current channel
-		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
-		;        loop offset (or at its start in case the loop offset is not
-		;        set)
+		;   D1 - Loop indicator. Set to a non-zero value if the sample has to
+		;        restart when reaching its end. Restart has to be from the 
+		;        loop offset point
 MixPluginRepeat\1
 	IF MXPLUGIN_REPEAT=1
 		; Test if the effect triggered already
@@ -4787,12 +4805,11 @@ MixPluginRepeatDeferred\1
 		; This routine forms the sync plugin routine. See MixPluginInitSync
 		; for more information.
 		;
-		;   A0 - Pointer to the output buffer to use
 		;   A1 - Pointer to the plugin data structure
 		;   D0 - Number of bytes to process
-		;   D1 - Loop indicator. Set to 1 if the sample has restarted at the
-		;        loop offset (or at its start in case the loop offset is not
-		;        set)
+		;   D1 - Loop indicator. Set to a non-zero value if the sample has to
+		;        restart when reaching its end. Restart has to be from the 
+		;        loop offset point
 MixPluginSync\1
 	IF MXPLUGIN_SYNC=1
 		; Test if the sync plugin is done
@@ -4978,11 +4995,16 @@ MixPluginSync\1
 ;-----------------------------------------------------------------------------
 ; Plugin support routines
 ;-----------------------------------------------------------------------------
-		; Routine: MixerPluginGetMultiplier
-		; This routine returns the minimum size a sample must be a multiple
-		; of.
+		; Routine: MixPluginGetMultiplier
+		; This routine returns the type of sample size multiple the mixer 
+		; expects. This can be used instead of MixerGetSampleMinSize() if the
+		; actual value is not relevant, only whether or not it's 4x, 32x or 
+		; (buffer_size)x.
 		;
-		; D0 - Minimum multiple size
+		; Returns either MXPLG_MULTIPLIER_4, MXPLG_MULTIPLIER_32 or
+		; MXPLG_MULTIPLIER_BUFSIZE.
+		;
+		; D0 - One of the MXPLG_MULTIPLIER_* constants
 MixPluginGetMultiplier\1
 		IF MIXER_SIZEX32=1
 			IF MIXER_SIZEXBUF=1

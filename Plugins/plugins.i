@@ -1,4 +1,4 @@
-; $VER: plugins.i 1.1 (21.09.26)
+; $VER: plugins.i 1.2 (21.09.26)
 ;
 ; plugins.i
 ; Include file for plugins.asm
@@ -123,9 +123,9 @@
 ;	      A2 - Pointer to the MXChannel structure for the current channel
 ;              (see note below)
 ;         D0 - Number of bytes to process
-;         D1 - Loop indicator. Set to 1 if the sample has restarted at the
-;              loop offset (or at its start in case the loop offset is not
-;              set)
+;         D1 - Loop indicator. Set to a non-zero value if the sample has to
+;              restart when reaching its end. Restart has to be from the loop
+;              offset point
 ;    - Depending on what the plugin itself needs, these parameters can be
 ;      omitted / left blank.
 ;    - Plugin routines have to preserve all registers
@@ -213,9 +213,9 @@
 ;                            volume) to 8 (silence)
 ;
 ;                            Note that the shift value for silence is
-;                            dependent on the mixer mode and the number of 
-;                            channels the mixer can mix (as set in 
-;                            mixer_config.i):
+;                            dependent on whether or not MIXER_HQ_MODE is set
+;                            and the number of channels the mixer can mix (as
+;                            set in mixer_config.i):
 ;                                                  Shift value for silence
 ;                            HQ Mode/1-4 channels       8
 ;                            Normal/1 channel       	8
@@ -317,6 +317,11 @@
 ;   routine at this address as a deferred plugin routine.
 ;   The plugin makes use of the MXPDSyncInitData structure to pass its
 ;   parameters.
+;
+;   Note: due to the way the mixer works, the sync plugin will always trigger
+;         1 mixer tick (which is roughly 1 frame) prior to the sample playback
+;         reaching the set sync delay. This is true irrespective of the chosen
+;         sync settings.
 ;
 ;   See the section Structures above for information how to set up this
 ;   structure.
