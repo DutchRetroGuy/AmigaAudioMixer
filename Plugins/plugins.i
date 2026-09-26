@@ -241,7 +241,8 @@
 ;                              *) MXPLG_SYNC_START
 ;                                 Triggers once, at the start of playback
 ;                              *) MXPLG_SYNC_END
-;                                 Triggers once, at the end of playback
+;                                 Triggers once, at the end of playback. 
+;                                 Never triggers for looping samples.
 ;                              *) MXPLG_SYNC_LOOP
 ;                                 Triggers every time playback loops
 ;                              *) MXPLG_SYNC_START_AND_LOOP
@@ -288,6 +289,10 @@
 ;   NO-OP plugin if the code written to call MixerPlayFX() or 
 ;   MixerPlayChannelFX() in a specific program always wants to pass a plugin,
 ;   even if this is not required for the sample to be played.
+;
+;   Note: the dummy plugin will not fill the output buffer, so using it with
+;         MIX_PLUGIN_STD set will result in playback of whatever is in the
+;         plugin output buffer.
 ;
 ;   MXPlugin setup:
 ;   --------------
@@ -381,10 +386,16 @@
 ;   See the section Structures above for information how to set up this
 ;   structure.
 ;
+;   Note: when using MXPLG_PITCH_LEVELS, the pitch can only be shifted down.
 ;   Note: using pre-calculated values for length & offset does not increase 
 ;         performance of the actual plugin, it only speeds up the 
 ;         initialisation that runs when calling MixerPlayFX() or 
 ;         MixerPlayChannelFX()
+;   Note: the pitch plugin has a maximum sample size. The input and output
+;         length are both limited to 262.144 bytes. This limit is only valid
+;         for the real time calculation of mpid_pit_length and 
+;         mpid_pit_loop_offset. If pre-calculated length/loop offset values
+;         are used, this limit can be higher in some circumstances.
 ;
 ;   MXPlugin setup:
 ;   --------------

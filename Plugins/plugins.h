@@ -169,6 +169,10 @@ void MixPluginInitDummy(void)
 	NO-OP plugin if the code written to call MixerPlayFX() or 
 	MixerPlayChannelFX() in a specific program always wants to pass a plugin,
 	even if this is not required for the sample to be played.
+	
+	Note: the dummy plugin will not fill the output buffer, so using it with
+		  MIX_PLUGIN_STD set will result in playback of whatever is in the
+		  plugin output buffer.
 
 	MXPlugin setup:
 	--------------
@@ -212,6 +216,7 @@ void MixPluginInitSync(void *mxeffect, void *plugin_init_data,
 	      1 mixer tick (which is roughly 1 frame) prior to the sample playback
 		  reaching the set sync delay. This is true irrespective of the chosen
 		  sync settings.
+	Note: MXPLG_SYNC_END never triggers for looping samples.
 	
 	See the types above for information how to set up this structure.
 
@@ -224,6 +229,13 @@ void MixPluginInitSync(void *mxeffect, void *plugin_init_data,
 		  called with the plugin data for the synchronisation plugin in A1.
 		  This data follows the definition of MXPDSyncData, as found in 
 		  plugins.i and plugins.h
+		  
+	MXPlugin setup:
+	--------------
+	* mpl_plugin_type	- Set to MIX_PLUGIN_NODATA
+	* mpl_init_ptr		- Pointer to MixPluginInitSync()
+	* mpl_plugin_ptr	- Pointer to MixPluginSync()
+	* mpl_init_data_ptr	- Pointer to instance of structure MXPDSyncInitData
 */
 PLG_API void MixPluginInitSync(MIX_REGARG(void *mxeffect, "a0"),
 							   MIX_REGARG(void *plugin_init_data, "a1"),
@@ -242,6 +254,13 @@ void MixPluginInitVolume(void *mxeffect, void *plugin_init_data,
 	The plugin makes use of the MXPDVolumeInitData structure to pass its
 	parameters.
 	See the types above for information how to set up this structure.
+	
+	MXPlugin setup:
+	--------------
+	* mpl_plugin_type	- Set to MIX_PLUGIN_STD
+	* mpl_init_ptr		- Pointer to MixPluginInitVolume()
+	* mpl_plugin_ptr	- Pointer to MixPluginVolume()
+	* mpl_init_data_ptr	- Pointer to instance of structure MXPDVolumeInitData
 */
 PLG_API void MixPluginInitVolume(MIX_REGARG(void *mxeffect, "a0"),
 								 MIX_REGARG(void *plugin_init_data, "a1"),
@@ -263,10 +282,17 @@ void MixPluginInitPitch(void *mxeffect, void *plugin_init_data,
 	pass its parameters.
 	See the types above for information how to set up this structure.
 
+	Note: when using MXPLG_PITCH_LEVELS, the pitch can only be shifted down.
 	Note: using pre-calculated values for length & offset does not increase 
 		  performance of the actual plugin, it only speeds up the 
 		  initialisation that runs when calling MixerPlayFX() or 
 		  MixerPlayChannelFX()
+	Note: the pitch plugin has a maximum sample size. The input and output
+		  length are both limited to 262.144 bytes. This limit is only valid
+		  for the real time calculation of mpid_pit_length and 
+		  mpid_pit_loop_offset. If pre-calculated length/loop offset values
+		  are used, this limit can be higher in some circumstances.
+	
 	
 	MXPlugin setup:
 	--------------

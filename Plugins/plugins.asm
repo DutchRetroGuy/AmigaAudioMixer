@@ -359,9 +359,10 @@ MixPluginInitDummy\1
 		;       playing such samples without use of the pitch plugin.
 		; Note: the pitch plugin has a maximum sample size. The input and 
 		;       output length are both limited to 262.144 bytes. This limit is
-		;       only valid for the real time calculation of mfx_length and 
-		;       mfx_loop_offset. If pre-calculated length/loop offset values
-		;       are used, this limit can be higher in some circumstances.
+		;       only valid for the real time calculation of mpid_pit_length 
+		;       and mpid_pit_loop_offset. If pre-calculated length/loop offset
+		;       values are used, this limit can be higher in some 
+		;       circumstances.
 		;
 		;       See MixPluginPitchRatioPrecalc for more information.
 		;
@@ -691,7 +692,8 @@ MixPluginInitRepeat\1
 		;           *) MXPLG_SYNC_START          - triggers once, at the start
 		;                                          of playback
 		;           *) MXPLG_SYNC_END            - triggers once, at the end
-		;                                          of playback
+		;                                          of playback. Never triggers
+		;                                          for looping samples.
 		;           *) MXPLG_SYNC_LOOP           - triggers every time
 		;                                          playback loops
 		;           *) MXPLG_SYNC_START_AND_LOOP - triggers at the start of
