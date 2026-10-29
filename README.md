@@ -63,3 +63,5 @@ agermose on the AmigaGameDev discord.
 
 Special thanks go to h0ffman, nivrig, KaiN, Jobbo and McGeezer over at the
 AmigaGameDev Discord.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/B8W229OI9X)
